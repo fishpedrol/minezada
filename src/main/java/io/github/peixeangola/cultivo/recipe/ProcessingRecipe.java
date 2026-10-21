@@ -90,7 +90,8 @@ public record ProcessingRecipe(StationKind kind, Ingredient ingredient, int inpu
 
     @Override
     public PlacementInfo placementInfo() {
-        return PlacementInfo.NOT_PLACEABLE;
+        // Com NOT_PLACEABLE o RecipeManager descarta a receita dos índices (e avisa no log)
+        return PlacementInfo.create(ingredient);
     }
 
     @Override

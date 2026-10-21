@@ -12,12 +12,7 @@
           "location_predicate": {
             "predicate_type": "minecraft:always_true"
           },
-          "output_state": {
-            "Name": "cultivo:brisa_crop",
-            "Properties": {
-              "age": "0"
-            }
-          }
+          "output_state": "cultivo:brisa_crop"
         },
         {
           "input_predicate": {
@@ -28,12 +23,7 @@
           "location_predicate": {
             "predicate_type": "minecraft:always_true"
           },
-          "output_state": {
-            "Name": "cultivo:aurora_crop",
-            "Properties": {
-              "age": "0"
-            }
-          }
+          "output_state": "cultivo:aurora_crop"
         },
         {
           "input_predicate": {
@@ -44,12 +34,7 @@
           "location_predicate": {
             "predicate_type": "minecraft:always_true"
           },
-          "output_state": {
-            "Name": "cultivo:eclipse_crop",
-            "Properties": {
-              "age": "0"
-            }
-          }
+          "output_state": "cultivo:eclipse_crop"
         },
         {
           "input_predicate": {
@@ -60,12 +45,7 @@
           "location_predicate": {
             "predicate_type": "minecraft:always_true"
           },
-          "output_state": {
-            "Name": "minecraft:carrots",
-            "Properties": {
-              "age": "0"
-            }
-          }
+          "output_state": "minecraft:carrots"
         },
         {
           "input_predicate": {
@@ -76,12 +56,7 @@
           "location_predicate": {
             "predicate_type": "minecraft:always_true"
           },
-          "output_state": {
-            "Name": "minecraft:potatoes",
-            "Properties": {
-              "age": "0"
-            }
-          }
+          "output_state": "minecraft:potatoes"
         },
         {
           "input_predicate": {
@@ -92,12 +67,7 @@
           "location_predicate": {
             "predicate_type": "minecraft:always_true"
           },
-          "output_state": {
-            "Name": "minecraft:beetroots",
-            "Properties": {
-              "age": "0"
-            }
-          }
+          "output_state": "minecraft:beetroots"
         }
       ]
     }

@@ -49,7 +49,7 @@ Estas decisões vêm de NEXT_SESSION.md, seção 4, e estão no código. As cons
 
   Não exige luz artificial nem irrigação extra além da farmland.
 - **Fontes de sementes** (`SeedSources`):
-  - **Aldeias:** o 26.3 tem 5 tipos (plains, desert, savanna, snowy, taiga). Recebem sementes os baús `minecraft:chests/village/village_{plains,savanna,taiga,desert}_house`, ou seja, 4 de 5 tipos (80%); snowy fica de fora. O pool injetado tem 1 rolagem: vazio 50, Brisa 30 (1–3), Aurora 14 (1–2), Eclipse 6 (1). As chances por baú são 30%, 14% e 6%.
+  - **Aldeias:** o 26.3 tem 5 tipos (plains, desert, savanna, snowy, taiga). Recebem sementes os baús `minecraft:chests/village/village_{plains,savanna,taiga,desert}_house`, ou seja, 4 de 5 tipos (80%); snowy fica de fora. O pool injetado tem 1 rolagem: vazio 50, Brisa 30 (1–3), Aurora 14 (1–2), Eclipse 6 (1). No 26.3 o `LootTableLoadEvent` não expõe o registro de loot tables, então o pool é montado em Java (`SeedLootInjector`) a partir de `SeedSources`; `loot_table/inject/village_seeds.json` espelha os mesmos pesos. As chances por baú são 30%, 14% e 6%.
   - **Lavouras de aldeia de planície:** `data/minecraft/worldgen/processor_list/farm_plains.json` é sobrescrito. As regras `random_block_match` sobre trigo entram **antes** das vanilla: Brisa 0,05, Aurora 0,025 e Eclipse 0,01, com saída no crop do mod com age 0. As regras vanilla (cenoura 0,3, batata 0,2, beterraba 0,1) foram mantidas.
   - **Selva:** não há aldeia de selva no 26.3. A fonte equivalente é o bloco `cultivo:wild_plant`, colocado pelo placed feature `wild_plant_jungle` (rarity 1/16) via biome modifier `forge:add_features` em `#minecraft:is_jungle`.
   - **Campo natural de planície:** `wild_plant_plains` (rarity 1/48) em `minecraft:plains` e `minecraft:meadow`.
@@ -89,7 +89,6 @@ Estas decisões vêm de NEXT_SESSION.md, seção 4, e estão no código. As cons
   - sons e partículas são os vanilla, herdados das propriedades do trigo, das tábuas e do arbusto.
 
 ## Em aberto
-- Confirmar no build real que os formatos JSON do 26.3 escolhidos sem o jar vanilla carregam sem erro. Estão listados em NEXT_SESSION.md, seção 6.
 - Ajuste fino de balanceamento (pesos, raridade da planta silvestre, velocidades) depois de jogar.
 - Interação/uso dos artigos de fumo: continuam decorativos; efeitos de consumo ficam fora até decisão explícita.
 - Confirmar se os amigos usam Forge (a recomendação continua sendo Forge).

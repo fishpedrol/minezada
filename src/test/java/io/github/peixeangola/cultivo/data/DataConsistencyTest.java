@@ -168,7 +168,7 @@ class DataConsistencyTest {
             JsonObject input = rule.getAsJsonObject("input_predicate");
             assertEquals("minecraft:random_block_match", input.get("predicate_type").getAsString());
             assertEquals("minecraft:wheat", input.get("block").getAsString());
-            String output = rule.getAsJsonObject("output_state").get("Name").getAsString();
+            String output = rule.get("output_state").getAsString();
             if (i < SeedSources.FARM_RULES.size()) {
                 SeedSources.FarmRule expected = SeedSources.FARM_RULES.get(i);
                 assertEquals("cultivo:" + expected.variety().cropId(), output);
@@ -221,13 +221,16 @@ class DataConsistencyTest {
             JsonObject flower = children.get(0).getAsJsonObject();
             assertEquals("cultivo:" + v.freshFlowerId(), flower.get("name").getAsString());
             JsonObject condition = flower.getAsJsonObject("condition");
-            assertEquals("minecraft:block_state_property", condition.get("type").getAsString());
-            assertEquals("7", condition.getAsJsonObject("properties").get("age").getAsString());
+            assertEquals("minecraft:match_block", condition.get("type").getAsString());
+            assertEquals("cultivo:" + v.cropId(), condition.get("blocks").getAsString());
+            assertEquals("7", condition.getAsJsonObject("state").get("age").getAsString());
             assertEquals("cultivo:set_harvest_quality", modifiers(flower).get(0).getAsJsonObject().get("type").getAsString());
             JsonObject seedFallback = children.get(1).getAsJsonObject();
             assertEquals("cultivo:" + v.seedsId(), seedFallback.get("name").getAsString());
             assertFalse(seedFallback.has("condition"), "imaturo dá 1 semente");
-            JsonObject bonusSeeds = pools.get(1).getAsJsonObject().getAsJsonArray("entries").get(0).getAsJsonObject();
+            JsonObject bonusPool = pools.get(1).getAsJsonObject();
+            assertEquals("7", bonusPool.getAsJsonObject("condition").getAsJsonObject("state").get("age").getAsString());
+            JsonObject bonusSeeds = bonusPool.getAsJsonArray("entries").get(0).getAsJsonObject();
             assertEquals("cultivo:" + v.seedsId(), bonusSeeds.get("name").getAsString());
             assertEquals("minecraft:apply_bonus", modifiers(bonusSeeds).get(0).getAsJsonObject().get("type").getAsString());
         }
@@ -255,8 +258,9 @@ class DataConsistencyTest {
     private static void collectLegacyKeys(JsonElement element, String where, List<String> out) {
         if (element.isJsonObject()) {
             for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {
-                if (Set.of("functions", "conditions", "function").contains(e.getKey())
-                    || (e.getKey().equals("condition") && e.getValue().isJsonPrimitive())) {
+                // "condition" pode ser objeto ou ID registrado (string), como no short_grass.json vanilla
+                if (Set.of("functions", "conditions", "function", "block_state_property").contains(e.getKey())
+                    || (e.getValue().isJsonPrimitive() && e.getValue().getAsString().equals("minecraft:block_state_property"))) {
                     out.add(where + ":" + e.getKey());
                 }
                 collectLegacyKeys(e.getValue(), where, out);

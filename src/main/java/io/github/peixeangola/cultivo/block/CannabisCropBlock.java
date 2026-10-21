@@ -10,7 +10,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.block.FarmBlock;
+import net.minecraft.world.level.block.FarmlandBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.ForgeHooks;
 
@@ -65,8 +65,8 @@ public class CannabisCropBlock extends CropBlock {
             for (int dz = -1; dz <= 1; dz++) {
                 float soil = 0.0F;
                 BlockState ground = level.getBlockState(below.offset(dx, 0, dz));
-                if (ground.getBlock() instanceof FarmBlock) {
-                    soil = ground.getValue(FarmBlock.MOISTURE) > 0 ? 3.0F : 1.0F;
+                if (ground.getBlock() instanceof FarmlandBlock) {
+                    soil = ground.getValue(FarmlandBlock.MOISTURE) > 0 ? 3.0F : 1.0F;
                 }
                 if (dx != 0 || dz != 0) {
                     soil /= 4.0F;

@@ -89,15 +89,16 @@ for (const lang of ['en_us', 'pt_br']) {
 }
 
 // ------------------------------------------------------------------ data: loot tables (formato 26.3: type/condition/modifier)
-const blockState = (block, age) => ({ type: 'minecraft:block_state_property', block: id(block), properties: { age: String(age) } });
+const blockState = (block, age) => ({ type: 'minecraft:match_block', blocks: id(block), state: { age: String(age) } });
 for (const v of varieties) {
   const crop = `${v.id}_crop`;
+  // Mesmo formato de loot_table/blocks/wheat.json do 26.3
   write(`data/${NS}/loot_table/blocks/${crop}.json`, {
     type: 'minecraft:block',
+    modifier: { type: 'minecraft:explosion_decay' },
     pools: [
       {
         rolls: 1,
-        bonus_rolls: 0,
         entries: [{
           type: 'minecraft:alternatives',
           children: [
@@ -105,28 +106,24 @@ for (const v of varieties) {
               type: 'minecraft:item',
               name: id(`${v.id}_fresh_flower`),
               condition: blockState(crop, 7),
-              modifier: [{ type: id('set_harvest_quality') }, { type: 'minecraft:explosion_decay' }],
+              modifier: { type: id('set_harvest_quality') },
             },
-            { type: 'minecraft:item', name: id(`${v.id}_seeds`), modifier: { type: 'minecraft:explosion_decay' } },
+            { type: 'minecraft:item', name: id(`${v.id}_seeds`) },
           ],
         }],
       },
       {
         rolls: 1,
-        bonus_rolls: 0,
+        condition: blockState(crop, 7),
         entries: [{
           type: 'minecraft:item',
           name: id(`${v.id}_seeds`),
-          condition: blockState(crop, 7),
-          modifier: [
-            {
-              type: 'minecraft:apply_bonus',
-              enchantment: 'minecraft:fortune',
-              formula: 'minecraft:binomial_with_bonus_count',
-              parameters: { extra: 3, probability: 0.5714286 },
-            },
-            { type: 'minecraft:explosion_decay' },
-          ],
+          modifier: {
+            type: 'minecraft:apply_bonus',
+            enchantment: 'minecraft:fortune',
+            formula: 'minecraft:binomial_with_bonus_count',
+            parameters: { extra: 3, probability: 0.5714286 },
+          },
         }],
       },
     ],
@@ -137,7 +134,6 @@ write(`data/${NS}/loot_table/blocks/${wild.id}.json`, {
   type: 'minecraft:block',
   pools: [{
     rolls: 1,
-    bonus_rolls: 0,
     entries: M.seed_sources.wild_drops.map((d) => ({
       type: 'minecraft:item',
       name: id(`${d.variety}_seeds`),
@@ -152,8 +148,8 @@ for (const s of stations) {
     type: 'minecraft:block',
     pools: [{
       rolls: 1,
-      bonus_rolls: 0,
-      entries: [{ type: 'minecraft:item', name: id(s.id), condition: { type: 'minecraft:survives_explosion' } }],
+      condition: { type: 'minecraft:survives_explosion' },
+      entries: [{ type: 'minecraft:item', name: id(s.id) }],
     }],
     random_sequence: id(`blocks/${s.id}`),
   });
@@ -163,7 +159,6 @@ write(`data/${NS}/loot_table/inject/village_seeds.json`, {
   type: 'minecraft:chest',
   pools: [{
     rolls: 1,
-    bonus_rolls: 0,
     entries: [
       { type: 'minecraft:empty', weight: ss.chest_empty_weight },
       ...ss.chest_entries.map((e) => ({
@@ -236,7 +231,7 @@ for (const tag of ['crops', 'maintains_farmland', 'bee_growables']) {
 const rule = (block, probability, output) => ({
   input_predicate: { predicate_type: 'minecraft:random_block_match', block: 'minecraft:wheat', probability },
   location_predicate: { predicate_type: 'minecraft:always_true' },
-  output_state: { Name: output, Properties: { age: '0' } },
+  output_state: output, // string de block state, como no farm_plains.json vanilla (age padrão 0)
 });
 write('data/minecraft/worldgen/processor_list/farm_plains.json', {
   processors: [{
@@ -249,28 +244,31 @@ write('data/minecraft/worldgen/processor_list/farm_plains.json', {
 });
 write(`data/${NS}/worldgen/feature/${wild.id}.json`, {
   type: 'minecraft:simple_block',
-  to_place: { type: 'minecraft:simple_state_provider', state: { Name: id(wild.id) } },
+  to_place: { id: id(wild.id) },
 });
 const patch = (rarity) => ({
   feature: id(wild.id),
   placement: [
     { type: 'minecraft:rarity_filter', chance: rarity },
     { type: 'minecraft:in_square' },
-    { type: 'minecraft:heightmap', heightmap: 'WORLD_SURFACE_WG' },
+    { type: 'minecraft:heightmap', heightmap: 'MOTION_BLOCKING' },
     { type: 'minecraft:biome' },
     { type: 'minecraft:count', count: 12 },
     {
-      type: 'minecraft:random_offset',
-      xz_spread: { type: 'minecraft:uniform', min_inclusive: -4, max_inclusive: 4 },
-      y_spread: { type: 'minecraft:uniform', min_inclusive: -1, max_inclusive: 1 },
+      // Como em placed_feature/patch_melon.json do 26.3 (random_patch não existe mais)
+      type: 'minecraft:offset',
+      x: { type: 'minecraft:trapezoid', min: -4, max: 4, plateau: 0 },
+      y: { type: 'minecraft:trapezoid', min: -2, max: 2, plateau: 0 },
+      z: { type: 'minecraft:trapezoid', min: -4, max: 4, plateau: 0 },
     },
     {
       type: 'minecraft:block_predicate_filter',
       predicate: {
         type: 'minecraft:all_of',
         predicates: [
-          { type: 'minecraft:matching_blocks', blocks: 'minecraft:air' },
-          { type: 'minecraft:would_survive', state: { Name: id(wild.id) } },
+          { type: 'minecraft:replaceable' },
+          { type: 'minecraft:matching_fluids', fluids: 'minecraft:empty' },
+          { type: 'minecraft:would_survive', state: id(wild.id) },
         ],
       },
     },

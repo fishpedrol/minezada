@@ -17,12 +17,12 @@
 Essa matriz substitui a divergência entre 66.0.6 e 66.0.10 descrita abaixo, porque o MDK efetivamente baixado traz a 66.0.13.
 
 ### Rede necessária para o build
-O ForgeGradle 7 baixa ferramentas e dependências de `maven.minecraftforge.net` (por exemplo `minecraft-mavenizer-0.5.21.jar`) e o jogo dos servidores da Mojang (`piston-meta.mojang.com`, `libraries.minecraft.net`). Na sessão na nuvem de 21/10/2026, esses hosts foram negados pela política de rede (403 no CONNECT), e `./gradlew build` falhou na configuração. O plugin em si vem do Gradle Plugin Portal, que estava acessível. Para builds na nuvem, libere esses domínios nas configurações de rede do ambiente.
+O ForgeGradle 7 baixa ferramentas e dependências de `maven.minecraftforge.net` (por exemplo `minecraft-mavenizer-0.5.21.jar`) e o jogo dos servidores da Mojang (`piston-meta.mojang.com`, `libraries.minecraft.net`). Na sessão na nuvem de 21/10/2026, esses hosts foram negados pela política de rede (403 no CONNECT), e `./gradlew build` falhou na configuração. Depois de liberar os domínios nas configurações de rede do ambiente, o build completou (`BUILD SUCCESSFUL`). O plugin em si vem do Gradle Plugin Portal, que estava acessível. Para builds na nuvem, libere esses domínios nas configurações de rede do ambiente.
 
 Hosts que estavam acessíveis: `services.gradle.org`, `plugins.gradle.org`, `repo1.maven.org` e downloads de releases do GitHub (por onde veio o JDK Temurin). Enquanto o build completo não roda, `tools/test-offline.sh` executa os testes JUnit que não dependem do Minecraft.
 
-### Formatos de dados 26.3 usados (verificar contra o `client-extra` jar)
-Escritos sem acesso ao jar vanilla, com base em NEXT_SESSION.md e nas notas oficiais dos snapshots ([26.3 Snapshot 4](https://www.minecraft.net/en-us/article/minecraft-26-3-snapshot-4), [notas do 26.1 Pre-Release 1](https://www.minecraft.net/en-us/article/minecraft-26-1-pre-release-1)):
+### Formatos de dados 26.3 usados (conferidos contra o `client-extra-26.3` jar em 21/10/2026)
+A pesquisa inicial veio das notas oficiais dos snapshots; os formatos finais foram copiados dos JSONs vanilla (detalhes em NEXT_SESSION.md, seção 6). Fontes ([26.3 Snapshot 4](https://www.minecraft.net/en-us/article/minecraft-26-3-snapshot-4), [notas do 26.1 Pre-Release 1](https://www.minecraft.net/en-us/article/minecraft-26-1-pre-release-1)):
 - **Loot (26.3 Snapshot 4):** nas entradas, `conditions` virou `condition` e `functions` virou `modifier`, com valor único ou lista (lista = `minecraft:sequence`). Nos predicados e funções, o campo de tipo agora se chama `type` (antes `condition`/`function`). Uma lista de condições não equivale mais a `all_of` implícito.
 - **Worldgen (26.1):** o tipo `random_patch` foi removido. Patches agora são `count` + `random_offset` + `block_predicate_filter` no placed feature, e as features configuradas ficam em `worldgen/feature/`.
 - **Receitas:** `crafting_shaped`/`crafting_shapeless` com ingrediente em string (`"ns:item"` ou `"#ns:tag"`) e `result: {id, count}`.

@@ -37,7 +37,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.block.FarmBlock;
+import net.minecraft.world.level.block.FarmlandBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -103,7 +103,7 @@ public final class CultivoGameTests {
     }
 
     private static void plantOnFarmland(GameTestHelper helper, Variety variety, int age) {
-        helper.setBlock(SOIL, Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, FarmBlock.MAX_MOISTURE));
+        helper.setBlock(SOIL, Blocks.FARMLAND.defaultBlockState().setValue(FarmlandBlock.MOISTURE, FarmlandBlock.MAX_MOISTURE));
         helper.setBlock(PLANT, crop(variety, age));
     }
 
@@ -112,7 +112,7 @@ public final class CultivoGameTests {
         helper.setBlock(PLANT.above(2), Blocks.GLASS.defaultBlockState());
         helper.setBlock(PLANT.east(2), Blocks.GLASS.defaultBlockState());
         helper.setBlock(PLANT.west(2), Blocks.GLASS.defaultBlockState());
-        helper.setBlock(PLANT.north(2), Blocks.LIME_STAINED_GLASS.defaultBlockState());
+        helper.setBlock(PLANT.north(2), Blocks.STAINED_GLASS.lime().defaultBlockState());
         helper.setBlock(PLANT.south(2), Blocks.GLASS_PANE.defaultBlockState());
     }
 

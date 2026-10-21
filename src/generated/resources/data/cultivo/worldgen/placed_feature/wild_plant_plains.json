@@ -10,7 +10,7 @@
     },
     {
       "type": "minecraft:heightmap",
-      "heightmap": "WORLD_SURFACE_WG"
+      "heightmap": "MOTION_BLOCKING"
     },
     {
       "type": "minecraft:biome"
@@ -20,16 +20,24 @@
       "count": 12
     },
     {
-      "type": "minecraft:random_offset",
-      "xz_spread": {
-        "type": "minecraft:uniform",
-        "min_inclusive": -4,
-        "max_inclusive": 4
+      "type": "minecraft:offset",
+      "x": {
+        "type": "minecraft:trapezoid",
+        "min": -4,
+        "max": 4,
+        "plateau": 0
       },
-      "y_spread": {
-        "type": "minecraft:uniform",
-        "min_inclusive": -1,
-        "max_inclusive": 1
+      "y": {
+        "type": "minecraft:trapezoid",
+        "min": -2,
+        "max": 2,
+        "plateau": 0
+      },
+      "z": {
+        "type": "minecraft:trapezoid",
+        "min": -4,
+        "max": 4,
+        "plateau": 0
       }
     },
     {
@@ -38,14 +46,15 @@
         "type": "minecraft:all_of",
         "predicates": [
           {
-            "type": "minecraft:matching_blocks",
-            "blocks": "minecraft:air"
+            "type": "minecraft:replaceable"
+          },
+          {
+            "type": "minecraft:matching_fluids",
+            "fluids": "minecraft:empty"
           },
           {
             "type": "minecraft:would_survive",
-            "state": {
-              "Name": "cultivo:wild_plant"
-            }
+            "state": "cultivo:wild_plant"
           }
         ]
       }

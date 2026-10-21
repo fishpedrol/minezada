@@ -4,6 +4,7 @@ import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -85,7 +86,7 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
             return InteractionResult.PASS;
         }
         if (!player.getInventory().add(taken)) {
-            player.drop(taken, false);
+            player.drop(taken, false, Prediction.SERVER_ONLY);
         }
         return InteractionResult.SUCCESS_SERVER;
     }
