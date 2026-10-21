@@ -1,0 +1,10 @@
+{
+  "type": "cultivo:sieving",
+  "ingredient": "#cultivo:dried_flowers",
+  "input_count": 1,
+  "result": {
+    "id": "cultivo:resin",
+    "count": 1
+  },
+  "processing_time": 200
+}

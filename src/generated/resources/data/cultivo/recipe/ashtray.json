@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "T T",
+    "TTT"
+  ],
+  "key": {
+    "T": "minecraft:terracotta"
+  },
+  "result": {
+    "id": "cultivo:ashtray",
+    "count": 1
+  }
+}

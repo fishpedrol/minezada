@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "cultivo:brisa_crop",
+    "cultivo:aurora_crop",
+    "cultivo:eclipse_crop"
+  ]
+}

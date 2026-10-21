@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    " G ",
+    "GWG"
+  ],
+  "key": {
+    "G": "minecraft:glass",
+    "W": "minecraft:water_bucket"
+  },
+  "result": {
+    "id": "cultivo:bong",
+    "count": 1
+  }
+}

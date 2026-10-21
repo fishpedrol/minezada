@@ -1,0 +1,162 @@
+{
+  "_comment": "Manifesto único do conteúdo do Cultivo. tools/gen/generate.mjs gera blockstates, modelos, definições de item, lang, loot, receitas, tags, worldgen e test_instance a partir dele. Os testes JUnit conferem o resultado contra as classes puras em core/.",
+  "varieties": [
+    { "id": "brisa", "en": "Brisa", "pt": "Brisa" },
+    { "id": "aurora", "en": "Aurora", "pt": "Aurora" },
+    { "id": "eclipse", "en": "Eclipse", "pt": "Eclipse" }
+  ],
+  "generic_items": [
+    { "id": "resin", "en": "Resin", "pt": "Resina" },
+    { "id": "hash", "en": "Hash", "pt": "Haxixe" },
+    { "id": "joint", "en": "Joint", "pt": "Baseado" }
+  ],
+  "articles": [
+    { "id": "bong", "en": "Bong", "pt": "Bong" },
+    { "id": "pipe", "en": "Pipe", "pt": "Cachimbo" },
+    { "id": "hookah", "en": "Hookah", "pt": "Narguilé" },
+    { "id": "chillum", "en": "Chillum", "pt": "Chillum" },
+    { "id": "rolling_paper", "en": "Rolling Paper", "pt": "Folha de Seda" },
+    { "id": "filter_tip", "en": "Filter Tip", "pt": "Piteira" },
+    { "id": "grinder", "en": "Grinder", "pt": "Dichavador" },
+    { "id": "lighter", "en": "Lighter", "pt": "Isqueiro" },
+    { "id": "rolling_tray", "en": "Rolling Tray", "pt": "Bandeja" },
+    { "id": "jar", "en": "Stash Jar", "pt": "Pote" },
+    { "id": "ashtray", "en": "Ashtray", "pt": "Cinzeiro" }
+  ],
+  "stations": [
+    { "id": "drying_rack", "type": "drying", "en": "Drying Rack", "pt": "Suporte de Secagem" },
+    { "id": "sieve", "type": "sieving", "en": "Bench Sieve", "pt": "Peneira de Bancada" },
+    { "id": "press", "type": "pressing", "en": "Hand Press", "pt": "Prensa Manual" }
+  ],
+  "wild_plant": { "id": "wild_plant", "en": "Wild Plant", "pt": "Planta Silvestre" },
+  "processing": {
+    "drying": { "ticks": 600 },
+    "sieving": { "ticks": 200, "ingredient": "#cultivo:dried_flowers", "result": "cultivo:resin", "count": 1 },
+    "pressing": { "ticks": 300, "ingredient": "cultivo:resin", "input_count": 2, "result": "cultivo:hash", "count": 1 }
+  },
+  "crafting": [
+    { "result": "bong", "count": 1, "pattern": [" G ", " G ", "GWG"], "key": { "G": "minecraft:glass", "W": "minecraft:water_bucket" } },
+    { "result": "pipe", "count": 1, "pattern": ["B  ", " BB"], "key": { "B": "minecraft:brick" } },
+    { "result": "hookah", "count": 1, "pattern": [" I ", "SGS", "IGI"], "key": { "I": "minecraft:iron_ingot", "S": "minecraft:string", "G": "minecraft:glass" } },
+    { "result": "chillum", "count": 1, "pattern": ["T", "T"], "key": { "T": "minecraft:terracotta" } },
+    { "result": "rolling_paper", "count": 4, "ingredients": ["minecraft:paper", "minecraft:sugar_cane"] },
+    { "result": "filter_tip", "count": 4, "ingredients": ["minecraft:paper", "minecraft:string"] },
+    { "result": "grinder", "count": 1, "pattern": ["I", "F", "I"], "key": { "I": "minecraft:iron_ingot", "F": "minecraft:flint" } },
+    { "result": "lighter", "count": 1, "pattern": ["F", "N", "N"], "key": { "F": "minecraft:flint", "N": "minecraft:iron_nugget" } },
+    { "result": "rolling_tray", "count": 1, "pattern": ["N N", "NNN"], "key": { "N": "minecraft:iron_nugget" } },
+    { "result": "jar", "count": 1, "pattern": ["S", "G", "G"], "key": { "S": "#minecraft:wooden_slabs", "G": "minecraft:glass" } },
+    { "result": "ashtray", "count": 1, "pattern": ["T T", "TTT"], "key": { "T": "minecraft:terracotta" } },
+    { "result": "joint", "count": 1, "ingredients": ["cultivo:rolling_paper", "#cultivo:dried_flowers"] },
+    { "result": "drying_rack", "count": 1, "pattern": ["SSS", "T T", "SSS"], "key": { "S": "minecraft:stick", "T": "minecraft:string" } },
+    { "result": "sieve", "count": 1, "pattern": ["PTP", "P P"], "key": { "P": "#minecraft:planks", "T": "minecraft:string" } },
+    { "result": "press", "count": 1, "pattern": ["III", " S ", "PPP"], "key": { "I": "minecraft:iron_ingot", "S": "minecraft:stick", "P": "#minecraft:planks" } }
+  ],
+  "seed_sources": {
+    "chest_tables": [
+      "minecraft:chests/village/village_plains_house",
+      "minecraft:chests/village/village_savanna_house",
+      "minecraft:chests/village/village_taiga_house",
+      "minecraft:chests/village/village_desert_house"
+    ],
+    "chest_empty_weight": 50,
+    "chest_entries": [
+      { "variety": "brisa", "weight": 30, "min": 1, "max": 3 },
+      { "variety": "aurora", "weight": 14, "min": 1, "max": 2 },
+      { "variety": "eclipse", "weight": 6, "min": 1, "max": 1 }
+    ],
+    "farm_rules": [
+      { "variety": "brisa", "probability": 0.05 },
+      { "variety": "aurora", "probability": 0.025 },
+      { "variety": "eclipse", "probability": 0.01 }
+    ],
+    "vanilla_farm_plains_rules": [
+      { "block": "minecraft:carrots", "probability": 0.3 },
+      { "block": "minecraft:potatoes", "probability": 0.2 },
+      { "block": "minecraft:beetroots", "probability": 0.1 }
+    ],
+    "wild_drops": [
+      { "variety": "brisa", "weight": 60 },
+      { "variety": "aurora", "weight": 30 },
+      { "variety": "eclipse", "weight": 10 }
+    ],
+    "wild_biomes": {
+      "jungle": "#minecraft:is_jungle",
+      "plains": ["minecraft:plains", "minecraft:meadow"]
+    }
+  },
+  "greenhouse_glass": [
+    "minecraft:glass", "minecraft:tinted_glass", "minecraft:glass_pane",
+    "minecraft:white_stained_glass", "minecraft:orange_stained_glass", "minecraft:magenta_stained_glass",
+    "minecraft:light_blue_stained_glass", "minecraft:yellow_stained_glass", "minecraft:lime_stained_glass",
+    "minecraft:pink_stained_glass", "minecraft:gray_stained_glass", "minecraft:light_gray_stained_glass",
+    "minecraft:cyan_stained_glass", "minecraft:purple_stained_glass", "minecraft:blue_stained_glass",
+    "minecraft:brown_stained_glass", "minecraft:green_stained_glass", "minecraft:red_stained_glass",
+    "minecraft:black_stained_glass",
+    "minecraft:white_stained_glass_pane", "minecraft:orange_stained_glass_pane", "minecraft:magenta_stained_glass_pane",
+    "minecraft:light_blue_stained_glass_pane", "minecraft:yellow_stained_glass_pane", "minecraft:lime_stained_glass_pane",
+    "minecraft:pink_stained_glass_pane", "minecraft:gray_stained_glass_pane", "minecraft:light_gray_stained_glass_pane",
+    "minecraft:cyan_stained_glass_pane", "minecraft:purple_stained_glass_pane", "minecraft:blue_stained_glass_pane",
+    "minecraft:brown_stained_glass_pane", "minecraft:green_stained_glass_pane", "minecraft:red_stained_glass_pane",
+    "minecraft:black_stained_glass_pane"
+  ],
+  "game_tests": [
+    { "name": "outdoor_growth", "max_ticks": 100 },
+    { "name": "greenhouse_quality", "max_ticks": 100 },
+    { "name": "harvest_drops", "max_ticks": 100 },
+    { "name": "drying_station", "max_ticks": 100 },
+    { "name": "sieve_station", "max_ticks": 100 },
+    { "name": "press_station", "max_ticks": 100 },
+    { "name": "station_output_full", "max_ticks": 100 },
+    { "name": "station_persistence", "max_ticks": 100 },
+    { "name": "village_chest_seeds", "max_ticks": 100 },
+    { "name": "article_recipes", "max_ticks": 100 }
+  ],
+  "lang": {
+    "en_us": {
+      "itemGroup.cultivo": "Cultivo",
+      "tooltip.cultivo.quality": "Quality: %s",
+      "tooltip.cultivo.quality.1": "Poor",
+      "tooltip.cultivo.quality.2": "Fair",
+      "tooltip.cultivo.quality.3": "Good",
+      "tooltip.cultivo.quality.4": "Great",
+      "tooltip.cultivo.quality.5": "Exceptional",
+      "tooltip.cultivo.rarity.common": "Common",
+      "tooltip.cultivo.rarity.uncommon": "Uncommon",
+      "tooltip.cultivo.rarity.rare": "Rare",
+      "tooltip.cultivo.cycle.autoflowering": "Autoflowering",
+      "tooltip.cultivo.cycle.photoperiod": "Photoperiod",
+      "tooltip.cultivo.lineage.sativa": "Sativa",
+      "tooltip.cultivo.lineage.hybrid": "Hybrid",
+      "tooltip.cultivo.lineage.indica": "Indica",
+      "tooltip.cultivo.seed_profile": "%s · %s · %s",
+      "tooltip.cultivo.decorative": "Decorative item, no consumption effects",
+      "tooltip.cultivo.station.drying": "Dries fresh flowers over time",
+      "tooltip.cultivo.station.sieving": "Sifts dried flowers into fictional resin",
+      "tooltip.cultivo.station.pressing": "Presses 2 resin into 1 hash",
+      "tooltip.cultivo.station.usage": "Right-click to insert; empty hand to collect"
+    },
+    "pt_br": {
+      "itemGroup.cultivo": "Cultivo",
+      "tooltip.cultivo.quality": "Qualidade: %s",
+      "tooltip.cultivo.quality.1": "Ruim",
+      "tooltip.cultivo.quality.2": "Regular",
+      "tooltip.cultivo.quality.3": "Boa",
+      "tooltip.cultivo.quality.4": "Ótima",
+      "tooltip.cultivo.quality.5": "Excepcional",
+      "tooltip.cultivo.rarity.common": "Comum",
+      "tooltip.cultivo.rarity.uncommon": "Incomum",
+      "tooltip.cultivo.rarity.rare": "Rara",
+      "tooltip.cultivo.cycle.autoflowering": "Automática",
+      "tooltip.cultivo.cycle.photoperiod": "Fotoperíodo",
+      "tooltip.cultivo.lineage.sativa": "Sativa",
+      "tooltip.cultivo.lineage.hybrid": "Híbrida",
+      "tooltip.cultivo.lineage.indica": "Índica",
+      "tooltip.cultivo.seed_profile": "%s · %s · %s",
+      "tooltip.cultivo.decorative": "Item decorativo, sem efeitos de consumo",
+      "tooltip.cultivo.station.drying": "Seca flores frescas com o tempo",
+      "tooltip.cultivo.station.sieving": "Peneira flores secas em resina fictícia",
+      "tooltip.cultivo.station.pressing": "Prensa 2 resinas em 1 haxixe",
+      "tooltip.cultivo.station.usage": "Clique direito para inserir; mão vazia para retirar"
+    }
+  }
+}

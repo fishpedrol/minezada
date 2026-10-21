@@ -1,0 +1,74 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "name": "cultivo:brisa_fresh_flower",
+              "condition": {
+                "type": "minecraft:block_state_property",
+                "block": "cultivo:brisa_crop",
+                "properties": {
+                  "age": "7"
+                }
+              },
+              "modifier": [
+                {
+                  "type": "cultivo:set_harvest_quality"
+                },
+                {
+                  "type": "minecraft:explosion_decay"
+                }
+              ]
+            },
+            {
+              "type": "minecraft:item",
+              "name": "cultivo:brisa_seeds",
+              "modifier": {
+                "type": "minecraft:explosion_decay"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "cultivo:brisa_seeds",
+          "condition": {
+            "type": "minecraft:block_state_property",
+            "block": "cultivo:brisa_crop",
+            "properties": {
+              "age": "7"
+            }
+          },
+          "modifier": [
+            {
+              "type": "minecraft:apply_bonus",
+              "enchantment": "minecraft:fortune",
+              "formula": "minecraft:binomial_with_bonus_count",
+              "parameters": {
+                "extra": 3,
+                "probability": 0.5714286
+              }
+            },
+            {
+              "type": "minecraft:explosion_decay"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "random_sequence": "cultivo:blocks/brisa_crop"
+}

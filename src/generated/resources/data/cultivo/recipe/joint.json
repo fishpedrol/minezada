@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "cultivo:rolling_paper",
+    "#cultivo:dried_flowers"
+  ],
+  "result": {
+    "id": "cultivo:joint",
+    "count": 1
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "cultivo:block/press_top",
+    "bottom": "cultivo:block/press_top",
+    "side": "cultivo:block/press_side"
+  }
+}

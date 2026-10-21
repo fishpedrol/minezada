@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "cultivo:sieve_station",
+  "environment": "minecraft:default",
+  "structure": "forge:empty9x9x9",
+  "max_ticks": 100
+}
