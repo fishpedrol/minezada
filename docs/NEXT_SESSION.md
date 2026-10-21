@@ -1,6 +1,14 @@
 # Orientação para a próxima sessão
 
-Escrito em 21/10/2026, ao fim de uma sessão de investigação. **Nenhum código do mod foi escrito ainda.** O repositório contém só o MDK oficial do Forge (ainda com `examplemod`), os docs e `tools/art/png.mjs` (encoder PNG sem dependências, ainda não commitado). Leia CLAUDE.md e docs/ antes; este arquivo resume o que já foi verificado para não repetir a pesquisa.
+**Atualizado em 21/10/2026, ao fim da sessão na nuvem.** O MVP inteiro está escrito: código Java, dados, assets originais, testes JUnit e GameTests. Nesta sessão, porém, **o código que depende do Minecraft nunca foi compilado**: a rede da nuvem bloqueou `maven.minecraftforge.net` e os servidores da Mojang, e o ForgeGradle falhou ao configurar (`Failed to download default tool: minecraft-mavenizer-0.5.21.jar`). Só rodaram os 62 testes JUnit que não dependem do Minecraft (`tools/test-offline.sh`, todos passando). Os resultados reais estão em docs/TODO.md.
+
+**Tarefa da próxima sessão:** numa máquina, ou num ambiente de nuvem, com acesso a `maven.minecraftforge.net`, `piston-meta.mojang.com`, `libraries.minecraft.net` e `launchermeta.mojang.com`:
+1. rodar `./gradlew build` e corrigir a compilação (seção 6 lista as suposições de API mais arriscadas);
+2. rodar `./gradlew test` e `./gradlew runGameTestServer`;
+3. conferir os JSONs contra os vanilla;
+4. testar `runClient`/`runServer`, inspecionar o jar e atualizar TODO.md.
+
+As seções 1–4 abaixo continuam valendo. As seções 5 e 6 descrevem o estado atual.
 
 ## 1. Ambiente e versões (verificadas no MDK baixado)
 
@@ -111,7 +119,65 @@ Depois do primeiro build, o ForgeGradle deixa estes arquivos no projeto:
   - JUnit (adicionar `testImplementation` do JUnit 5 + `useJUnitPlatform()`) para as regras puras (qualidade, estufa, pesos de fonte, rendimento de processamento) e para a completude dos assets e receitas (parse dos JSON);
   - GameTests para crescimento, colheita, estufa, estações (incluindo persistência via save/load da BE), injeção de loot e receitas.
 
-## 5. Próximos passos, em ordem
+## 5. O que existe agora (mapa do código)
+- `src/main/java/io/github/peixeangola/cultivo/`:
+  - `Cultivo` (@Mod): registra todos os DeferredRegister e o listener de `LootTableLoadEvent`;
+  - `core/`: regras **puras**, sem Minecraft: `Variety`, `QualityRules`, `GrowthRules`, `GreenhouseRules`, `ProcessingRules`, `StationKind`, `SeedSources`, `ArticleRecipes`, `ContentIds`;
+  - `registry/`: `ModBlocks`, `ModItems`, `ModComponents` (`cultivo:quality`), `ModBlockEntities` (`processing_station`), `ModRecipes` (tipos e serializers drying/sieving/pressing), `ModLootFunctions` (`set_harvest_quality`), `ModCreativeTabs`, `ModTags`;
+  - `block/`: `CannabisCropBlock`, `WildPlantBlock`, `ProcessingStationBlock` e `ProcessingStationBlockEntity`, `GreenhouseDetector`;
+  - `item/`: `QualityItem`, `SeedItem`, `DecorativeItem` e `StationBlockItem` (tooltips);
+  - `recipe/ProcessingRecipe`, `loot/SetHarvestQualityFunction`, `loot/SeedLootInjector`;
+  - `gametest/CultivoGameTests`: 10 GameTests registrados em `Registries.TEST_FUNCTION`.
+- `src/generated/resources/`: **gerado** por `node tools/gen/generate.mjs`, que também chama `tools/art/textures.mjs`. Não editar à mão. Para mudar algo, edite `tools/gen/manifest.json` e os scripts e rode o gerador de novo.
+- `src/test/java/`: testes das regras puras (`core/`) e da completude e consistência dos dados (`data/`). Os testes leem os arquivos a partir da raiz do projeto.
+- `tools/test-offline.sh`: roda o JUnit sem Gradle nem Minecraft. Útil quando o maven do Forge não está acessível.
+
+## 6. Suposições não verificadas (conferir primeiro quando o build rodar)
+Foram escritas sem o jar de fontes do 26.3. Se algo não compilar, confira primeiro estes pontos.
+
+**API Java**
+1. `SetHarvestQualityFunction`: o construtor de `LootItemConditionalFunction` recebe `Optional<LootItemCondition>` (no 26.3 a condição é única); `new LootItemFunctionType<>(MapCodec)`; `LootContext#getOptionalParameter`.
+2. `ProcessingRecipe`:
+   - `Recipe#assemble(SingleRecipeInput)` com 1 argumento;
+   - `PlacementInfo.NOT_PLACEABLE`, `RecipeBookCategories.CRAFTING_MISC`;
+   - `Ingredient.CODEC`/`CONTENTS_STREAM_CODEC`;
+   - `new RecipeSerializer<>(MapCodec, StreamCodec)`;
+   - `BuiltInRegistries.ITEM.byNameCodec()`.
+   O resultado foi modelado como `{id, count}` próprio, sem `ItemStackTemplate`.
+3. `WildPlantBlock extends VegetationBlock`: construtor e métodos abstratos.
+4. `BlockBehaviour.Properties.ofFullCopy(...)`, `noOcclusion()`, `Item.Properties#useBlockDescriptionPrefix()` e `useItemDescriptionPrefix()`.
+5. `ProcessingStationBlockEntity`:
+   - `ContainerHelper.saveAllItems(ValueOutput, …)`/`loadAllItems(ValueInput, …)`, `ValueInput#getIntOr`;
+   - `preRemoveSideEffects`;
+   - `level.recipeAccess().getRecipeFor(...)`.
+6. `ProcessingStationBlock`: `useItemOn`/`useWithoutItem`, `Player#hasInfiniteMaterials()` e `level.isClientSide()`.
+7. `CannabisCropBlock`: `ForgeHooks.onCropsGrowPre(Level, BlockPos, BlockState, boolean)`/`onCropsGrowPost` e `getBaseSeedId()`.
+8. `SeedLootInjector`: `LootTableLoadEvent#getName()` retornando `Identifier`, `LootTable#addPool`, `LootPool.Builder#name`, `NestedLootTable.lootTableReference`.
+9. `CultivoGameTests`:
+   - `helper.fail(Component)`;
+   - `BlockEntity#saveWithFullMetadata(HolderLookup.Provider)` + `BlockEntity.loadStatic(...)`;
+   - `Block.getDrops(state, ServerLevel, pos, null)`;
+   - `LootTable#getRandomItems(LootParams)`;
+   - `CraftingInput.of(w, h, list)`;
+   - `BuiltInRegistries.ITEM.getValue(Identifier)`.
+10. `QualityItem`, `SeedItem` e afins: assinatura de `appendHoverText` (vem de NEXT_SESSION, seção 2).
+
+**Formatos JSON** (copie dos vanilla em `client-extra-*.jar` se diferirem):
+1. `worldgen/feature/wild_plant.json`: usei `simple_block` + `to_place` como provider (`simple_state_provider`), sem o wrapper `config`. A nota da seção 2 dizia `"to_place":{"id":...}`; confira em `worldgen/feature/` vanilla.
+2. `worldgen/placed_feature/wild_plant_*.json`: `rarity_filter`, `count`, `random_offset` (int providers `uniform` com `min_inclusive`/`max_inclusive`) e `block_predicate_filter`. Compare com `patch_melon.json`.
+3. `data/minecraft/worldgen/processor_list/farm_plains.json`: as regras vanilla (cenoura 0,3, batata 0,2, beterraba 0,1) vieram de memória do 1.21. **Substitua-as pelas do jar 26.3**, mantendo as 3 do mod antes. O teste `farmPlainsAddsModRulesBeforeVanillaRules` aceita qualquer quantidade de regras vanilla, desde que fiquem depois das do mod.
+4. Loot: entradas com `condition` e `modifier` (objeto ou lista), predicados e funções com `type`; `set_count` com `{"type":"minecraft:uniform","min","max"}`. Compare com `loot_table/blocks/wheat.json`.
+5. `forge/biome_modifier/`: confira o caminho exato da pasta no registro `forge:biome_modifier`.
+6. `test_instance` e `forge:empty9x9x9`: confira se o GameTest `outdoor_growth` tem luz ≥ 9 (o teste falha com a mensagem "luz insuficiente" se não tiver).
+
+## 7. Próximos passos, em ordem
+1. Liberar a rede (ou usar a máquina local com JDK 25) e rodar `./gradlew build`; corrigir os itens da seção 6.
+2. `./gradlew test`: deve repetir os 62 testes de `tools/test-offline.sh`.
+3. `./gradlew runGameTestServer`: os 10 GameTests devem passar.
+4. `runClient` (ver texturas, tooltips, estufa) e `runServer` (aceitar a EULA em `run/`; entrar com cliente).
+5. Inspecionar `build/libs/cultivo-0.1.0.jar` e atualizar TODO.md **somente com evidências**.
+
+## Histórico: plano da sessão de investigação (passos 1–5 e 7 feitos na nuvem; o 6 foi bloqueado pela rede)
 1. Commitar `tools/art/png.mjs` e este arquivo.
 2. Renomear o MDK para `cultivo`, criar o esqueleto de registros e rodar `gradlew build`.
 3. Implementar as regras puras com JUnit (TDD).
