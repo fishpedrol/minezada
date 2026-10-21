@@ -22,6 +22,9 @@ public final class ContentIds {
         "bong", "pipe", "hookah", "chillum", "rolling_paper", "filter_tip",
         "grinder", "lighter", "rolling_tray", "jar", "ashtray");
 
+    /** Efeitos próprios (textura em textures/mob_effect/&lt;id&gt;.png, 18×18). */
+    public static final List<String> EFFECTS = List.of("high");
+
     public static final List<String> STATIONS =
         Arrays.stream(StationKind.values()).map(StationKind::blockId).toList();
 
@@ -36,7 +39,13 @@ public final class ContentIds {
         "station_output_full",
         "station_persistence",
         "village_chest_seeds",
-        "article_recipes");
+        "article_recipes",
+        "joint_recipe_copies_quality",
+        "smoke_joint_effects",
+        "smoke_requires_lighter_and_fuel",
+        "smoke_pipe_uses_fuel",
+        "smoke_bong_hash_stronger",
+        "smoke_stacking_and_cap");
 
     private ContentIds() {}
 

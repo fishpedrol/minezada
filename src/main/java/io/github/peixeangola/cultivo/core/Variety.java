@@ -31,6 +31,16 @@ public enum Variety {
         this.qualityBonusChance = qualityBonusChance;
     }
 
+    /** Variedade pelo ID (brisa, aurora, eclipse), se existir. */
+    public static java.util.Optional<Variety> byId(String id) {
+        for (Variety v : values()) {
+            if (v.id().equals(id)) {
+                return java.util.Optional.of(v);
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
     /** Nome usado nos IDs de registro: brisa, aurora, eclipse. */
     public String id() {
         return name().toLowerCase(Locale.ROOT);

@@ -85,6 +85,7 @@ for (const lang of ['en_us', 'pt_br']) {
   }
   for (const g of [...M.generic_items, ...M.articles]) t[`item.${NS}.${g.id}`] = en ? g.en : g.pt;
   for (const b of [...stations, wild]) t[`block.${NS}.${b.id}`] = en ? b.en : b.pt;
+  for (const e of M.effects) t[`effect.${NS}.${e.id}`] = en ? e.en : e.pt;
   write(`assets/${NS}/lang/${lang}.json`, Object.fromEntries(Object.entries(t).sort(([a], [b]) => a.localeCompare(b))));
 }
 
@@ -174,16 +175,27 @@ write(`data/${NS}/loot_table/inject/village_seeds.json`, {
 // ------------------------------------------------------------------ data: receitas
 for (const r of M.crafting) {
   const result = { id: id(r.result), count: r.count };
+  const file = `data/${NS}/recipe/${r.id ?? r.result}.json`;
   if (r.pattern) {
-    write(`data/${NS}/recipe/${r.result}.json`, {
+    write(file, {
       type: 'minecraft:crafting_shaped',
       category: 'misc',
       pattern: r.pattern,
       key: Object.fromEntries(Object.entries(r.key).map(([k, v]) => [k, ingredient(v)])),
       result,
     });
+  } else if (r.transmute) {
+    // Baseado: transmute copia os componentes da flor seca (qualidade) e grava a variedade (cultivo:strain)
+    write(file, {
+      type: 'minecraft:crafting_transmute',
+      category: 'misc',
+      group: 'cultivo_joint',
+      input: ingredient(r.transmute.input),
+      material: ingredient(r.transmute.material),
+      result: { ...result, components: { [id('strain')]: r.transmute.strain } },
+    });
   } else {
-    write(`data/${NS}/recipe/${r.result}.json`, {
+    write(file, {
       type: 'minecraft:crafting_shapeless',
       category: 'misc',
       ingredients: r.ingredients.map(ingredient),

@@ -10,20 +10,22 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'src', 'generated', 'resources', 'assets', 'cultivo', 'textures');
 
 function render(name, grid, palette) {
-  if (grid.length !== 16) throw new Error(`${name}: ${grid.length} linhas`);
-  const rgba = new Uint8Array(16 * 16 * 4);
+  // Itens e blocos são 16x16; ícones de efeito (mob_effect) são 18x18, como os vanilla
+  const size = grid.length;
+  if (size !== 16 && size !== 18) throw new Error(`${name}: ${size} linhas`);
+  const rgba = new Uint8Array(size * size * 4);
   grid.forEach((row, y) => {
-    if (row.length !== 16) throw new Error(`${name}: linha ${y} tem ${row.length} colunas`);
+    if (row.length !== size) throw new Error(`${name}: linha ${y} tem ${row.length} colunas`);
     [...row].forEach((ch, x) => {
       if (ch === '.') return;
       const hex = palette[ch];
       if (!hex) throw new Error(`${name}: cor ausente para '${ch}'`);
-      rgba.set(parseColor(hex), (y * 16 + x) * 4);
+      rgba.set(parseColor(hex), (y * size + x) * 4);
     });
   });
   const file = join(OUT, `${name}.png`);
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, encodePng(16, 16, rgba));
+  writeFileSync(file, encodePng(size, size, rgba));
   return file;
 }
 
@@ -592,6 +594,33 @@ const BLOCKS = {
   },
 };
 
+// Ícone do efeito cultivo:high (18x18): folha estilizada com um fio de fumaça
+const EFFECTS = {
+  high: {
+    grid: [
+      '..................',
+      '.......ww.........',
+      '......w..w........',
+      '.........w........',
+      '........L.........',
+      '.......LLL........',
+      '..L....LLL....L...',
+      '..LL...LGL...LL...',
+      '...LL..LGL..LL....',
+      '...LLL.LGL.LLL....',
+      '....LLLLGLLLL.....',
+      '.LL...LLGLL...LL..',
+      '..LLLL.LGL.LLLL...',
+      '....LLLLGLLLL.....',
+      '........G.........',
+      '........G.........',
+      '.......GG.........',
+      '..................',
+    ],
+    palette: { L: '#6aa84f', G: '#3d6b2c', w: '#e8e8e8c8' },
+  },
+};
+
 const WILD = {
   L: '#6a9a3c', D: '#46702a', S: '#557a2e', B: '#a9c46a', b: '#7f9a46', P: '#d99b4a',
 };
@@ -610,6 +639,7 @@ export function generateAll() {
   written.push(render('block/wild_plant', CROP_STAGES[3], WILD));
   for (const [id, t] of Object.entries(ITEMS)) written.push(render(`item/${id}`, t.grid, t.palette));
   for (const [id, t] of Object.entries(BLOCKS)) written.push(render(`block/${id}`, t.grid, t.palette));
+  for (const [id, t] of Object.entries(EFFECTS)) written.push(render(`mob_effect/${id}`, t.grid, t.palette));
   return written;
 }
 

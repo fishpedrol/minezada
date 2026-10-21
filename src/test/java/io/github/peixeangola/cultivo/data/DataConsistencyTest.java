@@ -54,40 +54,59 @@ class DataConsistencyTest {
         Set<String> actual = new HashSet<>();
         ArticleRecipes.ALL.forEach(r -> actual.add(r.result()));
         assertEquals(expected, actual);
+        Set<String> ids = new HashSet<>();
+        ArticleRecipes.ALL.forEach(r -> assertTrue(ids.add(r.id()), "id repetido " + r.id()));
     }
 
     @Test
     void craftingJsonMatchesArticleRecipes() {
         for (ArticleRecipes.Recipe r : ArticleRecipes.ALL) {
-            JsonObject json = Resources.json(Resources.data("cultivo", "recipe/" + r.result() + ".json"));
+            JsonObject json = Resources.json(Resources.data("cultivo", "recipe/" + r.id() + ".json"));
             JsonObject result = json.getAsJsonObject("result");
-            assertEquals("cultivo:" + r.result(), result.get("id").getAsString());
-            assertEquals(r.count(), result.get("count").getAsInt(), r.result());
-            if (r.shaped()) {
-                assertEquals("minecraft:crafting_shaped", json.get("type").getAsString());
-                List<String> pattern = new ArrayList<>();
-                json.getAsJsonArray("pattern").forEach(e -> pattern.add(e.getAsString()));
-                assertEquals(r.pattern(), pattern, r.result());
-                JsonObject key = json.getAsJsonObject("key");
-                assertEquals(r.key().size(), key.size(), r.result());
-                for (Map.Entry<Character, ArticleRecipes.Key> k : r.key().entrySet()) {
-                    assertEquals(k.getValue().ingredient(), key.get(String.valueOf(k.getKey())).getAsString(), r.result());
-                    assertTrue(pattern.stream().anyMatch(row -> row.indexOf(k.getKey()) >= 0), "símbolo sem uso");
+            assertEquals("cultivo:" + r.result(), result.get("id").getAsString(), r.id());
+            int count = result.has("count") ? result.get("count").getAsInt() : 1;
+            assertEquals(r.count(), count, r.id());
+            switch (r.kind()) {
+                case SHAPED -> {
+                    assertEquals("minecraft:crafting_shaped", json.get("type").getAsString());
+                    List<String> pattern = new ArrayList<>();
+                    json.getAsJsonArray("pattern").forEach(e -> pattern.add(e.getAsString()));
+                    assertEquals(r.pattern(), pattern, r.id());
+                    JsonObject key = json.getAsJsonObject("key");
+                    assertEquals(r.key().size(), key.size(), r.id());
+                    for (Map.Entry<Character, ArticleRecipes.Key> k : r.key().entrySet()) {
+                        assertEquals(k.getValue().ingredient(), key.get(String.valueOf(k.getKey())).getAsString(), r.id());
+                        assertTrue(pattern.stream().anyMatch(row -> row.indexOf(k.getKey()) >= 0), "símbolo sem uso");
+                    }
                 }
-            } else {
-                assertEquals("minecraft:crafting_shapeless", json.get("type").getAsString());
-                List<String> ingredients = new ArrayList<>();
-                json.getAsJsonArray("ingredients").forEach(e -> ingredients.add(e.getAsString()));
-                assertEquals(r.ingredients().stream().map(ArticleRecipes.Key::ingredient).toList(), ingredients);
+                case SHAPELESS -> {
+                    assertEquals("minecraft:crafting_shapeless", json.get("type").getAsString());
+                    List<String> ingredients = new ArrayList<>();
+                    json.getAsJsonArray("ingredients").forEach(e -> ingredients.add(e.getAsString()));
+                    assertEquals(r.ingredients().stream().map(ArticleRecipes.Key::ingredient).toList(), ingredients);
+                }
+                case TRANSMUTE -> {
+                    assertEquals("minecraft:crafting_transmute", json.get("type").getAsString());
+                    assertEquals(r.ingredients().get(0).ingredient(), json.get("input").getAsString(), r.id());
+                    assertEquals(r.ingredients().get(1).ingredient(), json.get("material").getAsString(), r.id());
+                    assertEquals(r.strain(), result.getAsJsonObject("components").get("cultivo:strain").getAsString());
+                }
             }
         }
     }
 
     @Test
-    void jointUsesRollingPaperAndDriedFlowerTag() {
-        ArticleRecipes.Recipe joint = ArticleRecipes.forResult("joint");
-        assertEquals(List.of("cultivo:rolling_paper", "#cultivo:dried_flowers"),
-            joint.ingredients().stream().map(ArticleRecipes.Key::ingredient).toList());
+    void jointIsTransmuteOfRollingPaperAndEachDriedFlower() {
+        for (Variety v : Variety.values()) {
+            ArticleRecipes.Recipe joint = ArticleRecipes.byId("joint_" + v.id());
+            assertEquals(ArticleRecipes.Kind.TRANSMUTE, joint.kind());
+            assertEquals("joint", joint.result());
+            assertEquals(List.of("cultivo:" + v.driedFlowerId(), "cultivo:rolling_paper"),
+                joint.ingredients().stream().map(ArticleRecipes.Key::ingredient).toList());
+            assertEquals(v.id(), joint.strain());
+        }
+        assertFalse(Files.exists(Resources.data("cultivo", "recipe/joint.json")),
+            "a receita shapeless antiga conflitaria com as transmute");
         Set<String> dried = values(Resources.data("cultivo", "tags/item/dried_flowers.json"));
         for (Variety v : Variety.values()) {
             assertTrue(dried.contains("cultivo:" + v.driedFlowerId()));

@@ -15,14 +15,19 @@ public final class ArticleRecipes {
         }
     }
 
+    public enum Kind { SHAPED, SHAPELESS, TRANSMUTE }
+
     /**
-     * @param pattern linhas da receita shaped; vazio para shapeless
+     * @param id nome do arquivo em data/cultivo/recipe (sem .json)
+     * @param pattern linhas da receita shaped; vazio nos outros tipos
      * @param key mapa símbolo → ingrediente (shaped)
-     * @param ingredients ingredientes (shapeless)
+     * @param ingredients ingredientes (shapeless) ou [entrada, material] (transmute)
+     * @param strain variedade gravada no resultado (só transmute do baseado), ou null
      */
-    public record Recipe(String result, int count, List<String> pattern, Map<Character, Key> key, List<Key> ingredients) {
+    public record Recipe(String id, Kind kind, String result, int count, List<String> pattern, Map<Character, Key> key,
+                         List<Key> ingredients, String strain) {
         public boolean shaped() {
-            return !pattern.isEmpty();
+            return kind == Kind.SHAPED;
         }
     }
 
@@ -49,8 +54,9 @@ public final class ArticleRecipes {
         shaped("rolling_tray", 1, List.of("N N", "NNN"), Map.of('N', NUGGET)),
         shaped("jar", 1, List.of("S", "G", "G"), Map.of('S', SLABS, 'G', GLASS)),
         shaped("ashtray", 1, List.of("T T", "TTT"), Map.of('T', TERRACOTTA)),
-        shapeless("joint", 1, List.of(Key.item("cultivo:rolling_paper"),
-            new Key("#cultivo:dried_flowers", "cultivo:brisa_dried_flower"))),
+        joint(Variety.BRISA),
+        joint(Variety.AURORA),
+        joint(Variety.ECLIPSE),
         shaped("drying_rack", 1, List.of("SSS", "T T", "SSS"), Map.of('S', STICK, 'T', STRING)),
         shaped("sieve", 1, List.of("PTP", "P P"), Map.of('P', PLANKS, 'T', STRING)),
         shaped("press", 1, List.of("III", " S ", "PPP"), Map.of('I', IRON, 'S', STICK, 'P', PLANKS)));
@@ -58,15 +64,25 @@ public final class ArticleRecipes {
     private ArticleRecipes() {}
 
     private static Recipe shaped(String result, int count, List<String> pattern, Map<Character, Key> key) {
-        return new Recipe(result, count, pattern, key, List.of());
+        return new Recipe(result, Kind.SHAPED, result, count, pattern, key, List.of(), null);
     }
 
     private static Recipe shapeless(String result, int count, List<Key> ingredients) {
-        return new Recipe(result, count, List.of(), Map.of(), ingredients);
+        return new Recipe(result, Kind.SHAPELESS, result, count, List.of(), Map.of(), ingredients, null);
     }
 
-    public static Recipe forResult(String result) {
-        return ALL.stream().filter(r -> r.result().equals(result)).findFirst()
-            .orElseThrow(() -> new IllegalArgumentException(result));
+    /**
+     * Baseado: folha de seda + flor seca de uma variedade. É um {@code crafting_transmute}, então a qualidade da
+     * flor passa para o baseado, e a variedade fica gravada no componente cultivo:strain.
+     */
+    private static Recipe joint(Variety variety) {
+        Key flower = Key.item("cultivo:" + variety.driedFlowerId());
+        return new Recipe("joint_" + variety.id(), Kind.TRANSMUTE, "joint", 1, List.of(), Map.of(),
+            List.of(flower, Key.item("cultivo:rolling_paper")), variety.id());
+    }
+
+    public static Recipe byId(String id) {
+        return ALL.stream().filter(r -> r.id().equals(id)).findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(id));
     }
 }

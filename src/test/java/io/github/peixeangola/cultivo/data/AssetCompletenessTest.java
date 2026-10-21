@@ -95,7 +95,7 @@ class AssetCompletenessTest {
 
     @Test
     void translationKeysUsedInJavaExist() throws IOException {
-        Pattern literal = Pattern.compile("\"((?:tooltip|itemGroup)\\.cultivo[a-z0-9_.]*)\"");
+        Pattern literal = Pattern.compile("\"((?:tooltip|itemGroup|message|effect)\\.cultivo[a-z0-9_.]*)\"");
         Set<String> en = Resources.json(Resources.assets("lang/en_us.json")).keySet();
         List<String> missing = new ArrayList<>();
         try (Stream<Path> files = Files.walk(Resources.JAVA)) {
@@ -133,6 +133,31 @@ class AssetCompletenessTest {
     }
 
     @Test
+    void everyEffectHasIconAndTranslation() {
+        for (String effect : ContentIds.EFFECTS) {
+            assertPng(Resources.assets("textures/mob_effect/" + effect + ".png"), 18);
+            for (String lang : LANGS) {
+                assertTranslated(Resources.json(Resources.assets("lang/" + lang + ".json")), "effect.cultivo." + effect, lang);
+            }
+        }
+    }
+
+    @Test
+    void smokingMessagesAndVarietyNamesTranslated() {
+        for (String lang : LANGS) {
+            JsonObject t = Resources.json(Resources.assets("lang/" + lang + ".json"));
+            for (String key : List.of("message.cultivo.need_lighter", "message.cultivo.need_fuel",
+                "tooltip.cultivo.smoke.joint", "tooltip.cultivo.smoke.device", "tooltip.cultivo.lighter",
+                "tooltip.cultivo.strain")) {
+                assertTranslated(t, key, lang);
+            }
+            for (Variety v : Variety.values()) {
+                assertTranslated(t, "tooltip.cultivo.variety." + v.id(), lang);
+            }
+        }
+    }
+
+    @Test
     void noOrphanTextures() throws IOException {
         Set<String> referenced = new HashSet<>();
         try (Stream<Path> models = Files.walk(Resources.assets("models"))) {
@@ -147,6 +172,12 @@ class AssetCompletenessTest {
             for (Path png : pngs.filter(p -> p.toString().endsWith(".png")).toList()) {
                 String rel = Resources.assets("textures").relativize(png).toString().replace('\\', '/');
                 String id = "cultivo:" + rel.substring(0, rel.length() - ".png".length());
+                if (rel.startsWith("mob_effect/")) {
+                    // Ícones de efeito são achados pelo ID do efeito, não por modelo
+                    assertTrue(ContentIds.EFFECTS.contains(rel.substring("mob_effect/".length(), rel.length() - 4)),
+                        "ícone de efeito sem efeito registrado: " + id);
+                    continue;
+                }
                 assertTrue(referenced.contains(id), "textura sem uso: " + id);
             }
         }
@@ -176,13 +207,17 @@ class AssetCompletenessTest {
     }
 
     static void assertPng16(Path png) {
+        assertPng(png, 16);
+    }
+
+    static void assertPng(Path png, int size) {
         try (InputStream in = Files.newInputStream(png)) {
             byte[] header = in.readNBytes(24);
             assertEquals(0x89, header[0] & 0xff, png + " não é PNG");
             assertEquals("IHDR", new String(header, 12, 4));
             ByteBuffer buf = ByteBuffer.wrap(header);
-            assertEquals(16, buf.getInt(16), png + " largura");
-            assertEquals(16, buf.getInt(20), png + " altura");
+            assertEquals(size, buf.getInt(16), png + " largura");
+            assertEquals(size, buf.getInt(20), png + " altura");
         } catch (IOException e) {
             fail("textura faltando: " + png);
         }

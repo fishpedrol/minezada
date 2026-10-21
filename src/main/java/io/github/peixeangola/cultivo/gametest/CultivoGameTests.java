@@ -5,10 +5,13 @@ import io.github.peixeangola.cultivo.block.GreenhouseDetector;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlockEntity;
 import io.github.peixeangola.cultivo.core.ArticleRecipes;
 import io.github.peixeangola.cultivo.core.SeedSources;
+import io.github.peixeangola.cultivo.core.SmokeDevice;
+import io.github.peixeangola.cultivo.core.SmokeRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.registry.ModBlocks;
 import io.github.peixeangola.cultivo.registry.ModComponents;
+import io.github.peixeangola.cultivo.registry.ModEffects;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +29,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -67,6 +76,12 @@ public final class CultivoGameTests {
         TESTS.register("station_persistence", () -> CultivoGameTests::stationPersistence);
         TESTS.register("village_chest_seeds", () -> CultivoGameTests::villageChestSeeds);
         TESTS.register("article_recipes", () -> CultivoGameTests::articleRecipes);
+        TESTS.register("joint_recipe_copies_quality", () -> CultivoGameTests::jointRecipeCopiesQuality);
+        TESTS.register("smoke_joint_effects", () -> CultivoGameTests::smokeJointEffects);
+        TESTS.register("smoke_requires_lighter_and_fuel", () -> CultivoGameTests::smokeRequiresLighterAndFuel);
+        TESTS.register("smoke_pipe_uses_fuel", () -> CultivoGameTests::smokePipeUsesFuel);
+        TESTS.register("smoke_bong_hash_stronger", () -> CultivoGameTests::smokeBongHashStronger);
+        TESTS.register("smoke_stacking_and_cap", () -> CultivoGameTests::smokeStackingAndCap);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -419,5 +434,176 @@ public final class CultivoGameTests {
             }
         }
         return CraftingInput.of(width, height, stacks);
+    }
+
+    // ------------------------------------------------------------------ fumar (mecânica fictícia de jogo)
+
+    /** Baseado feito pela receita transmute herda a qualidade da flor seca e grava a variedade. */
+    public static void jointRecipeCopiesQuality(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            for (Variety variety : Variety.values()) {
+                ItemStack flower = withQuality(ModItems.DRIED_FLOWERS.get(variety).get(), 1, 5);
+                CraftingInput input = CraftingInput.of(2, 1,
+                    List.of(flower, new ItemStack(ModItems.ARTICLES.get("rolling_paper").get())));
+                Optional<RecipeHolder<CraftingRecipe>> found =
+                    level.recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, level);
+                check(found.isPresent(), "sem receita de baseado para " + variety);
+                ItemStack joint = found.get().value().assemble(input);
+                check(joint.is(ModItems.JOINT.get()) && joint.getCount() == 1, "resultado " + joint);
+                check(Integer.valueOf(5).equals(quality(joint)), "qualidade não passou para o baseado: " + quality(joint));
+                check(joint.get(ModComponents.STRAIN.get()) == variety, "variedade gravada " + joint.get(ModComponents.STRAIN.get()));
+            }
+        });
+    }
+
+    private static Player smoker(GameTestHelper helper, ItemStack inHand, ItemStack... inventory) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, inHand);
+        for (ItemStack stack : inventory) {
+            player.getInventory().add(stack);
+        }
+        return player;
+    }
+
+    private static ItemStack lighter() {
+        return new ItemStack(ModItems.LIGHTER.get());
+    }
+
+    /**
+     * Inventory#add guarda uma CÓPIA e zera a pilha original, então os testes sempre releem o inventário.
+     * Retorna quantos itens daquele tipo o jogador tem (inventário + mãos).
+     */
+    private static int countInInventory(Player player, Item item) {
+        int total = 0;
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (stack.is(item)) {
+                total += stack.getCount();
+            }
+        }
+        return total;
+    }
+
+    private static int lighterDamage(Player player) {
+        ItemStack lighter = io.github.peixeangola.cultivo.smoke.SmokeSession.findLighter(player);
+        check(!lighter.isEmpty(), "isqueiro sumiu do inventário");
+        return lighter.getDamageValue();
+    }
+
+    private static ItemStack joint(Variety variety, int quality) {
+        ItemStack joint = withQuality(ModItems.JOINT.get(), 1, quality);
+        joint.set(ModComponents.STRAIN.get(), variety);
+        return joint;
+    }
+
+    /** Simula segurar o botão até o fim: use() precisa aceitar e finishUsingItem() roda no servidor. */
+    private static InteractionResult smokeOnce(GameTestHelper helper, Player player) {
+        ServerLevel level = helper.getLevel();
+        ItemStack held = player.getMainHandItem();
+        InteractionResult result = held.getItem().use(level, player, InteractionHand.MAIN_HAND);
+        if (result == InteractionResult.CONSUME) {
+            held.getItem().finishUsingItem(held, level, player);
+        }
+        player.stopUsingItem();
+        return result;
+    }
+
+    private static int highTicks(Player player) {
+        MobEffectInstance high = player.getEffect(ModEffects.high());
+        return high == null ? 0 : high.getDuration();
+    }
+
+    /** Baseado índica de qualidade 5: aplica chapado/larica/náusea/lentidão, some e gasta o isqueiro. */
+    public static void smokeJointEffects(GameTestHelper helper) {
+        run(helper, () -> {
+            Player player = smoker(helper, joint(Variety.ECLIPSE, 5), lighter());
+            check(smokeOnce(helper, player) == InteractionResult.CONSUME, "uso recusado");
+            int expected = SmokeRules.totalHighTicks(0,
+                SmokeRules.sessionTicks(SmokeDevice.JOINT, new SmokeRules.Material(Variety.ECLIPSE, 5, false)));
+            check(highTicks(player) == expected, "chapado " + highTicks(player) + " esperado " + expected);
+            check(player.hasEffect(MobEffects.HUNGER), "sem larica");
+            check(player.hasEffect(MobEffects.NAUSEA), "sem náusea");
+            check(player.hasEffect(MobEffects.SLOWNESS), "índica deveria dar lentidão");
+            check(player.hasEffect(MobEffects.REGENERATION), "índica deveria dar regeneração");
+            check(!player.hasEffect(MobEffects.SPEED), "índica não dá velocidade");
+            check(player.getMainHandItem().isEmpty(), "o baseado deveria ser consumido");
+            check(lighterDamage(player) == SmokeRules.LIGHTER_DAMAGE_PER_USE, "isqueiro não gastou: " + lighterDamage(player));
+        });
+    }
+
+    /** Sem isqueiro nada acontece; artigo sem flor seca/haxixe também é recusado e nada é consumido. */
+    public static void smokeRequiresLighterAndFuel(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            Player noLighter = smoker(helper, joint(Variety.BRISA, 3));
+            check(smokeOnce(helper, noLighter) == InteractionResult.FAIL, "fumou sem isqueiro");
+            check(highTicks(noLighter) == 0, "efeito sem isqueiro");
+            check(noLighter.getMainHandItem().getCount() == 1, "consumiu baseado sem fumar");
+            // Mesmo chamando direto o fim do uso (cliente malicioso), o servidor revalida
+            ItemStack held = noLighter.getMainHandItem();
+            held.getItem().finishUsingItem(held, level, noLighter);
+            check(highTicks(noLighter) == 0 && held.getCount() == 1, "finishUsingItem ignorou a regra do isqueiro");
+
+            Player noFuel = smoker(helper, new ItemStack(ModItems.ARTICLES.get("pipe").get()), lighter());
+            check(smokeOnce(helper, noFuel) == InteractionResult.FAIL, "cachimbo sem material");
+            ItemStack pipe = noFuel.getMainHandItem();
+            pipe.getItem().finishUsingItem(pipe, level, noFuel);
+            check(highTicks(noFuel) == 0, "efeito sem material");
+            check(lighterDamage(noFuel) == 0, "isqueiro gasto sem fumar");
+        });
+    }
+
+    /** Cachimbo queima 1 flor seca por vez, continua inteiro e usa o perfil da variedade (sativa → velocidade). */
+    public static void smokePipeUsesFuel(GameTestHelper helper) {
+        run(helper, () -> {
+            Item flower = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
+            Player player = smoker(helper, new ItemStack(ModItems.ARTICLES.get("pipe").get()), lighter(),
+                withQuality(flower, 2, 3));
+            check(countInInventory(player, flower) == 2, "preparo: 2 flores no inventário");
+            check(smokeOnce(helper, player) == InteractionResult.CONSUME, "uso recusado");
+            check(countInInventory(player, flower) == 1, "deveria sobrar 1 flor, sobrou " + countInInventory(player, flower));
+            check(player.getMainHandItem().is(ModItems.ARTICLES.get("pipe").get()), "o cachimbo sumiu");
+            check(player.hasEffect(MobEffects.SPEED), "sativa deveria dar velocidade");
+            check(!player.hasEffect(MobEffects.SLOWNESS), "sativa não dá lentidão");
+            smokeOnce(helper, player);
+            check(countInInventory(player, flower) == 0, "segunda sessão não queimou a última flor");
+            check(smokeOnce(helper, player) == InteractionResult.FAIL, "fumou sem material");
+        });
+    }
+
+    /** Bong com haxixe rende mais tempo que cachimbo com flor seca da mesma qualidade. */
+    public static void smokeBongHashStronger(GameTestHelper helper) {
+        run(helper, () -> {
+            Player bong = smoker(helper, new ItemStack(ModItems.ARTICLES.get("bong").get()), lighter(),
+                withQuality(ModItems.HASH.get(), 1, 4));
+            Player pipe = smoker(helper, new ItemStack(ModItems.ARTICLES.get("pipe").get()), lighter(),
+                withQuality(ModItems.DRIED_FLOWERS.get(Variety.AURORA).get(), 1, 4));
+            smokeOnce(helper, bong);
+            smokeOnce(helper, pipe);
+            check(highTicks(bong) > highTicks(pipe), "bong+haxixe " + highTicks(bong) + " vs cachimbo " + highTicks(pipe));
+            check(bong.hasEffect(MobEffects.SLOWNESS), "haxixe sem variedade dá lentidão leve");
+        });
+    }
+
+    /** Fumar de novo soma tempo, até o limite; acima de 2 min o chapado fica nível II. */
+    public static void smokeStackingAndCap(GameTestHelper helper) {
+        run(helper, () -> {
+            Player player = smoker(helper, new ItemStack(ModItems.ARTICLES.get("bong").get()), lighter(),
+                withQuality(ModItems.HASH.get(), 64, 5));
+            smokeOnce(helper, player);
+            int first = highTicks(player);
+            smokeOnce(helper, player);
+            check(highTicks(player) > first, "não somou: " + first + " → " + highTicks(player));
+            for (int i = 0; i < 20; i++) {
+                smokeOnce(helper, player);
+            }
+            check(highTicks(player) == SmokeRules.MAX_HIGH_TICKS, "limite: " + highTicks(player));
+            MobEffectInstance high = player.getEffect(ModEffects.high());
+            check(high != null && high.getAmplifier() == 1, "deveria estar no nível II");
+            int left = countInInventory(player, ModItems.HASH.get());
+            check(left == 64 - 22, "haxixe consumido " + (64 - left));
+            check(lighterDamage(player) == 22, "isqueiro deveria ter 22 de dano, tem " + lighterDamage(player));
+        });
     }
 }

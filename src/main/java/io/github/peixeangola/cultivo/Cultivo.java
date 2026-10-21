@@ -7,6 +7,7 @@ import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import io.github.peixeangola.cultivo.registry.ModBlocks;
 import io.github.peixeangola.cultivo.registry.ModComponents;
 import io.github.peixeangola.cultivo.registry.ModCreativeTabs;
+import io.github.peixeangola.cultivo.registry.ModEffects;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModLootFunctions;
 import io.github.peixeangola.cultivo.registry.ModRecipes;
@@ -30,6 +31,7 @@ public final class Cultivo {
         ModRecipes.TYPES.register(modBusGroup);
         ModRecipes.SERIALIZERS.register(modBusGroup);
         ModLootFunctions.LOOT_FUNCTIONS.register(modBusGroup);
+        ModEffects.EFFECTS.register(modBusGroup);
         ModCreativeTabs.CREATIVE_TABS.register(modBusGroup);
         CultivoGameTests.TESTS.register(modBusGroup);
 
