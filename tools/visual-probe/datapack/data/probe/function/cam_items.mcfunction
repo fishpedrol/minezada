@@ -1,2 +1,2 @@
-tp @a 6 152.6 21.5 180 0
+tp @a 6.5 152.9 18.8 180 6
 say probe:cam_items

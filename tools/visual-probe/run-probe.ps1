@@ -89,10 +89,10 @@ try {
     # "Sei o que estou fazendo!".
     Wait-Log 'Found new data pack' 600
     $deadline = (Get-Date).AddSeconds(90)
-    while (-not (Select-String -Path $log -Pattern 'joined the game' -Quiet)) {
+    while (-not (Select-String -Path $log -Pattern 'logged in with entity id' -Quiet)) {
         if ((Get-Date) -gt $deadline) { throw 'O jogo nao entrou no mundo de teste' }
         Start-Sleep 4
-        if (-not (Select-String -Path $log -Pattern 'joined the game' -Quiet)) { Key 0x09; Key 0x09; Key 0x0D }
+        if (-not (Select-String -Path $log -Pattern 'logged in with entity id' -Quiet)) { Key 0x09; Key 0x09; Key 0x0D }
     }
     Focus
 
