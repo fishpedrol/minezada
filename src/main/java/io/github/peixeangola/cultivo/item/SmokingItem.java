@@ -42,8 +42,7 @@ public class SmokingItem extends Item {
         Refusal refusal = SmokeSession.check(player, device);
         if (refusal != Refusal.NONE) {
             if (!level.isClientSide()) {
-                String key = refusal == Refusal.NEEDS_LIGHTER ? "message.cultivo.need_lighter" : "message.cultivo.need_fuel";
-                player.sendOverlayMessage(Component.translatable(key));
+                player.sendOverlayMessage(Component.translatable(refusal.messageKey()));
             }
             return InteractionResult.FAIL;
         }

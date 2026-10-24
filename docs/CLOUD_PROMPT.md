@@ -1,5 +1,7 @@
 # Prompt para a sessão na nuvem
 
+> **Histórico.** Este foi o prompt da sessão de 21/10/2026, que já foi executado. O estado atual está em NEXT_SESSION.md e TODO.md. Desde então mudaram, por exemplo, a receita do baseado (agora `crafting_transmute`) e o escopo de efeitos de consumo (a mecânica de fumar foi pedida e implementada; veja DECISIONS.md).
+
 Copie o texto abaixo da linha e use-o como prompt inicial da sessão `claude --cloud`.
 
 ---

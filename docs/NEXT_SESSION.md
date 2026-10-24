@@ -1,6 +1,8 @@
 # Orientação para a próxima sessão
 
-**Atualizado em 21/10/2026.** O MVP compila e passa em `./gradlew build` (62 testes JUnit), `./gradlew runGameTestServer` (11 de 11) e `./gradlew runServer` (sobe sem erro do mod). As evidências estão em docs/TODO.md. Falta testar com o cliente gráfico/multiplayer e balancear. A seção 6 agora registra as diferenças de API do 26.3 encontradas no build real.
+**Atualizado em 24/10/2026.** O MVP e a mecânica de fumar (pedida pelo usuário) compilam e passam em `./gradlew build` (88 testes JUnit), `./gradlew runGameTestServer` (28 de 28) e `./gradlew runServer`. Evidências em docs/TODO.md; regras e números em docs/DECISIONS.md; passo a passo para o dono (leigo em Java) em docs/GUIA_INICIANTE.md. Falta testar com o cliente gráfico/multiplayer e balancear.
+
+**Código da mecânica de fumar:** `core/SmokeRules.java` e `core/SmokeDevice.java` (regras puras), `smoke/SmokeSession.java` (servidor: isqueiro, material, consumo, efeitos), `item/SmokingItem.java`, `item/LighterItem.java`, `effect/HighEffect.java`, `registry/ModEffects.java`, componente `cultivo:strain` em `registry/ModComponents.java`; GameTests `smoke_*`, `joint_*`, `hash_keeps_strain` em `gametest/CultivoGameTests.java`.
 
 ## 1. Ambiente e versões (verificadas no MDK baixado)
 
@@ -101,7 +103,7 @@ Depois do primeiro build, o ForgeGradle deixa estes arquivos no projeto:
   - Baús: injeção nas casas de **plains, savanna, taiga e desert** (4/5 tipos; snowy fica de fora). O pool injetado tem 1 rolagem com pesos vazio 50, brisa 30 (1–3), aurora 14 (1–2), eclipse 6 (1).
   - Lavouras de aldeia de planície: sobrescrever `data/minecraft/worldgen/processor_list/farm_plains.json`, mantendo as regras vanilla e acrescentando **antes** delas brisa 0,05, aurora 0,025 e eclipse 0,01 no crop com age 0.
   - Campo natural: bloco `wild_plant`, colocado por worldgen em `#minecraft:is_jungle` (equivalente da selva, que não tem aldeia) e em plains/meadow. Ao quebrar, dá sementes com pesos 60/30/10.
-- **Receita do baseado:** shapeless `rolling_paper` + `#cultivo:dried_flowers` → `joint`.
+- **Receita do baseado:** ~~shapeless `rolling_paper` + `#cultivo:dried_flowers`~~ → substituída em 21/10/2026 por 3 receitas `crafting_transmute` (flor seca de cada variedade + folha de seda), que copiam a qualidade e gravam `cultivo:strain`. Veja DECISIONS.md, "Mecânica de fumar".
 - **Artigos:** cada um com receita shaped/shapeless de itens vanilla. Use um GameTest para garantir que cada padrão resolve para a receita do mod e não conflita com receitas vanilla.
 - **Assets:**
   - texturas originais 16×16 geradas por script Node em `tools/art/` (usando `png.mjs`);

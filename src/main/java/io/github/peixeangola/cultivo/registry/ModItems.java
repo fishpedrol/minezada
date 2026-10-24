@@ -83,6 +83,17 @@ public final class ModItems {
             .orElseGet(() -> new DecorativeItem(properties));
     }
 
+    /** Variedade de uma semente, flor fresca ou flor seca pelo item; null para outros itens. */
+    public static Variety varietyOf(net.minecraft.world.item.ItemStack stack) {
+        for (Variety variety : Variety.values()) {
+            if (stack.is(SEEDS.get(variety).get()) || stack.is(FRESH_FLOWERS.get(variety).get())
+                || stack.is(DRIED_FLOWERS.get(variety).get())) {
+                return variety;
+            }
+        }
+        return null;
+    }
+
     private static RegistryObject<Item> quality(String name) {
         return ITEMS.register(name, () -> new QualityItem(new Item.Properties().setId(ITEMS.key(name))));
     }

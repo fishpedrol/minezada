@@ -11,21 +11,28 @@ import io.github.peixeangola.cultivo.registry.ModEffects;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModTags;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.stats.Stats;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.ForgeEventFactory;
 
 /**
  * Fumar no jogo, sempre decidido no servidor: confere isqueiro e material, consome o baseado ou 1 flor
@@ -73,19 +80,14 @@ public final class SmokeSession {
         return ItemStack.EMPTY;
     }
 
-    public static Refusal check(Player player, SmokeDevice device) {
-        return SmokeRules.check(device, !findLighter(player).isEmpty(), !findFuel(player).isEmpty());
+    /** Quanto ainda resta do "chapado" atual, em ticks (0 se nenhum). */
+    public static int remainingHigh(Player player) {
+        MobEffectInstance current = player.getEffect(ModEffects.high());
+        return current == null ? 0 : current.getDuration();
     }
 
-    /** Variedade de uma flor seca pelo item; null se não for flor seca. */
-    static Variety driedFlowerVariety(ItemStack stack) {
-        for (Map.Entry<Variety, net.minecraftforge.registries.RegistryObject<net.minecraft.world.item.Item>> e
-            : ModItems.DRIED_FLOWERS.entrySet()) {
-            if (stack.is(e.getValue().get())) {
-                return e.getKey();
-            }
-        }
-        return null;
+    public static Refusal check(Player player, SmokeDevice device) {
+        return SmokeRules.check(device, !findLighter(player).isEmpty(), !findFuel(player).isEmpty(), remainingHigh(player));
     }
 
     /** O que está sendo fumado: o próprio baseado ou o material do inventário. */
@@ -94,7 +96,7 @@ public final class SmokeSession {
         if (smoked.is(ModItems.HASH.get())) {
             return new Material(smoked.get(ModComponents.STRAIN.get()), quality, true);
         }
-        Variety flower = driedFlowerVariety(smoked);
+        Variety flower = ModItems.varietyOf(smoked);
         Variety variety = flower != null ? flower : smoked.get(ModComponents.STRAIN.get());
         return new Material(variety, quality, false);
     }
@@ -117,23 +119,32 @@ public final class SmokeSession {
     public static Optional<List<EffectSpec>> smoke(ServerLevel level, Player player, ItemStack held, SmokeDevice device) {
         ItemStack lighter = findLighter(player);
         ItemStack fuel = device.needsFuel() ? findFuel(player) : ItemStack.EMPTY;
-        if (SmokeRules.check(device, !lighter.isEmpty(), !fuel.isEmpty()) != Refusal.NONE || held.isEmpty()) {
+        int remaining = remainingHigh(player);
+        if (held.isEmpty() || SmokeRules.check(device, !lighter.isEmpty(), !fuel.isEmpty(), remaining) != Refusal.NONE) {
             return Optional.empty();
         }
         ItemStack smoked = device.needsFuel() ? fuel : held;
         Material material = materialOf(smoked);
 
-        MobEffectInstance current = player.getEffect(ModEffects.high());
-        int remaining = current == null ? 0 : current.getDuration();
         List<EffectSpec> effects = SmokeRules.effects(device, material, remaining);
         for (EffectSpec spec : effects) {
-            player.addEffect(new MobEffectInstance(holder(spec.kind()), spec.ticks(), spec.amplifier()));
+            MobEffectInstance instance = new MobEffectInstance(holder(spec.kind()), spec.ticks(), spec.amplifier());
+            if (spec.kind() == SmokeRules.EffectKind.HIGH) {
+                // O total já inclui o que restava: substitui a instância inteira. Com addEffect, um nível I por
+                // cima de um nível II viraria "efeito escondido" do vanilla e as sessões seguintes não somariam.
+                player.forceAddEffect(instance, null);
+                continue;
+            }
+            SmokeRules.EffectKind opposite = SmokeRules.opposite(spec.kind());
+            if (opposite != null) {
+                player.removeEffect(holder(opposite));
+            }
+            player.addEffect(instance);
         }
 
         if (!player.hasInfiniteMaterials()) {
             smoked.shrink(1);
-            lighter.hurtAndBreak(SmokeRules.LIGHTER_DAMAGE_PER_USE, level,
-                player instanceof ServerPlayer serverPlayer ? serverPlayer : null, broken -> { });
+            damageLighter(level, player, lighter);
         }
 
         Vec3 mouth = player.getEyePosition().add(player.getLookAngle().scale(0.4D));
@@ -142,5 +153,33 @@ public final class SmokeSession {
         level.playSound(null, player.blockPosition(), SoundEvents.FLINTANDSTEEL_USE, SoundSource.PLAYERS, 0.5F, 1.2F);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.15F, 1.6F);
         return Optional.of(effects);
+    }
+
+    /**
+     * Gasta 1 de durabilidade. Na mão, usa o caminho vanilla (som, partículas, estatística e evento do Forge ao
+     * quebrar); em outro slot do inventário, faz o mesmo à mão. Avisa o jogador quando o isqueiro quebra.
+     */
+    static void damageLighter(ServerLevel level, Player player, ItemStack lighter) {
+        if (lighter == player.getOffhandItem()) {
+            lighter.hurtAndBreak(SmokeRules.LIGHTER_DAMAGE_PER_USE, player, EquipmentSlot.OFFHAND);
+        } else if (lighter == player.getMainHandItem()) {
+            lighter.hurtAndBreak(SmokeRules.LIGHTER_DAMAGE_PER_USE, player, EquipmentSlot.MAINHAND);
+        } else {
+            lighter.hurtAndBreak(SmokeRules.LIGHTER_DAMAGE_PER_USE, level,
+                player instanceof ServerPlayer serverPlayer ? serverPlayer : null, broken -> {
+                    Holder<SoundEvent> sound = broken.get(DataComponents.BREAK_SOUND);
+                    if (sound != null) {
+                        level.playSound(null, player.getX(), player.getY(), player.getZ(), sound.value(),
+                            SoundSource.PLAYERS, 0.8F, 0.8F + level.getRandom().nextFloat() * 0.4F);
+                    }
+                    level.sendParticles(new ItemParticleOption(ParticleTypes.ITEM, ItemStackTemplate.fromNonEmptyStack(broken)),
+                        player.getX(), player.getEyeY() - 0.3D, player.getZ(), 5, 0.1D, 0.1D, 0.1D, 0.05D);
+                    player.awardStat(Stats.ITEM_BROKEN.get(broken.getItem()));
+                    ForgeEventFactory.onPlayerDestroyItem(player, broken, (EquipmentSlot) null);
+                });
+        }
+        if (lighter.isEmpty()) {
+            player.sendOverlayMessage(Component.translatable("message.cultivo.lighter_broke"));
+        }
     }
 }

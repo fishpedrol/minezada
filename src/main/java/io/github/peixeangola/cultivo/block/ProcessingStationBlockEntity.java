@@ -2,9 +2,11 @@ package io.github.peixeangola.cultivo.block;
 
 import io.github.peixeangola.cultivo.core.ProcessingRules;
 import io.github.peixeangola.cultivo.core.StationKind;
+import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.recipe.ProcessingRecipe;
 import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import io.github.peixeangola.cultivo.registry.ModComponents;
+import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModRecipes;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
@@ -108,12 +110,24 @@ public class ProcessingStationBlockEntity extends BlockEntity {
         return input;
     }
 
-    /** Resultado que o ciclo atual produziria, com a qualidade da entrada copiada. */
+    /**
+     * Resultado que o ciclo atual produziria, com a qualidade da entrada copiada. Na peneira e na prensa a
+     * variedade também passa adiante (cultivo:strain), para a resina e o haxixe lembrarem de qual flor vieram.
+     */
     ItemStack resultFor(ProcessingRecipe recipe, ItemStack input) {
         ItemStack result = recipe.assemble(new SingleRecipeInput(input));
         Integer quality = input.get(ModComponents.QUALITY.get());
         if (quality != null) {
             result.set(ModComponents.QUALITY.get(), quality);
+        }
+        if (kind() != StationKind.DRYING) {
+            Variety strain = input.get(ModComponents.STRAIN.get());
+            if (strain == null) {
+                strain = ModItems.varietyOf(input);
+            }
+            if (strain != null) {
+                result.set(ModComponents.STRAIN.get(), strain);
+            }
         }
         result.setCount(ProcessingRules.outputCount(kind(), result.getCount(), quality));
         return result;

@@ -29,6 +29,11 @@ public class QualityItem extends Item {
     @SuppressWarnings("deprecation")
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display,
                                 Consumer<Component> tooltip, TooltipFlag flag) {
+        io.github.peixeangola.cultivo.core.Variety strain = stack.get(ModComponents.STRAIN.get());
+        if (strain != null) {
+            tooltip.accept(Component.translatable("tooltip.cultivo.strain",
+                Component.translatable("tooltip.cultivo.variety." + strain.id())).withStyle(ChatFormatting.GRAY));
+        }
         Integer quality = stack.get(ModComponents.QUALITY.get());
         if (quality != null) {
             tooltip.accept(Component.translatable("tooltip.cultivo.quality",
