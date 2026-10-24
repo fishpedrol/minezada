@@ -58,7 +58,7 @@ Estas decisões vêm de NEXT_SESSION.md, seção 4, e estão no código. As cons
   - `drying_rack` (`cultivo:drying`, 600 ticks), `sieve` (`cultivo:sieving`, 200 ticks, +1 resina com qualidade ≥ 4) e `press` (`cultivo:pressing`, 300 ticks, 2 resinas → 1 haxixe);
   - todas usam uma única BlockEntity, com 1 entrada, 1 saída e progresso salvo em NBT;
   - a qualidade da entrada é copiada para a saída;
-  - com a saída cheia ou de outra qualidade, o progresso fica congelado; sem receita válida, zera;
+  - com a saída cheia ou com item de outra qualidade ou de outra variedade (`cultivo:strain`, na peneira e na prensa), o progresso fica congelado; sem receita válida, zera;
   - ao quebrar o bloco, os itens caem no chão.
 - **Receitas de crafting** (`ArticleRecipes`, só itens vanilla, exceto o baseado):
 
@@ -110,7 +110,8 @@ O usuário pediu explicitamente: "quero que implemente sim". A intensidade não 
   - Fome ("larica"): mesma duração do Chapado (o total acumulado);
   - Náusea: 30% da **sessão atual**, no máximo 8 s (20 s no nível II);
   - perfil pela variedade, também calculado só sobre a sessão atual: Brisa/sativa → Velocidade (50%); Aurora/híbrida → Regeneração 5 s; Eclipse/índica → Lentidão (50%) + Regeneração 10 s; sem variedade conhecida (baseado de `/give`, haxixe antigo) → Lentidão (30%);
-  - Velocidade e Lentidão se anulam: aplicar uma remove a outra.
+  - os efeitos vanilla se juntam aos que o jogador já tem (regras do vanilla); fumar não remove efeitos de poção, flecha ou sinalizador. Uma versão anterior removia o efeito oposto (Velocidade × Lentidão), mas isso apagava poções e virava exploit (ex.: tirar a Lentidão IV do Mestre Tartaruga); foi retirada na 2ª revisão;
+  - um "Chapado" infinito (só por comando) conta como no limite: fumar é recusado.
 - **Variedade do baseado:** a receita virou 3 receitas `crafting_transmute` (flor seca de cada variedade + folha de seda). O transmute copia os componentes da flor (a **qualidade**) e grava a variedade no componente `cultivo:strain`. A peneira e a prensa também passam a variedade adiante, então resina e haxixe lembram de qual flor vieram (resinas de variedades diferentes não empilham, como já acontecia com qualidades diferentes).
 - **Isqueiro:** perde 1 de durabilidade por uso (64 usos). Quando quebra, toca o som de item quebrado, conta a estatística e avisa o jogador ("Seu isqueiro acabou").
 - **Servidor:** `SmokeSession` revalida isqueiro e material no fim do uso (o cliente só mostra a animação) e é quem consome itens e aplica efeitos.

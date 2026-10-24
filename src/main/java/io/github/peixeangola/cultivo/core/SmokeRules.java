@@ -11,10 +11,11 @@ import java.util.List;
  * Fumar de novo soma ao tempo que ainda resta, até {@link #MAX_HIGH_TICKS}; perto do limite o jogo recusa
  * ({@link Refusal#AT_MAX}) para não gastar itens à toa. Acima de {@link #HEAVY_THRESHOLD_TICKS} o efeito fica
  * "forte" (nível II) e a náusea pode durar mais. Fome acompanha o tempo total; náusea e o perfil da variedade
- * duram só em função da sessão atual (não do acumulado).
+ * duram só em função da sessão atual (não do acumulado). Os efeitos vanilla se juntam aos que o jogador já tem
+ * (ex.: Velocidade de poção e Lentidão do baseado convivem, como no vanilla).
  *
  * <p>Perfis (só gameplay): sativa dá Velocidade, híbrida dá Regeneração curta, índica dá Lentidão + Regeneração,
- * e sem variedade conhecida (ex.: haxixe) dá Lentidão leve. Todos dão Fome ("larica") e um pouco de Náusea.
+ * e sem variedade conhecida (ex.: baseado de /give ou haxixe antigo sem cultivo:strain) dá Lentidão leve. Todos dão Fome ("larica") e um pouco de Náusea.
  */
 public final class SmokeRules {
     public static final int TICKS_PER_SECOND = 20;
@@ -67,7 +68,8 @@ public final class SmokeRules {
     /**
      * Ordem das recusas: isqueiro, depois material, depois limite.
      *
-     * @param remainingHighTicks quanto ainda resta do "chapado" atual (0 se nenhum)
+     * @param remainingHighTicks quanto ainda resta do "chapado" atual (0 se nenhum; negativo = infinito, vindo de
+     *     comando, e conta como no limite)
      */
     public static Refusal check(SmokeDevice device, boolean hasLighter, boolean hasFuel, int remainingHighTicks) {
         if (!hasLighter) {
@@ -76,20 +78,13 @@ public final class SmokeRules {
         if (device.needsFuel() && !hasFuel) {
             return Refusal.NEEDS_FUEL;
         }
-        if (remainingHighTicks > MAX_HIGH_TICKS - AT_MAX_MARGIN_TICKS) {
+        if (remainingHighTicks < 0 || remainingHighTicks > MAX_HIGH_TICKS - AT_MAX_MARGIN_TICKS) {
             return Refusal.AT_MAX;
         }
         return Refusal.NONE;
     }
 
-    /** Velocidade e Lentidão se anulam: aplicar uma remove a outra. Retorna o oposto, ou null. */
-    public static EffectKind opposite(EffectKind kind) {
-        return switch (kind) {
-            case SPEED -> EffectKind.SLOWNESS;
-            case SLOWNESS -> EffectKind.SPEED;
-            default -> null;
-        };
-    }
+
 
     public static int effectiveQuality(Integer quality) {
         return QualityRules.clamp(quality == null ? DEFAULT_QUALITY : quality);

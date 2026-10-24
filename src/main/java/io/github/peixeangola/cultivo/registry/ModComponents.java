@@ -23,8 +23,8 @@ public final class ModComponents {
             .build());
 
     /**
-     * cultivo:strain — variedade de um item que não é específico de variedade (o baseado). Gravado pela receita
-     * transmute do baseado; no JSON é o ID ("brisa", "aurora", "eclipse").
+     * cultivo:strain — variedade de itens que não são específicos de variedade (baseado, resina, haxixe). Gravado
+     * pela receita transmute do baseado e pela peneira/prensa; no JSON é o ID ("brisa", "aurora", "eclipse").
      */
     public static final RegistryObject<DataComponentType<Variety>> STRAIN = COMPONENTS.register("strain",
         () -> DataComponentType.<Variety>builder()
