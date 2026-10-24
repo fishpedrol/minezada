@@ -93,6 +93,8 @@ public final class CultivoGameTests {
         TESTS.register("joint_strain_persists", () -> CultivoGameTests::jointStrainPersists);
         TESTS.register("hash_keeps_strain", () -> CultivoGameTests::hashKeepsStrain);
         TESTS.register("smoke_devices_registered", () -> CultivoGameTests::smokeDevicesRegistered);
+        TESTS.register("smoke_keeps_potion_effects", () -> CultivoGameTests::smokeKeepsPotionEffects);
+        TESTS.register("smoke_infinite_high_refused", () -> CultivoGameTests::smokeInfiniteHighRefused);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -625,21 +627,36 @@ public final class CultivoGameTests {
         });
     }
 
-    /** Conta quantos ticks o "chapado" realmente dura, inclusive efeitos escondidos do vanilla. */
-    private static int effectiveHighTicks(GameTestHelper helper, Player player) {
+    /** O "chapado" atual tem um "efeito escondido" do vanilla por baixo? (Não deveria: seria tempo perdido.) */
+    private static boolean hasHiddenHigh(GameTestHelper helper, Player player) {
         MobEffectInstance high = player.getEffect(ModEffects.high());
         if (high == null) {
-            return 0;
+            return false;
         }
-        MobEffectInstance copy = new MobEffectInstance(high);
-        int ticks = 0;
-        boolean alive;
-        do {
-            // Cada chamada consome 1 tick; a última (que zera a duração) devolve false e também conta
-            alive = copy.tickServer(helper.getLevel(), player, () -> { });
-            ticks++;
-        } while (alive && ticks <= SmokeRules.MAX_HIGH_TICKS * 2);
-        return ticks;
+        var ops = helper.getLevel().registryAccess().createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE);
+        return MobEffectInstance.CODEC.encodeStart(ops, high).getOrThrow().getAsJsonObject().has("hidden_effect");
+    }
+
+    /** Jogador falso que guarda as chaves das mensagens mostradas acima da barra de itens. */
+    private static Player capturingPlayer(GameTestHelper helper, List<String> keys) {
+        return new Player(helper.getLevel(), new com.mojang.authlib.GameProfile(java.util.UUID.randomUUID(), "smoke-msg")) {
+            @Override
+            public GameType gameMode() {
+                return GameType.SURVIVAL;
+            }
+
+            @Override
+            public boolean isClientAuthoritative() {
+                return false;
+            }
+
+            @Override
+            public void sendOverlayMessage(Component message) {
+                if (message.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t) {
+                    keys.add(t.getKey());
+                }
+            }
+        };
     }
 
     /** Fumar enquanto um nível II acaba: cada sessão soma de verdade (sem "efeito escondido" do vanilla). */
@@ -654,7 +671,7 @@ public final class CultivoGameTests {
                 "500 + 900 = 1400 no nível I, veio " + highTicks(player));
             check(smokeOnce(helper, player) == InteractionResult.CONSUME, "2ª sessão recusada");
             check(highTicks(player) == 2300, "1400 + 900 = 2300, veio " + highTicks(player));
-            check(effectiveHighTicks(helper, player) == 2300, "duração efetiva " + effectiveHighTicks(helper, player));
+            check(!hasHiddenHigh(helper, player), "sobrou um efeito escondido do vanilla");
 
             // Subindo: cachimbo com 3 flores Brisa q2 (900 cada) passa ao nível II só na 3ª
             Item flower = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
@@ -728,8 +745,12 @@ public final class CultivoGameTests {
             worn.setDamageValue(SmokeRules.LIGHTER_DURABILITY - 1);
             ItemStack joints = joint(Variety.BRISA, 2);
             joints.setCount(2);
-            Player player = smoker(helper, joints, worn);
+            List<String> keys = new ArrayList<>();
+            Player player = capturingPlayer(helper, keys);
+            player.setItemInHand(InteractionHand.MAIN_HAND, joints);
+            player.getInventory().add(worn);
             check(smokeOnce(helper, player) == InteractionResult.CONSUME, "último uso recusado");
+            check(keys.contains("message.cultivo.lighter_broke"), "sem aviso de isqueiro quebrado: " + keys);
             check(io.github.peixeangola.cultivo.smoke.SmokeSession.findLighter(player).isEmpty(), "isqueiro deveria quebrar");
             check(smokeOnce(helper, player) == InteractionResult.FAIL, "fumou com isqueiro quebrado");
             check(player.getMainHandItem().getCount() == 1, "consumiu baseado sem isqueiro");
@@ -740,6 +761,17 @@ public final class CultivoGameTests {
             offhand.setItemInHand(InteractionHand.OFF_HAND, wornOffhand);
             check(smokeOnce(helper, offhand) == InteractionResult.CONSUME, "último uso (mão secundária) recusado");
             check(offhand.getOffhandItem().isEmpty(), "isqueiro da mão secundária deveria quebrar");
+
+            // Com 62 de dano ainda sobra um uso: não quebra antes da hora e não avisa
+            ItemStack almost = lighter();
+            almost.setDamageValue(SmokeRules.LIGHTER_DURABILITY - 2);
+            List<String> none = new ArrayList<>();
+            Player early = capturingPlayer(helper, none);
+            early.setItemInHand(InteractionHand.MAIN_HAND, joint(Variety.BRISA, 2));
+            early.getInventory().add(almost);
+            check(smokeOnce(helper, early) == InteractionResult.CONSUME, "uso recusado com isqueiro bom");
+            check(lighterDamage(early) == SmokeRules.LIGHTER_DURABILITY - 1, "dano " + lighterDamage(early));
+            check(none.isEmpty(), "avisou cedo demais: " + none);
         });
     }
 
@@ -758,7 +790,8 @@ public final class CultivoGameTests {
             check(countInInventory(player, flower) == 1, "criativo gastou flor");
             check(lighterDamage(player) == 0, "criativo gastou isqueiro");
             player.setItemInHand(InteractionHand.MAIN_HAND, joint(Variety.ECLIPSE, 3));
-            smokeOnce(helper, player);
+            check(smokeOnce(helper, player) == InteractionResult.CONSUME, "baseado recusado no criativo");
+            check(player.hasEffect(MobEffects.SLOWNESS), "o baseado índica não fez efeito");
             check(player.getMainHandItem().getCount() == 1, "criativo consumiu o baseado");
             check(lighterDamage(player) == 0, "criativo gastou isqueiro (baseado)");
         });
@@ -791,25 +824,7 @@ public final class CultivoGameTests {
     public static void smokeRefusalMessages(GameTestHelper helper) {
         run(helper, () -> {
             List<String> keys = new ArrayList<>();
-            Player player = new Player(helper.getLevel(),
-                new com.mojang.authlib.GameProfile(java.util.UUID.randomUUID(), "smoke-msg")) {
-                @Override
-                public GameType gameMode() {
-                    return GameType.SURVIVAL;
-                }
-
-                @Override
-                public boolean isClientAuthoritative() {
-                    return false;
-                }
-
-                @Override
-                public void sendOverlayMessage(Component message) {
-                    if (message.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t) {
-                        keys.add(t.getKey());
-                    }
-                }
-            };
+            Player player = capturingPlayer(helper, keys);
             player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ARTICLES.get("pipe").get()));
             smokeOnce(helper, player);
             player.getInventory().add(lighter());
@@ -885,6 +900,39 @@ public final class CultivoGameTests {
                 check(ModItems.ARTICLES.get(article).get() instanceof io.github.peixeangola.cultivo.item.DecorativeItem,
                     article + " deveria ser decorativo");
             }
+        });
+    }
+
+    /** Fumar não apaga efeitos de poção: Lentidão IV (Mestre Tartaruga) e Velocidade longa continuam. */
+    public static void smokeKeepsPotionEffects(GameTestHelper helper) {
+        run(helper, () -> {
+            Player turtle = smoker(helper, joint(Variety.BRISA, 3), lighter());
+            turtle.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 800, 3));
+            check(smokeOnce(helper, turtle) == InteractionResult.CONSUME, "uso recusado");
+            MobEffectInstance slowness = turtle.getEffect(MobEffects.SLOWNESS);
+            check(slowness != null && slowness.getAmplifier() == 3, "a Lentidão IV da poção sumiu");
+            check(turtle.hasEffect(MobEffects.SPEED), "a sativa ainda dá Velocidade");
+
+            Player swift = smoker(helper, joint(Variety.ECLIPSE, 3), lighter());
+            swift.addEffect(new MobEffectInstance(MobEffects.SPEED, 9600, 0));
+            check(smokeOnce(helper, swift) == InteractionResult.CONSUME, "uso recusado");
+            MobEffectInstance speed = swift.getEffect(MobEffects.SPEED);
+            check(speed != null && speed.getDuration() == 9600, "a Velocidade da poção foi apagada ou encurtada");
+            check(swift.hasEffect(MobEffects.SLOWNESS), "a índica ainda dá Lentidão");
+        });
+    }
+
+    /** Um "chapado" infinito (por comando) conta como no limite: recusa e não gasta nada nem o encurta. */
+    public static void smokeInfiniteHighRefused(GameTestHelper helper) {
+        run(helper, () -> {
+            Player player = smoker(helper, joint(Variety.AURORA, 3), lighter());
+            player.addEffect(new MobEffectInstance(ModEffects.high(), MobEffectInstance.INFINITE_DURATION, 1));
+            check(smokeOnce(helper, player) == InteractionResult.FAIL, "fumou com efeito infinito");
+            ItemStack held = player.getMainHandItem();
+            check(io.github.peixeangola.cultivo.smoke.SmokeSession.smoke(helper.getLevel(), player, held, SmokeDevice.JOINT).isEmpty(),
+                "o servidor aceitou fumar");
+            check(player.getEffect(ModEffects.high()).isInfiniteDuration(), "o efeito infinito foi encurtado");
+            check(held.getCount() == 1 && lighterDamage(player) == 0, "gastou itens");
         });
     }
 }

@@ -80,10 +80,16 @@ public final class SmokeSession {
         return ItemStack.EMPTY;
     }
 
-    /** Quanto ainda resta do "chapado" atual, em ticks (0 se nenhum). */
+    /**
+     * Quanto ainda resta do "chapado" atual, em ticks (0 se nenhum). Um efeito infinito (só por comando) conta como
+     * já no limite, para fumar ser recusado em vez de encurtá-lo.
+     */
     public static int remainingHigh(Player player) {
         MobEffectInstance current = player.getEffect(ModEffects.high());
-        return current == null ? 0 : current.getDuration();
+        if (current == null) {
+            return 0;
+        }
+        return current.isInfiniteDuration() ? SmokeRules.MAX_HIGH_TICKS : current.getDuration();
     }
 
     public static Refusal check(Player player, SmokeDevice device) {
@@ -135,10 +141,7 @@ public final class SmokeSession {
                 player.forceAddEffect(instance, null);
                 continue;
             }
-            SmokeRules.EffectKind opposite = SmokeRules.opposite(spec.kind());
-            if (opposite != null) {
-                player.removeEffect(holder(opposite));
-            }
+            // Junta com o que o jogador já tem (regras vanilla): não remove efeitos de poções, flechas ou sinalizadores
             player.addEffect(instance);
         }
 

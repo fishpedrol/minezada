@@ -59,7 +59,9 @@ public final class ContentIds {
         "smoke_refusal_messages",
         "joint_strain_persists",
         "hash_keeps_strain",
-        "smoke_devices_registered");
+        "smoke_devices_registered",
+        "smoke_keeps_potion_effects",
+        "smoke_infinite_high_refused");
 
     private ContentIds() {}
 

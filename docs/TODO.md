@@ -1,6 +1,6 @@
 # Plano do mod
 
-Estado em 24/10/2026: **MVP + mecânica de fumar compilados, testados e rodando em Forge 26.3-66.0.13.** `./gradlew build` passa (88 testes JUnit), os GameTests passam (28 de 28 obrigatórios, incluindo os 27 do Cultivo) e o servidor dedicado sobe com o mod. Falta testar com o cliente gráfico e com um jogador conectado (checklist em [GUIA_INICIANTE.md](GUIA_INICIANTE.md)).
+Estado em 24/10/2026: **MVP + mecânica de fumar compilados, testados e rodando em Forge 26.3-66.0.13.** `./gradlew build` passa (88 testes JUnit), os GameTests passam (30 de 30 obrigatórios, incluindo os 29 do Cultivo) e o servidor dedicado sobe com o mod. Falta testar com o cliente gráfico e com um jogador conectado (checklist em [GUIA_INICIANTE.md](GUIA_INICIANTE.md)).
 
 ## Evidências registradas
 
@@ -21,6 +21,9 @@ Estado em 24/10/2026: **MVP + mecânica de fumar compilados, testados e rodando 
 | 24/10/2026 | teste negativo: voltar `forceAddEffect` para `addEffect` | `cultivo:smoke_resmoke_after_heavy failed ... 500 + 900 = 1400 no nível I, veio 500`: o novo teste pega o bug. Correção restaurada. |
 | 24/10/2026 | `./gradlew build` (após as correções) | **`BUILD SUCCESSFUL in 1m 11s`**, 88 testes `PASSED`, 0 `FAILED` |
 | 24/10/2026 | `./gradlew runGameTestServer` (após as correções) | 1ª rodada: 2 falhas de teste (contagem de ticks com erro de 1; saída pré-carregada sem variedade em `station_persistence`, que agora não empilha por causa da variedade na resina, comportamento esperado). Testes ajustados: **`All 28 required tests passed :)`** |
+| 24/10/2026 | 2ª revisão por workflow (45 agentes: correção dos fixes, validade dos testes, consistência dos docs + guia) | 18 achados confirmados, 1 refutado. Principal: a regra "Velocidade × Lentidão se anulam" apagava efeitos de **poções** (exploit com Mestre Tartaruga; perda de Velocidade longa); a regra foi retirada. Também: "chapado" infinito por comando agora é recusado; testes passam a usar os valores literais da especificação; docs corrigidos. |
+| 24/10/2026 | teste negativo: recolocar a remoção do efeito oposto e o infinito como 0 | `cultivo:smoke_keeps_potion_effects failed ... a Lentidão IV da poção sumiu` e `cultivo:smoke_infinite_high_refused failed ... fumou com efeito infinito`: os testes novos pegam os dois bugs. Correção restaurada. |
+| 24/10/2026 | `./gradlew build` / `runGameTestServer` (versão final) | **`BUILD SUCCESSFUL in 33s`**, 88 testes `PASSED`; **`All 30 required tests passed :)`** (`30 GAME TESTS COMPLETE IN 2.585 s`) |
 | 24/10/2026 | `./gradlew runServer` | **`Done (0.669s)!`**, nenhum WARN/ERROR ligado ao Cultivo |
 | 24/10/2026 | inspeção do jar | 305 entradas, 43 PNGs (inclui `textures/mob_effect/high.png`), 0 arquivos do Minecraft |
 | 24/10/2026 | `sh tools/test-offline.sh` / `node tools/gen/generate.mjs` | 88 de 88 / 43 texturas e 149 JSONs |
@@ -49,17 +52,17 @@ Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: 
 **Gate:** regras e drops OK no servidor; checagem visual pendente.
 
 ## 3. Processamento
-- [x] Regras puras com testes: secagem 600, peneira 200 (+1 resina com qualidade ≥ 4), prensa 300 (2 resinas → 1 haxixe); saída cheia ou de outra qualidade congela o progresso; sem receita, zera.
-- [x] Receitas JSON conferidas por JUnit: 11 artigos + 3 estações + baseado (`rolling_paper` + `#cultivo:dried_flowers`), e as receitas `cultivo:drying`/`sieving`/`pressing`.
+- [x] Regras puras com testes: secagem 600, peneira 200 (+1 resina com qualidade ≥ 4), prensa 300 (2 resinas → 1 haxixe); saída cheia ou de outra qualidade/variedade congela o progresso; sem receita, zera.
+- [x] Receitas JSON conferidas por JUnit: 11 artigos + 3 estações + 3 baseados (`crafting_transmute` `joint_{brisa,aurora,eclipse}`: flor seca da variedade + `rolling_paper`, copia a qualidade e grava `cultivo:strain`), e as receitas `cultivo:drying`/`sieving`/`pressing`.
 - [x] Estações, `ProcessingRecipe` e serializers compilam.
-- [x] GameTests `drying_station`, `sieve_station`, `press_station`, `station_output_full` (saída cheia/outra qualidade congela, sem perda nem duplicação), `station_persistence` (save/load da BE; ao quebrar, os itens caem), `village_chest_seeds` (4 tabelas geram sementes; Brisa > 3× Eclipse) e `article_recipes` (15 grades resolvem para o item do mod) passam.
+- [x] GameTests `drying_station`, `sieve_station`, `press_station`, `station_output_full` (saída cheia/outra qualidade congela, sem perda nem duplicação), `station_persistence` (save/load da BE; ao quebrar, os itens caem), `village_chest_seeds` (4 tabelas geram sementes; Brisa > 3× Eclipse) e `article_recipes` (17 grades: 11 artigos, 3 baseados transmute e 3 estações, resolvem para o item do mod) passam.
 - [ ] Teste manual com um cliente conectado ao servidor dedicado.
 **Gate:** OK no servidor/GameTest; teste manual multiplayer pendente.
 
 ## 3b. Mecânica de fumar (pedida pelo usuário em 21/10/2026)
-- [x] Regras puras (`SmokeRules`, `SmokeDevice`) com JUnit: durações exatas por artigo/qualidade/haxixe, soma até 6 min, recusa perto do limite, nível II a partir de 2 min, perfis por variedade, Velocidade × Lentidão, ordem e mensagens das recusas, isqueiro de 64 usos.
+- [x] Regras puras (`SmokeRules`, `SmokeDevice`) com JUnit: durações exatas por artigo/qualidade/haxixe, soma até 6 min, recusa perto do limite, nível II a partir de 2 min, perfis por variedade, ordem e mensagens das recusas, isqueiro de 64 usos, constantes da especificação (6 min, 2 min, 30 s) com valores literais.
 - [x] Efeito `cultivo:high` com ícone 18×18 original; componente `cultivo:strain`; baseado por `crafting_transmute` (qualidade copiada, variedade gravada); peneira e prensa levam a variedade para resina e haxixe.
-- [x] GameTests: `joint_recipe_copies_quality`, `smoke_joint_effects`, `smoke_requires_lighter_and_fuel`, `smoke_pipe_uses_fuel`, `smoke_bong_hash_stronger`, `smoke_stacking_and_cap`, `smoke_resmoke_after_heavy`, `smoke_at_cap_refused`, `smoke_hash_multiplier`, `smoke_offhand_fuel_first`, `smoke_lighter_breaks`, `smoke_creative_consumes_nothing`, `smoke_joint_without_strain`, `smoke_refusal_messages`, `joint_strain_persists`, `hash_keeps_strain`, `smoke_devices_registered`, todos passando.
+- [x] GameTests: `joint_recipe_copies_quality`, `smoke_joint_effects`, `smoke_requires_lighter_and_fuel`, `smoke_pipe_uses_fuel`, `smoke_bong_hash_stronger`, `smoke_stacking_and_cap`, `smoke_resmoke_after_heavy`, `smoke_at_cap_refused`, `smoke_hash_multiplier`, `smoke_offhand_fuel_first`, `smoke_lighter_breaks`, `smoke_creative_consumes_nothing`, `smoke_joint_without_strain`, `smoke_refusal_messages`, `joint_strain_persists`, `hash_keeps_strain`, `smoke_devices_registered`, `smoke_keeps_potion_effects`, `smoke_infinite_high_refused`, todos passando.
 - [ ] Ver no cliente: animação de levar à boca, fumaça, sons, ícone e nome do efeito, náusea, tooltips e mensagens (precisa de `runClient`).
 - [ ] Testar em multiplayer: dois jogadores fumando no servidor dedicado.
 **Gate:** regras e servidor OK; checagem visual e multiplayer pendentes.

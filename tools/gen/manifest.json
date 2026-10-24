@@ -131,7 +131,9 @@
     { "name": "smoke_refusal_messages", "max_ticks": 100 },
     { "name": "joint_strain_persists", "max_ticks": 100 },
     { "name": "hash_keeps_strain", "max_ticks": 100 },
-    { "name": "smoke_devices_registered", "max_ticks": 100 }
+    { "name": "smoke_devices_registered", "max_ticks": 100 },
+    { "name": "smoke_keeps_potion_effects", "max_ticks": 100 },
+    { "name": "smoke_infinite_high_refused", "max_ticks": 100 }
   ],
   "lang": {
     "en_us": {

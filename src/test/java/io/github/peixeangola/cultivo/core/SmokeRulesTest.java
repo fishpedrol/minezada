@@ -186,20 +186,20 @@ class SmokeRulesTest {
     }
 
     @Test
-    void refusedOnlyWhenAlmostAtCap() {
-        int edge = SmokeRules.MAX_HIGH_TICKS - SmokeRules.AT_MAX_MARGIN_TICKS;
-        assertEquals(Refusal.NONE, SmokeRules.check(SmokeDevice.JOINT, true, false, edge));
-        assertEquals(Refusal.AT_MAX, SmokeRules.check(SmokeDevice.JOINT, true, false, edge + 1));
-        assertEquals(Refusal.NONE, SmokeRules.check(SmokeDevice.JOINT, true, false, 0));
+    void specConstants() {
+        assertEquals(6 * 60 * 20, SmokeRules.MAX_HIGH_TICKS, "limite de 6 min");
+        assertEquals(2 * 60 * 20, SmokeRules.HEAVY_THRESHOLD_TICKS, "nível II a partir de 2 min");
+        assertEquals(30 * 20, SmokeRules.AT_MAX_MARGIN_TICKS, "margem de 30 s");
+        assertEquals(8 * 20, SmokeRules.NAUSEA_LIGHT_MAX_TICKS);
+        assertEquals(20 * 20, SmokeRules.NAUSEA_HEAVY_MAX_TICKS);
     }
 
     @Test
-    void speedAndSlownessAreOpposites() {
-        assertEquals(EffectKind.SLOWNESS, SmokeRules.opposite(EffectKind.SPEED));
-        assertEquals(EffectKind.SPEED, SmokeRules.opposite(EffectKind.SLOWNESS));
-        for (EffectKind kind : List.of(EffectKind.HIGH, EffectKind.HUNGER, EffectKind.NAUSEA, EffectKind.REGENERATION)) {
-            assertEquals(null, SmokeRules.opposite(kind));
-        }
+    void refusedOnlyWhenAlmostAtCap() {
+        assertEquals(Refusal.NONE, SmokeRules.check(SmokeDevice.JOINT, true, false, 6600));
+        assertEquals(Refusal.AT_MAX, SmokeRules.check(SmokeDevice.JOINT, true, false, 6601));
+        assertEquals(Refusal.NONE, SmokeRules.check(SmokeDevice.JOINT, true, false, 0));
+        assertEquals(Refusal.AT_MAX, SmokeRules.check(SmokeDevice.JOINT, true, false, -1), "infinito conta como no limite");
     }
 
     @Test
@@ -221,10 +221,10 @@ class SmokeRulesTest {
     @Test
     void heavyBoundaryIsExactlyTwoMinutes() {
         Material m = new Material(Variety.AURORA, 2, false);
-        int session = SmokeRules.sessionTicks(SmokeDevice.JOINT, m);
-        List<EffectSpec> below = SmokeRules.effects(SmokeDevice.JOINT, m, SmokeRules.HEAVY_THRESHOLD_TICKS - session - 1);
+        // Sessão de 900 ticks: 1499 + 900 = 2399 (nível I); 1500 + 900 = 2400 = 2 min (nível II)
+        List<EffectSpec> below = SmokeRules.effects(SmokeDevice.JOINT, m, 1499);
         assertEquals(0, find(below, EffectKind.HIGH).orElseThrow().amplifier());
-        List<EffectSpec> at = SmokeRules.effects(SmokeDevice.JOINT, m, SmokeRules.HEAVY_THRESHOLD_TICKS - session);
+        List<EffectSpec> at = SmokeRules.effects(SmokeDevice.JOINT, m, 1500);
         assertEquals(1, find(at, EffectKind.HIGH).orElseThrow().amplifier());
     }
 }

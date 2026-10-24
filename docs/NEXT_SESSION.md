@@ -1,6 +1,6 @@
 # Orientação para a próxima sessão
 
-**Atualizado em 24/10/2026.** O MVP e a mecânica de fumar (pedida pelo usuário) compilam e passam em `./gradlew build` (88 testes JUnit), `./gradlew runGameTestServer` (28 de 28) e `./gradlew runServer`. Evidências em docs/TODO.md; regras e números em docs/DECISIONS.md; passo a passo para o dono (leigo em Java) em docs/GUIA_INICIANTE.md. Falta testar com o cliente gráfico/multiplayer e balancear.
+**Atualizado em 24/10/2026.** O MVP e a mecânica de fumar (pedida pelo usuário) compilam e passam em `./gradlew build` (88 testes JUnit), `./gradlew runGameTestServer` (30 de 30) e `./gradlew runServer`. Evidências em docs/TODO.md; regras e números em docs/DECISIONS.md; passo a passo para o dono (leigo em Java) em docs/GUIA_INICIANTE.md. Falta testar com o cliente gráfico/multiplayer e balancear.
 
 **Código da mecânica de fumar:** `core/SmokeRules.java` e `core/SmokeDevice.java` (regras puras), `smoke/SmokeSession.java` (servidor: isqueiro, material, consumo, efeitos), `item/SmokingItem.java`, `item/LighterItem.java`, `effect/HighEffect.java`, `registry/ModEffects.java`, componente `cultivo:strain` em `registry/ModComponents.java`; GameTests `smoke_*`, `joint_*`, `hash_keeps_strain` em `gametest/CultivoGameTests.java`.
 
@@ -16,7 +16,7 @@
 
 - **Decisão: manter 26.3 + Forge.** O build do MDK de exemplo já passou (`BUILD SUCCESSFUL in 5m 1s`, jar `build/libs/examplemod-1.0.0.jar`). Não vale a pena trocar de versão.
 - Máquina local: JDK 25 em `C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1`. O `java` no PATH é Java 8 de 32 bits, então use `JAVA_HOME` apontando para o JDK 25. Na nuvem, instale um JDK 25 (Temurin). O plugin foojay em `settings.gradle` pode baixar o toolchain.
-- Ainda falta atualizar `docs/TECHNICAL_RESEARCH.md` com essa matriz exata, porque hoje ele diz que a versão não está fixada.
+- A matriz exata está registrada em `docs/TECHNICAL_RESEARCH.md` (seção "Matriz exata do projeto").
 
 ### Como consultar a API sem pesquisar na web
 Depois do primeiro build, o ForgeGradle deixa estes arquivos no projeto:
@@ -53,10 +53,10 @@ Depois do primeiro build, o ForgeGradle deixa estes arquivos no projeto:
 - Biome modifier do Forge: `data/cultivo/forge/biome_modifier/x.json` com `{"type":"forge:add_features","biomes":"#minecraft:is_jungle","features":"cultivo:...","step":"vegetal_decoration"}`. Confira o caminho exato da pasta no registro `forge:biome_modifier`.
 - **Render layer automático:** a camada cutout é inferida da transparência da textura, então não é preciso `render_type`.
 - Modelos de item: além de `models/item/x.json`, cada item precisa de `assets/<ns>/items/x.json` com `{"model":{"type":"minecraft:model","model":"cultivo:item/x"}}`.
-- Injeção de loot: `LootTableLoadEvent.BUS.addListener(...)` e depois `event.getTable().addPool(...)`, com uma entrada `NestedLootTable.lootTableReference(ResourceKey)`. O evento roda só no servidor.
+- Injeção de loot: `LootTableLoadEvent.BUS.addListener(...)` e depois `event.getTable().addPool(...)`. No 26.3 `NestedLootTable.lootTableReference` pede `Holder<LootTable>` e o evento não dá acesso ao registro; por isso `SeedLootInjector` monta o pool em Java a partir de `SeedSources` (veja a seção 6). O evento roda só no servidor.
 - **GameTests no Forge 26.3:**
   - registre as funções via DeferredRegister em `Registries.TEST_FUNCTION`, como `Consumer<GameTestHelper>`;
-  - crie um JSON por teste em `data/cultivo/test_instance/<nome>.json` no formato `{"type":"minecraft:function","function":"cultivo:<nome>","environment":"minecraft:default","structure":"forge:empty9x9x9","max_ticks":200}`;
+  - crie um JSON por teste em `data/cultivo/test_instance/<nome>.json` no formato `{"type":"minecraft:function","function":"cultivo:<nome>","environment":"minecraft:default","structure":"forge:empty9x9x9","max_ticks":100}`;
   - o Forge gera sozinho a estrutura vazia `forge:emptyXxYxZ`;
   - para rodar: `gradlew runGameTestServer`, com `forge.enabledGameTestNamespaces=cultivo` no build.gradle.
   - Helpers úteis: `setBlock`, `getBlockState`, `randomTick`, `useBlock(pos, player)`, `makeMockPlayer(GameType)`, `getLevel`, `succeed`, `fail`.
@@ -116,12 +116,13 @@ Depois do primeiro build, o ForgeGradle deixa estes arquivos no projeto:
 ## 5. O que existe agora (mapa do código)
 - `src/main/java/io/github/peixeangola/cultivo/`:
   - `Cultivo` (@Mod): registra todos os DeferredRegister e o listener de `LootTableLoadEvent`;
-  - `core/`: regras **puras**, sem Minecraft: `Variety`, `QualityRules`, `GrowthRules`, `GreenhouseRules`, `ProcessingRules`, `StationKind`, `SeedSources`, `ArticleRecipes`, `ContentIds`;
-  - `registry/`: `ModBlocks`, `ModItems`, `ModComponents` (`cultivo:quality`), `ModBlockEntities` (`processing_station`), `ModRecipes` (tipos e serializers drying/sieving/pressing), `ModLootFunctions` (`set_harvest_quality`), `ModCreativeTabs`, `ModTags`;
+  - `core/`: regras **puras**, sem Minecraft: `Variety`, `QualityRules`, `GrowthRules`, `GreenhouseRules`, `ProcessingRules`, `StationKind`, `SeedSources`, `ArticleRecipes`, `ContentIds`, `SmokeRules`, `SmokeDevice`;
+  - `registry/`: `ModBlocks`, `ModItems`, `ModComponents` (`cultivo:quality`, `cultivo:strain`), `ModEffects` (`cultivo:high`), `ModBlockEntities` (`processing_station`), `ModRecipes` (tipos e serializers drying/sieving/pressing), `ModLootFunctions` (`set_harvest_quality`), `ModCreativeTabs`, `ModTags`;
   - `block/`: `CannabisCropBlock`, `WildPlantBlock`, `ProcessingStationBlock` e `ProcessingStationBlockEntity`, `GreenhouseDetector`;
-  - `item/`: `QualityItem`, `SeedItem`, `DecorativeItem` e `StationBlockItem` (tooltips);
+  - `item/`: `QualityItem`, `SeedItem`, `DecorativeItem`, `StationBlockItem`, `SmokingItem` e `LighterItem`;
+  - `smoke/SmokeSession` (servidor: isqueiro, material, consumo, efeitos) e `effect/HighEffect`;
   - `recipe/ProcessingRecipe`, `loot/SetHarvestQualityFunction`, `loot/SeedLootInjector`;
-  - `gametest/CultivoGameTests`: 10 GameTests registrados em `Registries.TEST_FUNCTION`.
+  - `gametest/CultivoGameTests`: 29 GameTests registrados em `Registries.TEST_FUNCTION` (10 do MVP + 19 da mecânica de fumar/variedade; nomes em `ContentIds.GAME_TESTS`).
 - `src/generated/resources/`: **gerado** por `node tools/gen/generate.mjs`, que também chama `tools/art/textures.mjs`. Não editar à mão. Para mudar algo, edite `tools/gen/manifest.json` e os scripts e rode o gerador de novo.
 - `src/test/java/`: testes das regras puras (`core/`) e da completude e consistência dos dados (`data/`). Os testes leem os arquivos a partir da raiz do projeto.
 - `tools/test-offline.sh`: roda o JUnit sem Gradle nem Minecraft. Útil quando o maven do Forge não está acessível.
