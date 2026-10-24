@@ -75,7 +75,7 @@ Estas decisões vêm de NEXT_SESSION.md, seção 4, e estão no código. As cons
   | bandeja | `"N N"/"NNN"`: pepitas de ferro |
   | pote | `"S"/"G"/"G"`: laje de madeira + vidro |
   | cinzeiro | `"T T"/"TTT"`: terracota |
-  | baseado | `rolling_paper` + `#cultivo:dried_flowers`, sem forma |
+  | baseado | 3 × `crafting_transmute`: flor seca da variedade (entrada) + folha de seda (material); copia a qualidade e grava `cultivo:strain` |
   | suporte de secagem | `"SSS"/"T T"/"SSS"`: graveto + linha |
   | peneira | `"PTP"/"P P"`: tábuas + linha |
   | prensa | `"III"/" S "/"PPP"`: ferro, graveto, tábuas |
@@ -86,7 +86,8 @@ Estas decisões vêm de NEXT_SESSION.md, seção 4, e estão no código. As cons
   - as texturas são pixel art original em ASCII, geradas por `tools/art/textures.mjs`;
   - blockstates, modelos, definições de item, lang, loot, receitas, tags, worldgen e test_instance são gerados por `tools/gen/generate.mjs` a partir de `tools/gen/manifest.json`;
   - a saída vai para `src/generated/resources` (não editar à mão);
-  - sons e partículas são os vanilla, herdados das propriedades do trigo, das tábuas e do arbusto.
+  - sons e partículas são os vanilla: herdados das propriedades do trigo, das tábuas e do arbusto; ao fumar, partícula `white_smoke` e os sons do isqueiro (`item.flintandsteel.use`) e de brasa (`block.fire.extinguish`, baixo); ao quebrar o isqueiro, o som e as partículas de item quebrado;
+  - o efeito `cultivo:high` tem ícone original 18×18 em `textures/mob_effect/high.png`.
 
 ## Mecânica de fumar (pedida pelo usuário em 21/10/2026)
 O usuário pediu explicitamente: "quero que implemente sim". A intensidade não foi escolhida por ele; o padrão adotado é **moderado** (atrapalha um pouco, sem impedir de jogar), e todos os números ficam em `core/SmokeRules.java` e `core/SmokeDevice.java`, com testes.
@@ -103,13 +104,15 @@ O usuário pediu explicitamente: "quero que implemente sim". A intensidade não 
   | narguilé | idem | ×0,8 | 2,4 s |
 
   O material da mão secundária é usado primeiro; senão, o primeiro do inventário. Em modo criativo nada é consumido.
-- **Duração** (`SmokeRules`): 45 s × força × (0,6 + 0,2 × qualidade) × 1,5 se for haxixe. Sem qualidade conta como 2. Fumar de novo **soma** ao tempo restante, até 6 minutos. A partir de 2 minutos acumulados o "Chapado" vira nível II e a náusea pode durar mais.
+- **Duração** (`SmokeRules`): 45 s × força × (0,6 + 0,2 × qualidade) × 1,5 se for haxixe. Sem qualidade conta como 2. Fumar de novo **soma** ao tempo restante, até 6 minutos; com menos de 30 s de espaço até o limite o jogo **recusa** (mensagem "já está chapado ao máximo") e nada é gasto. A partir de 2 minutos acumulados o "Chapado" vira nível II e a náusea pode durar mais. O Chapado é aplicado com `forceAddEffect`, porque com `addEffect` um nível I por cima de um nível II viraria "efeito escondido" do vanilla e as sessões seguintes não somariam (bug achado na revisão).
 - **Efeitos** (todos temporários):
   - `cultivo:high` ("Chapado"): só o indicador, com ícone próprio;
-  - Fome ("larica"): mesma duração do Chapado;
-  - Náusea: 30% da duração, no máximo 8 s (20 s no nível II);
-  - perfil pela variedade: Brisa/sativa → Velocidade (50% da duração); Aurora/híbrida → Regeneração 5 s; Eclipse/índica → Lentidão (50%) + Regeneração 10 s; sem variedade conhecida (haxixe) → Lentidão (30%).
-- **Variedade do baseado:** a receita virou 3 receitas `crafting_transmute` (flor seca de cada variedade + folha de seda). O transmute copia os componentes da flor (a **qualidade**) e grava a variedade no componente `cultivo:strain`. Haxixe e resina não guardam variedade.
+  - Fome ("larica"): mesma duração do Chapado (o total acumulado);
+  - Náusea: 30% da **sessão atual**, no máximo 8 s (20 s no nível II);
+  - perfil pela variedade, também calculado só sobre a sessão atual: Brisa/sativa → Velocidade (50%); Aurora/híbrida → Regeneração 5 s; Eclipse/índica → Lentidão (50%) + Regeneração 10 s; sem variedade conhecida (baseado de `/give`, haxixe antigo) → Lentidão (30%);
+  - Velocidade e Lentidão se anulam: aplicar uma remove a outra.
+- **Variedade do baseado:** a receita virou 3 receitas `crafting_transmute` (flor seca de cada variedade + folha de seda). O transmute copia os componentes da flor (a **qualidade**) e grava a variedade no componente `cultivo:strain`. A peneira e a prensa também passam a variedade adiante, então resina e haxixe lembram de qual flor vieram (resinas de variedades diferentes não empilham, como já acontecia com qualidades diferentes).
+- **Isqueiro:** perde 1 de durabilidade por uso (64 usos). Quando quebra, toca o som de item quebrado, conta a estatística e avisa o jogador ("Seu isqueiro acabou").
 - **Servidor:** `SmokeSession` revalida isqueiro e material no fim do uso (o cliente só mostra a animação) e é quem consome itens e aplica efeitos.
 
 ## Em aberto

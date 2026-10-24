@@ -1,6 +1,6 @@
 # Plano do mod
 
-Estado em 21/10/2026: **MVP compilado, testado e rodando em Forge 26.3-66.0.13.** `./gradlew build` passa (62 testes JUnit), os GameTests passam (11 de 11 obrigatórios, incluindo os 10 do Cultivo) e o servidor dedicado sobe com o mod. Falta testar com o cliente gráfico e com um jogador conectado.
+Estado em 24/10/2026: **MVP + mecânica de fumar compilados, testados e rodando em Forge 26.3-66.0.13.** `./gradlew build` passa (88 testes JUnit), os GameTests passam (28 de 28 obrigatórios, incluindo os 27 do Cultivo) e o servidor dedicado sobe com o mod. Falta testar com o cliente gráfico e com um jogador conectado (checklist em [GUIA_INICIANTE.md](GUIA_INICIANTE.md)).
 
 ## Evidências registradas
 
@@ -16,6 +16,14 @@ Estado em 21/10/2026: **MVP compilado, testado e rodando em Forge 26.3-66.0.13.*
 | 21/10/2026 | inspeção do jar | Só `io/github/...`, `assets/cultivo`, `data/cultivo`, `META-INF/mods.toml`, `pack.mcmeta` e os overrides de dados do próprio mod em `data/minecraft` (3 tags + `farm_plains.json`). 42 PNGs. Nenhum arquivo do jogo. `mods.toml`: `cultivo` 0.1.0, MIT, forge `[66,)`, minecraft `[26.3,26.4)`. |
 | 21/10/2026 | `sh tools/test-offline.sh` | 62 de 62 (mesma suíte, sem Gradle) |
 | 21/10/2026 | `node tools/gen/generate.mjs` | 42 texturas e 130 JSONs |
+| 21/10/2026 | mecânica de fumar (commit `740bf86`): `./gradlew build` / `runGameTestServer` | `BUILD SUCCESSFUL`, 80 testes `PASSED`; 1ª rodada de GameTests com 3 falhas, todas do próprio teste (referência a pilha antiga após `Inventory#add`); corrigido o teste, `All 17 required tests passed :)` |
+| 24/10/2026 | revisão adversarial por workflow (54 agentes: 4 revisores + 2 céticos por achado + guia) | 22 achados confirmados, 1 refutado. Bug real: refumar enquanto um "chapado" nível II acabava caía no "efeito escondido" do vanilla e não somava tempo (gastando itens). Todos os 22 tratados no commit `1e7325a`. |
+| 24/10/2026 | teste negativo: voltar `forceAddEffect` para `addEffect` | `cultivo:smoke_resmoke_after_heavy failed ... 500 + 900 = 1400 no nível I, veio 500`: o novo teste pega o bug. Correção restaurada. |
+| 24/10/2026 | `./gradlew build` (após as correções) | **`BUILD SUCCESSFUL in 1m 11s`**, 88 testes `PASSED`, 0 `FAILED` |
+| 24/10/2026 | `./gradlew runGameTestServer` (após as correções) | 1ª rodada: 2 falhas de teste (contagem de ticks com erro de 1; saída pré-carregada sem variedade em `station_persistence`, que agora não empilha por causa da variedade na resina, comportamento esperado). Testes ajustados: **`All 28 required tests passed :)`** |
+| 24/10/2026 | `./gradlew runServer` | **`Done (0.669s)!`**, nenhum WARN/ERROR ligado ao Cultivo |
+| 24/10/2026 | inspeção do jar | 305 entradas, 43 PNGs (inclui `textures/mob_effect/high.png`), 0 arquivos do Minecraft |
+| 24/10/2026 | `sh tools/test-offline.sh` / `node tools/gen/generate.mjs` | 88 de 88 / 43 texturas e 149 JSONs |
 
 Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: `loot_table/blocks/wheat.json`, `chests/village/village_plains_house.json`, `processor_list/farm_plains.json` (as regras vanilla do mod são idênticas às do jar), `feature/melon.json`, `placed_feature/patch_melon.json`, `recipe/bowl.json`/`book.json` e `test_instance/always_pass.json`.
 
@@ -48,6 +56,14 @@ Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: 
 - [ ] Teste manual com um cliente conectado ao servidor dedicado.
 **Gate:** OK no servidor/GameTest; teste manual multiplayer pendente.
 
+## 3b. Mecânica de fumar (pedida pelo usuário em 21/10/2026)
+- [x] Regras puras (`SmokeRules`, `SmokeDevice`) com JUnit: durações exatas por artigo/qualidade/haxixe, soma até 6 min, recusa perto do limite, nível II a partir de 2 min, perfis por variedade, Velocidade × Lentidão, ordem e mensagens das recusas, isqueiro de 64 usos.
+- [x] Efeito `cultivo:high` com ícone 18×18 original; componente `cultivo:strain`; baseado por `crafting_transmute` (qualidade copiada, variedade gravada); peneira e prensa levam a variedade para resina e haxixe.
+- [x] GameTests: `joint_recipe_copies_quality`, `smoke_joint_effects`, `smoke_requires_lighter_and_fuel`, `smoke_pipe_uses_fuel`, `smoke_bong_hash_stronger`, `smoke_stacking_and_cap`, `smoke_resmoke_after_heavy`, `smoke_at_cap_refused`, `smoke_hash_multiplier`, `smoke_offhand_fuel_first`, `smoke_lighter_breaks`, `smoke_creative_consumes_nothing`, `smoke_joint_without_strain`, `smoke_refusal_messages`, `joint_strain_persists`, `hash_keeps_strain`, `smoke_devices_registered`, todos passando.
+- [ ] Ver no cliente: animação de levar à boca, fumaça, sons, ícone e nome do efeito, náusea, tooltips e mensagens (precisa de `runClient`).
+- [ ] Testar em multiplayer: dois jogadores fumando no servidor dedicado.
+**Gate:** regras e servidor OK; checagem visual e multiplayer pendentes.
+
 ## 4. Conteúdo de release
 - [x] Licença escolhida (MIT para código e assets do Cultivo) e registrada em `mods.toml` e `LICENSE`.
 - [x] Jar inspecionado: assets incluídos, nenhum arquivo do Minecraft.
@@ -56,7 +72,8 @@ Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: 
 **Gate:** pendente só do cliente.
 
 ## Próximos passos
-1. `./gradlew runClient` numa máquina com display: olhar texturas, tooltips, a aba criativa e a estufa.
+O passo a passo para leigos está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md).
+1. `./gradlew runClient` numa máquina com display: olhar texturas, tooltips, a aba criativa, a estufa e a mecânica de fumar (animação, fumaça, ícone do efeito).
 2. `./gradlew runServer` + cliente conectado: ciclo completo em multiplayer (plantar, colher, secar, peneirar, prensar, craftar).
 3. Num mundo novo, procurar a planta silvestre em selva/planície e o crop nas lavouras de aldeia de planície.
 4. Balanceamento depois de jogar (DECISIONS.md, "Em aberto").
