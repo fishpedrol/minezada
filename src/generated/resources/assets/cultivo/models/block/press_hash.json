@@ -1,0 +1,68 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cultivo:block/press_hash",
+    "hash": "cultivo:block/press_hash"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        3,
+        5
+      ],
+      "to": [
+        11,
+        4.5,
+        11
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#hash"
+        },
+        "north": {
+          "uv": [
+            5,
+            0,
+            11,
+            1.5
+          ],
+          "texture": "#hash"
+        },
+        "south": {
+          "uv": [
+            5,
+            0,
+            11,
+            1.5
+          ],
+          "texture": "#hash"
+        },
+        "west": {
+          "uv": [
+            5,
+            0,
+            11,
+            1.5
+          ],
+          "texture": "#hash"
+        },
+        "east": {
+          "uv": [
+            5,
+            0,
+            11,
+            1.5
+          ],
+          "texture": "#hash"
+        }
+      }
+    }
+  ]
+}

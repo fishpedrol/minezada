@@ -1,7 +1,117 @@
 {
-  "variants": {
-    "": {
-      "model": "cultivo:block/sieve"
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_working"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_done"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_working",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_done",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_working",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_done",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_working",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_done",
+        "y": 270
+      }
     }
-  }
+  ]
 }

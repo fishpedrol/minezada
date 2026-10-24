@@ -2,7 +2,9 @@ package io.github.peixeangola.cultivo.gametest;
 
 import io.github.peixeangola.cultivo.Cultivo;
 import io.github.peixeangola.cultivo.block.GreenhouseDetector;
+import io.github.peixeangola.cultivo.block.ProcessingStationBlock;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlockEntity;
+import io.github.peixeangola.cultivo.block.StationContents;
 import io.github.peixeangola.cultivo.core.ArticleRecipes;
 import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.SeedSources;
@@ -119,6 +121,7 @@ public final class CultivoGameTests {
         TESTS.register("catalog_joint_carries_strain", () -> CultivoGameTests::catalogJointCarriesStrain);
         TESTS.register("wandering_trader_catalog_seeds", () -> CultivoGameTests::wanderingTraderCatalogSeeds);
         TESTS.register("creative_tabs_split", () -> CultivoGameTests::creativeTabsSplit);
+        TESTS.register("station_visual_state", () -> CultivoGameTests::stationVisualState);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -1404,6 +1407,76 @@ public final class CultivoGameTests {
                 "semente ou flor na aba Cultivo");
             check(strains.getDisplayItems().stream().allMatch(stack -> ModItems.varietyOf(stack) != null),
                 "item sem variedade na aba Genéticas");
+        });
+    }
+
+    // ------------------------------------------------------------------ estado visual das estações
+
+    private static StationContents contentsAt(GameTestHelper helper, BlockPos rel) {
+        return helper.getLevel().getBlockState(helper.absolutePos(rel)).getValue(ProcessingStationBlock.CONTENTS);
+    }
+
+    /** Coloca uma estação pelo caminho real (item na mão, clique no topo de um bloco) com o jogador olhando para yRot. */
+    private static BlockPos placeStationFacing(GameTestHelper helper, StationKind kind, BlockPos floorRel, float yRot) {
+        ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        player.setYRot(yRot);
+        helper.setBlock(floorRel, Blocks.STONE.defaultBlockState());
+        BlockPos floor = helper.absolutePos(floorRel);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.STATIONS.get(kind).get()));
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(floor).add(0.0D, 0.5D, 0.0D), Direction.UP, floor, false);
+        InteractionResult result = player.gameMode.useItemOn(player, helper.getLevel(), player.getMainHandItem(),
+            InteractionHand.MAIN_HAND, hit);
+        check(result.consumesAction(), "a estação não foi colocada: " + result);
+        check(helper.getLevel().getBlockState(floor.above()).is(ModBlocks.STATIONS.get(kind).get()), "estação ausente");
+        return floorRel.above();
+    }
+
+    /**
+     * O blockstate mostra o conteúdo: entrada → working, só saída → done, nada → empty; a BlockEntity é a mesma o
+     * tempo todo (a troca de estado não derruba nem recria os itens). A frente da estação olha para quem a colocou.
+     */
+    public static void stationVisualState(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            ProcessingStationBlockEntity station = placeStation(helper, StationKind.DRYING);
+            BlockPos pos = helper.absolutePos(SOIL);
+            check(contentsAt(helper, SOIL) == StationContents.EMPTY, "estação nova deveria estar vazia");
+
+            check(station.insert(level, withQuality(ModItems.FRESH_FLOWERS.get(Variety.BRISA).get(), 1, 3)) == 1,
+                "não inseriu a flor fresca");
+            check(contentsAt(helper, SOIL) == StationContents.WORKING, "com entrada deveria estar trabalhando");
+            check(level.getBlockEntity(pos) == station, "a troca de estado recriou a BlockEntity");
+
+            station.setProgress(StationKind.DRYING.defaultTicks() - 1);
+            station.serverTick(level);
+            check(station.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get()),
+                "o ciclo não terminou");
+            check(contentsAt(helper, SOIL) == StationContents.DONE, "só com saída deveria estar pronta");
+            check(level.getBlockEntity(pos) == station, "a BlockEntity mudou ao terminar o ciclo");
+            check(level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D)).isEmpty(),
+                "a troca de estado derrubou itens");
+
+            ItemStack taken = station.extract();
+            check(taken.getCount() == 1, "retirada da saída: " + taken);
+            check(contentsAt(helper, SOIL) == StationContents.EMPTY, "depois de retirar deveria estar vazia");
+
+            // Entrada e saída juntas: a entrada manda (working); retirar a saída mantém working
+            ProcessingStationBlockEntity sieve = placeStationAt(helper, StationKind.SIEVING, SOIL.east(2));
+            sieve.setItem(ProcessingStationBlockEntity.OUTPUT, withQuality(ModItems.RESIN.get(), 1, 3));
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.DONE, "peneira com saída deveria estar pronta");
+            sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(Variety.AURORA).get(), 2, 3));
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.WORKING, "entrada + saída deveria estar trabalhando");
+            sieve.extract();
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.WORKING, "sem a saída, a entrada segue trabalhando");
+
+            // Colocação real: olhando para o sul (yRot 0) a frente fica para o norte; olhando para o oeste, para o leste
+            BlockPos north = placeStationFacing(helper, StationKind.PRESSING, new BlockPos(1, 1, 7), 0.0F);
+            check(level.getBlockState(helper.absolutePos(north)).getValue(ProcessingStationBlock.FACING) == Direction.NORTH,
+                "jogador olhando para o sul deveria deixar facing=north");
+            check(contentsAt(helper, north) == StationContents.EMPTY, "estação colocada deveria estar vazia");
+            BlockPos east = placeStationFacing(helper, StationKind.SIEVING, new BlockPos(7, 1, 7), 90.0F);
+            check(level.getBlockState(helper.absolutePos(east)).getValue(ProcessingStationBlock.FACING) == Direction.EAST,
+                "jogador olhando para o oeste deveria deixar facing=east");
         });
     }
 }

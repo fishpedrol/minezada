@@ -1,6 +1,149 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "cultivo:item/hash"
+    "type": "minecraft:select",
+    "property": "minecraft:component",
+    "component": "cultivo:strain",
+    "cases": [
+      {
+        "when": [
+          "brisa"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_brisa"
+        }
+      },
+      {
+        "when": [
+          "aurora"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_aurora"
+        }
+      },
+      {
+        "when": [
+          "eclipse"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_eclipse"
+        }
+      },
+      {
+        "when": [
+          "manga_gelada",
+          "ouro_colombiano",
+          "ouro_18k",
+          "kush_de_manga",
+          "bananona"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_dourado"
+        }
+      },
+      {
+        "when": [
+          "amnesia_neblina",
+          "jack_heroi",
+          "ligeirinha",
+          "cao_quimico"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_limao"
+        }
+      },
+      {
+        "when": [
+          "cola_de_gorila",
+          "ak_48",
+          "bolo_de_casamento",
+          "luzes_do_norte",
+          "viuva_branca"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_gelo"
+        }
+      },
+      {
+        "when": [
+          "ultravioleta",
+          "kush_roxinha",
+          "neblina_roxa",
+          "soco_roxo",
+          "do_si_do",
+          "viagem_lisergica"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_roxo"
+        }
+      },
+      {
+        "when": [
+          "bruno_banner",
+          "tri_campea",
+          "viagem_25"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_verde"
+        }
+      },
+      {
+        "when": [
+          "kush_do_bubba",
+          "gorilao"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_verde_escuro"
+        }
+      },
+      {
+        "when": [
+          "mirtilo",
+          "andarilho_do_ceu",
+          "azul_arroxeado",
+          "gelato_azul_42"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_azul"
+        }
+      },
+      {
+        "when": [
+          "caramelo_critico",
+          "creme_de_caramelo"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_creme"
+        }
+      },
+      {
+        "when": [
+          "bala_sortida",
+          "confeitez",
+          "morango_com_banana",
+          "frutinha_veloz",
+          "chiclete",
+          "morango_azedo"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/hash_rosa"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "cultivo:item/hash"
+    }
   }
 }

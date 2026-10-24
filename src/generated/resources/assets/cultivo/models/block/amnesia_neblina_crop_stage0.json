@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/crop",
-  "textures": {
-    "crop": "cultivo:block/amnesia_neblina_crop_stage0"
-  }
-}

@@ -179,7 +179,8 @@
     { "name": "catalog_strain_grows_and_drops", "max_ticks": 100 },
     { "name": "catalog_joint_carries_strain", "max_ticks": 100 },
     { "name": "wandering_trader_catalog_seeds", "max_ticks": 100 },
-    { "name": "creative_tabs_split", "max_ticks": 100 }
+    { "name": "creative_tabs_split", "max_ticks": 100 },
+    { "name": "station_visual_state", "max_ticks": 100 }
   ],
   "lang": {
     "en_us": {

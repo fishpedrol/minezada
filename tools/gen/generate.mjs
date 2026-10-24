@@ -4,7 +4,8 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateAll as generateTextures } from '../art/textures.mjs';
+import { artFamilies, CROP_STAGE_COUNT, generateAll as generateTextures } from '../art/textures.mjs';
+import { handModels, LIT_DEVICES, LIT_DISPLAY, LIT_TEXTURE_VAR, stationBlockstate, stationModels } from './models.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'src', 'generated', 'resources');
@@ -43,35 +44,93 @@ rmSync(OUT, { recursive: true, force: true });
 const textures = generateTextures(strains);
 
 // ------------------------------------------------------------------ assets: blockstates e modelos
-for (const v of strains) {
-  const variants = {};
-  for (let age = 0; age <= 7; age++) variants[`age=${age}`] = { model: id(`block/${v.id}_crop_stage${Math.floor(age / 2)}`) };
-  write(`assets/${NS}/blockstates/${v.id}_crop.json`, { variants });
-  for (let stage = 0; stage < 4; stage++) {
-    write(`assets/${NS}/models/block/${v.id}_crop_stage${stage}.json`, {
+// Lavoura: 8 estágios visuais (um por idade, como o trigo). Os modelos e texturas são por família de arte: as
+// variedades da mesma família compartilham a planta no campo; sementes e flores são por variedade.
+const families = artFamilies(strains);
+for (const family of families) {
+  for (let stage = 0; stage < CROP_STAGE_COUNT; stage++) {
+    write(`assets/${NS}/models/block/${family}_crop_stage${stage}.json`, {
       parent: 'minecraft:block/crop',
-      textures: { crop: id(`block/${v.id}_crop_stage${stage}`) },
+      textures: { crop: id(`block/${family}_crop_stage${stage}`) },
     });
   }
+}
+for (const v of strains) {
+  const variants = {};
+  for (let age = 0; age <= 7; age++) variants[`age=${age}`] = { model: id(`block/${v.family}_crop_stage${age}`) };
+  write(`assets/${NS}/blockstates/${v.id}_crop.json`, { variants });
 }
 write(`assets/${NS}/blockstates/${wild.id}.json`, { variants: { '': { model: id(`block/${wild.id}`) } } });
 write(`assets/${NS}/models/block/${wild.id}.json`, { parent: 'minecraft:block/cross', textures: { cross: id(`block/${wild.id}`) } });
 write(`assets/${NS}/models/item/${wild.id}.json`, { parent: 'minecraft:item/generated', textures: { layer0: id(`block/${wild.id}`) } });
 
+// Estações: modelos 3D com elementos e blockstate multipart (facing gira a base; contents liga as partes)
+const stationDefs = stationModels();
 for (const s of stations) {
-  write(`assets/${NS}/blockstates/${s.id}.json`, { variants: { '': { model: id(`block/${s.id}`) } } });
-  write(`assets/${NS}/models/block/${s.id}.json`, {
-    parent: 'minecraft:block/cube_bottom_top',
-    textures: { top: id(`block/${s.id}_top`), bottom: id(`block/${s.id}_top`), side: id(`block/${s.id}_side`) },
-  });
+  const def = stationDefs[s.id];
+  if (!def) throw new Error(`estação sem modelo: ${s.id}`);
+  write(`assets/${NS}/models/block/${s.id}.json`, def.base);
+  for (const [name, model] of Object.entries(def.templates)) write(`assets/${NS}/models/block/${name}.json`, model);
+  for (const [part, p] of Object.entries(def.parts)) write(`assets/${NS}/models/block/${s.id}_${part}.json`, p.model);
+  write(`assets/${NS}/blockstates/${s.id}.json`, stationBlockstate(s.id, def.parts));
+  // O item mostra a estação vazia (a base), com as transformações de bloco de minecraft:block/block
   write(`assets/${NS}/models/item/${s.id}.json`, { parent: id(`block/${s.id}`) });
 }
-for (const item of flatItems) {
-  write(`assets/${NS}/models/item/${item}.json`, { parent: 'minecraft:item/generated', textures: { layer0: id(`item/${item}`) } });
+
+// Itens planos (ícone gerado da textura)
+const flatModel = (item, texture = item) => write(`assets/${NS}/models/item/${item}.json`, {
+  parent: 'minecraft:item/generated', textures: { layer0: id(`item/${texture}`) },
+});
+for (const item of flatItems) flatModel(item);
+flatModel('joint_lit');
+for (const family of families) flatModel(`hash_${family}`);
+
+// Modelos 3D na mão dos aparelhos de fumo e do isqueiro (+ variante acesa com brasa)
+const hand = handModels();
+for (const [device, model] of Object.entries(hand)) {
+  write(`assets/${NS}/models/item/${device}_in_hand.json`, model);
+  if (LIT_DEVICES.includes(device)) {
+    write(`assets/${NS}/models/item/${device}_in_hand_lit.json`, {
+      parent: id(`item/${device}_in_hand`),
+      textures: { [LIT_TEXTURE_VAR[device]]: id('item/smoke_ember') },
+      display: LIT_DISPLAY[device],
+    });
+  }
 }
-for (const item of [...flatItems, ...blockItems]) {
-  write(`assets/${NS}/items/${item}.json`, { model: { type: 'minecraft:model', model: id(`item/${item}`) } });
+
+// Definições de item (assets/cultivo/items): modelo simples, ou árvore de seleção do 26.3
+const model = (path) => ({ type: 'minecraft:model', model: id(path) });
+const FLAT_CONTEXTS = ['gui', 'ground', 'fixed', 'on_shelf'];
+// Como a luneta vanilla: ícone plano no inventário, no chão e em molduras; modelo 3D na mão
+const flatOrHand = (flat, inHand) => ({
+  type: 'minecraft:select', property: 'minecraft:display_context',
+  cases: [{ when: FLAT_CONTEXTS, model: flat }], fallback: inHand,
+});
+const usingItem = (onTrue, onFalse) => ({ type: 'minecraft:condition', property: 'minecraft:using_item', on_true: onTrue, on_false: onFalse });
+const itemDefinitions = {};
+for (const item of [...flatItems, ...blockItems]) itemDefinitions[item] = model(`item/${item}`);
+// Haxixe: carimbo com a cor da família da variedade gravada em cultivo:strain (sem variedade, carimbo neutro)
+itemDefinitions.hash = {
+  type: 'minecraft:select', property: 'minecraft:component', component: id('strain'),
+  cases: families.map((family) => ({
+    when: strains.filter((v) => v.family === family).map((v) => v.id),
+    model: model(`item/hash_${family}`),
+  })),
+  fallback: model('item/hash'),
+};
+// Baseado: aceso (brasa e fumaça) enquanto o jogador fuma, também no ícone da hotbar
+itemDefinitions.joint = usingItem(
+  flatOrHand(model('item/joint_lit'), model('item/joint_in_hand_lit')),
+  flatOrHand(model('item/joint'), model('item/joint_in_hand')),
+);
+for (const device of Object.keys(hand)) {
+  if (device === 'joint') continue;
+  const inHand = LIT_DEVICES.includes(device)
+    ? usingItem(model(`item/${device}_in_hand_lit`), model(`item/${device}_in_hand`))
+    : model(`item/${device}_in_hand`);
+  itemDefinitions[device] = flatOrHand(model(`item/${device}`), inHand);
 }
+for (const [item, def] of Object.entries(itemDefinitions)) write(`assets/${NS}/items/${item}.json`, { model: def });
 
 // ------------------------------------------------------------------ assets: lang
 for (const lang of ['en_us', 'pt_br']) {

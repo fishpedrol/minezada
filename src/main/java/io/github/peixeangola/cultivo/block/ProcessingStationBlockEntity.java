@@ -3,6 +3,7 @@ package io.github.peixeangola.cultivo.block;
 import com.mojang.logging.LogUtils;
 import io.github.peixeangola.cultivo.core.ProcessingRules;
 import io.github.peixeangola.cultivo.core.StationKind;
+import io.github.peixeangola.cultivo.core.StationVisualRules;
 import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.recipe.ProcessingRecipe;
 import io.github.peixeangola.cultivo.registry.ModBlockEntities;
@@ -35,7 +36,10 @@ import org.slf4j.Logger;
  * Inventário comum às três estações: slot 0 entrada, slot 1 saída e progresso em ticks (salvo em NBT).
  * A lógica roda só no servidor. Com saída cheia ou de outra qualidade o progresso para, sem perda nem
  * duplicação; ao quebrar o bloco, os itens caem no chão. Os dois slots (sem o progresso) são sincronizados com o
- * cliente a cada mudança de conteúdo, para o bloco prever o clique sem esperar o servidor.
+ * cliente a cada mudança de conteúdo, para o bloco prever o clique sem esperar o servidor. A propriedade contents do
+ * bloco acompanha os slots (a cada mudança e a cada tick, o que também acerta mundos salvos antes dela) com
+ * setBlock(UPDATE_CLIENTS) só quando o valor muda, como o LIT da fornalha: o bloco é o mesmo, então esta BlockEntity
+ * continua no lugar.
  */
 public class ProcessingStationBlockEntity extends BlockEntity {
     public static final int INPUT = 0;
@@ -73,7 +77,24 @@ public class ProcessingStationBlockEntity extends BlockEntity {
     private void contentsChanged() {
         setChanged();
         if (level != null && !level.isClientSide()) {
+            syncVisualState();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /**
+     * Grava contents (vazia, trabalhando, pronta) no blockstate se mudou. Só a BlockEntity viva no mundo mexe no
+     * bloco: uma cópia carregada à parte (ou já removida) nunca recoloca a estação.
+     */
+    private void syncVisualState() {
+        BlockState current = level.getBlockState(worldPosition);
+        if (level.getBlockEntity(worldPosition) != this || !current.hasProperty(ProcessingStationBlock.CONTENTS)) {
+            return;
+        }
+        BlockState wanted = ProcessingStationBlock.withContents(current,
+            StationVisualRules.contents(items.get(INPUT).isEmpty(), items.get(OUTPUT).isEmpty()));
+        if (wanted != current) {
+            level.setBlock(worldPosition, wanted, Block.UPDATE_CLIENTS);
         }
     }
 
@@ -208,6 +229,7 @@ public class ProcessingStationBlockEntity extends BlockEntity {
         if (progress != previous) {
             setChanged();
         }
+        syncVisualState();
     }
 
     @Override

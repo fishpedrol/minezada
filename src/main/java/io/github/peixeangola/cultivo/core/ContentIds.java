@@ -3,6 +3,7 @@ package io.github.peixeangola.cultivo.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -43,6 +44,15 @@ public final class ContentIds {
     public static final List<String> STATIONS =
         Arrays.stream(StationKind.values()).map(StationKind::blockId).toList();
 
+    /**
+     * Propriedades do blockstate das estações e seus valores, na ordem do Minecraft (espelho de
+     * ProcessingStationBlock.FACING e CONTENTS). O teste dos modelos multipart confere que todo "when" usa só estas
+     * propriedades e valores; uma propriedade nova (como um booleano da peneira) entra aqui também.
+     */
+    public static final Map<String, List<String>> STATION_STATE_PROPERTIES = Map.of(
+        "facing", List.of("north", "south", "west", "east"),
+        "contents", Arrays.stream(StationVisualRules.Contents.values()).map(StationVisualRules.Contents::id).toList());
+
     /** Nomes dos GameTests; cada um tem data/cultivo/test_instance/&lt;nome&gt;.json. */
     public static final List<String> GAME_TESTS = List.of(
         "outdoor_growth",
@@ -82,7 +92,8 @@ public final class ContentIds {
         "catalog_strain_grows_and_drops",
         "catalog_joint_carries_strain",
         "wandering_trader_catalog_seeds",
-        "creative_tabs_split");
+        "creative_tabs_split",
+        "station_visual_state");
 
     private ContentIds() {}
 

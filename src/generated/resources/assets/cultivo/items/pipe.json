@@ -1,6 +1,32 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "cultivo:item/pipe"
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "gui",
+          "ground",
+          "fixed",
+          "on_shelf"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/pipe"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:condition",
+      "property": "minecraft:using_item",
+      "on_true": {
+        "type": "minecraft:model",
+        "model": "cultivo:item/pipe_in_hand_lit"
+      },
+      "on_false": {
+        "type": "minecraft:model",
+        "model": "cultivo:item/pipe_in_hand"
+      }
+    }
   }
 }

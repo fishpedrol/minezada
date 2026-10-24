@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/crop",
-  "textures": {
-    "crop": "cultivo:block/gorilao_crop_stage0"
-  }
-}

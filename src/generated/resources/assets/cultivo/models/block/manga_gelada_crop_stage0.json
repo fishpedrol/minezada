@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/crop",
-  "textures": {
-    "crop": "cultivo:block/manga_gelada_crop_stage0"
-  }
-}

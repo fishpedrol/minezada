@@ -1,6 +1,8 @@
 // Gera todas as texturas originais 16x16 do Cultivo a partir de pixel art em ASCII.
 // Uso: node tools/art/textures.mjs   (escreve em src/generated/resources/assets/cultivo/textures)
 // Cada textura é uma grade de 16 linhas x 16 colunas; '.' é transparente e os demais símbolos vêm da paleta.
+// Só há pixels opacos ou totalmente transparentes (nada de alfa parcial): assim o jogo escolhe a camada cutout
+// sozinho e nada cai na camada translúcida (AssetCompletenessTest confere).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,100 +31,7 @@ function render(name, grid, palette) {
   return file;
 }
 
-// ---------------------------------------------------------------- variedades
-// Paletas próprias das nativas: a família de arte delas é o próprio ID (brisa, aurora, eclipse)
-const NATIVE_PALETTES = {
-  brisa: {
-    leaf: '#7cc142', leafDark: '#4e8f2a', stem: '#5f8f32',
-    bud: '#cfe38a', budDark: '#9fbf55', pistil: '#e8a04a',
-    seed: '#c9a873', seedDark: '#6e5434', seedHi: '#ead6a8',
-    dried: '#b7b56a', driedDark: '#7f7c3f', driedPistil: '#b8743a',
-  },
-  aurora: {
-    leaf: '#5aa83a', leafDark: '#3c7a26', stem: '#4d7a2c',
-    bud: '#c6b6dc', budDark: '#8f78b0', pistil: '#f2c14e',
-    seed: '#9a8f86', seedDark: '#4c433d', seedHi: '#cbc3bb',
-    dried: '#a39ab0', driedDark: '#6f6680', driedPistil: '#c79a3c',
-  },
-  eclipse: {
-    leaf: '#3f7a4a', leafDark: '#2a5535', stem: '#35603a',
-    bud: '#7d5ea3', budDark: '#4e3870', pistil: '#d9773a',
-    seed: '#5b4a3c', seedDark: '#2a211a', seedHi: '#8e7a66',
-    dried: '#6e5a73', driedDark: '#45374b', driedPistil: '#a65a2c',
-  },
-};
-
-// Paletas-base das famílias do catálogo (campo "family" de manifest.json). Até o estágio de arte redesenhar tudo,
-// as variedades do catálogo usam as mesmas grades das nativas com estas cores.
-const FAMILY_PALETTES = {
-  verde: {
-    leaf: '#6fb83e', leafDark: '#457f27', stem: '#548a30',
-    bud: '#b9dc78', budDark: '#84ad4a', pistil: '#e39a45',
-    seed: '#b8a07a', seedDark: '#5e4a32', seedHi: '#e0cfa6',
-    dried: '#a8b062', driedDark: '#707838', driedPistil: '#b06a34',
-  },
-  verde_escuro: {
-    leaf: '#3e7a36', leafDark: '#26522a', stem: '#355e2e',
-    bud: '#7fae5a', budDark: '#4f7a3a', pistil: '#d98a40',
-    seed: '#6e5a44', seedDark: '#33281c', seedHi: '#9c8466',
-    dried: '#6a7a44', driedDark: '#424e2a', driedPistil: '#9a5a2a',
-  },
-  limao: {
-    leaf: '#8ccf3e', leafDark: '#5a9a26', stem: '#6a9a32',
-    bud: '#e4ec7a', budDark: '#b8c444', pistil: '#f2b84a',
-    seed: '#c8b07a', seedDark: '#6a5634', seedHi: '#ece0b0',
-    dried: '#c4c068', driedDark: '#8a8638', driedPistil: '#c08a36',
-  },
-  dourado: {
-    leaf: '#7cb040', leafDark: '#4f7d28', stem: '#6b8a34',
-    bud: '#e8c85a', budDark: '#b8963a', pistil: '#f08a3a',
-    seed: '#b89a62', seedDark: '#5c4626', seedHi: '#e6d09a',
-    dried: '#c8a85a', driedDark: '#8a7034', driedPistil: '#b8662c',
-  },
-  roxo: {
-    leaf: '#4f8a40', leafDark: '#33602e', stem: '#456e34',
-    bud: '#9a6cc0', budDark: '#6a4890', pistil: '#e8904a',
-    seed: '#6a5a52', seedDark: '#2e2420', seedHi: '#9a8a80',
-    dried: '#7a6488', driedDark: '#4e3e5c', driedPistil: '#b06a34',
-  },
-  azul: {
-    leaf: '#4a8a5a', leafDark: '#2e5e3e', stem: '#3f6a46',
-    bud: '#7a9ad8', budDark: '#4e68a8', pistil: '#f0a050',
-    seed: '#5e6670', seedDark: '#2a2e34', seedHi: '#8e98a4',
-    dried: '#6e7e9e', driedDark: '#46526c', driedPistil: '#b07a3c',
-  },
-  rosa: {
-    leaf: '#5ea544', leafDark: '#3c742c', stem: '#4f7f34',
-    bud: '#e898bc', budDark: '#b8648e', pistil: '#f4c060',
-    seed: '#a08478', seedDark: '#4e3a34', seedHi: '#d0b8ac',
-    dried: '#b88aa0', driedDark: '#7e586c', driedPistil: '#c0843c',
-  },
-  gelo: {
-    leaf: '#6aa86a', leafDark: '#44784a', stem: '#557f50',
-    bud: '#e6eee6', budDark: '#b4c4b8', pistil: '#e8a868',
-    seed: '#b0aca4', seedDark: '#56524c', seedHi: '#e4e0d8',
-    dried: '#c8ccc0', driedDark: '#8e9488', driedPistil: '#b88a54',
-  },
-  creme: {
-    leaf: '#78a848', leafDark: '#4e782e', stem: '#648a3a',
-    bud: '#ecd8a8', budDark: '#c0a070', pistil: '#d8783a',
-    seed: '#c0a07a', seedDark: '#624a30', seedHi: '#ead6b4',
-    dried: '#c8b088', driedDark: '#8e7650', driedPistil: '#a8602c',
-  },
-};
-
-// Variação de destaque determinística pela posição da variedade dentro da família (na ordem do manifesto): a 1ª usa a
-// paleta-base; as seguintes giram o tom dos botões, mudam a claridade das folhas e sementes e trocam a cor dos
-// pistilos, para duas variedades da mesma família nunca saírem iguais (AssetCompletenessTest confere).
-const ACCENTS = [
-  null,
-  { hue: 14, light: 0.05, pistil: '#f2c14e' },
-  { hue: -14, light: -0.05, pistil: '#d9653a' },
-  { hue: 28, light: -0.02, pistil: '#ff9ec4' },
-  { hue: -28, light: 0.02, pistil: '#f6e3b0' },
-  { hue: 7, light: 0.08, pistil: '#e8503a' },
-];
-
+// ---------------------------------------------------------------- cores
 function rgbToHsl([r, g, b]) {
   const [rn, gn, bn] = [r / 255, g / 255, b / 255];
   const max = Math.max(rn, gn, bn);
@@ -153,32 +62,148 @@ function hslToRgb([h, s, l]) {
   return [channel(hn + 1 / 3), channel(hn), channel(hn - 1 / 3)].map((v) => Math.round(v * 255));
 }
 
+const toHex = (rgb) => '#' + rgb.map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+const hsl = (hex) => rgbToHsl(parseColor(hex).slice(0, 3));
+
 /** Gira o tom (graus) e soma à claridade (0–1) de uma cor '#rrggbb'. */
 function shift(hex, dHue, dLight) {
-  const [h, s, l] = rgbToHsl(parseColor(hex).slice(0, 3));
-  const rgb = hslToRgb([h + dHue, s, Math.min(0.95, Math.max(0.05, l + dLight))]);
-  return '#' + rgb.map((v) => v.toString(16).padStart(2, '0')).join('');
+  const [h, s, l] = hsl(hex);
+  return toHex(hslToRgb([h + dHue, s, Math.min(0.95, Math.max(0.05, l + dLight))]));
 }
 
-function withAccent(base, a) {
-  if (!a) return base;
+/**
+ * Versão "seca" de uma cor: puxa o tom para o oliva/palha, tira saturação e escurece. As nativas têm paletas
+ * secas escritas à mão (plano de arte 2.1); as famílias do catálogo usam esta regra.
+ */
+function dry(hex, { hueTo = 50, hueMix = 0.4, sat = 0.55, light = 0.82 } = {}) {
+  const [h, s, l] = hsl(hex);
+  const dh = ((hueTo - h + 540) % 360) - 180;
+  return toHex(hslToRgb([h + dh * hueMix, s * sat, l * light]));
+}
+
+// ---------------------------------------------------------------- paletas das plantas
+// Símbolos: L folha, D folha escura/pecíolo (carrega o tom da família), S caule, B botão, b botão escuro/mancha,
+// P pistilo, F tricoma/brilho de geada. Sementes: o contorno, O corpo, h brilho, b listra.
+const NATIVE_PALETTES = {
+  // Brisa: verde claro e dourado
+  brisa: {
+    plant: { L: '#8fd14f', D: '#5c9a2e', S: '#6f9a3a', B: '#d6e07a', b: '#b39a3e', P: '#f0a640', F: '#fbf6d2' },
+    dried: { L: '#8a8a3a', D: '#6a6a2a', S: '#6b5a3a', B: '#b8b45a', b: '#7f7a3a', P: '#c07a30', F: '#e8e2c0' },
+    seed: { o: '#6e5434', O: '#c9a873', h: '#ead6a8', b: '#9a7a4e' },
+    stamp: '#d6b84a',
+  },
+  // Aurora: verde com manchas roxo-rosadas (o botão não é mais lilás, para não parecer lavanda)
+  aurora: {
+    plant: { L: '#4fa83c', D: '#8a4a86', S: '#4d7a2c', B: '#9cc46a', b: '#b06aa8', P: '#ff8fb8', F: '#f6e6f6' },
+    dried: { L: '#6a7a3a', D: '#6a4a5a', S: '#6b5a3a', B: '#7f9450', b: '#7d4f78', P: '#c86a8a', F: '#e4d8e4' },
+    seed: { o: '#4c433d', O: '#9a8f86', h: '#cbc3bb', b: '#6a6058' },
+    stamp: '#d07aa8',
+  },
+  // Eclipse: verde escuro e roxo profundo
+  eclipse: {
+    plant: { L: '#2f6a3a', D: '#4a2a5c', S: '#3c5030', B: '#5e4a86', b: '#33244f', P: '#e3843e', F: '#dcd2ea' },
+    dried: { L: '#3a4a30', D: '#3a2a40', S: '#5a4a32', B: '#4a3a62', b: '#2a1d3c', P: '#a85a2c', F: '#c8bfd6' },
+    seed: { o: '#1e1712', O: '#4a3c32', h: '#7a6656', b: '#2a211a' },
+    stamp: '#8a6ac0',
+  },
+};
+
+// Paletas-base das famílias do catálogo (campo "family" do manifesto). As folhas (L) das 12 famílias ficam a pelo
+// menos 40 de distância RGB umas das outras, para cada família se reconhecer na lavoura (AssetCompletenessTest).
+const FAMILY_PALETTES = {
+  verde: {
+    plant: { L: '#2fc45c', D: '#1f8a3e', S: '#3f8a3a', B: '#b4e47a', b: '#6aa046', P: '#f08c3c', F: '#f0fae0' },
+    seed: { o: '#5e4a32', O: '#b8a07a', h: '#e0cfa6', b: '#8a7454' },
+    stamp: '#6cc860',
+  },
+  verde_escuro: {
+    plant: { L: '#507a1c', D: '#2e5214', S: '#3c5a20', B: '#a8d07a', b: '#5a7e36', P: '#e07a3a', F: '#eef6dc' },
+    seed: { o: '#33281c', O: '#6e5a44', h: '#9c8466', b: '#4e3e2c' },
+    stamp: '#4e9a40',
+  },
+  limao: {
+    plant: { L: '#bcdc46', D: '#7ea024', S: '#8aa236', B: '#f0f07a', b: '#c4c040', P: '#f5b041', F: '#fffbe0' },
+    seed: { o: '#6a5634', O: '#c8b07a', h: '#ece0b0', b: '#9a8656' },
+    stamp: '#e6e65a',
+  },
+  dourado: {
+    plant: { L: '#a0a436', D: '#6e7420', S: '#7a7a30', B: '#f0c85a', b: '#b88a2e', P: '#e8742e', F: '#fff2c8' },
+    seed: { o: '#5c4626', O: '#b89a62', h: '#e6d09a', b: '#8a6e40' },
+    stamp: '#f0a838',
+  },
+  roxo: {
+    plant: { L: '#5a6452', D: '#6a3c8a', S: '#4a5a44', B: '#a070d0', b: '#5e3a8a', P: '#f08a4a', F: '#efe0fa' },
+    seed: { o: '#2e2420', O: '#6a5a52', h: '#9a8a80', b: '#463a34' },
+    stamp: '#b07ae0',
+  },
+  azul: {
+    plant: { L: '#3c9682', D: '#2a5e6e', S: '#3a6a5a', B: '#8aa8e8', b: '#4a64a8', P: '#f0a050', F: '#e8f0ff' },
+    seed: { o: '#2a2e34', O: '#5e6670', h: '#8e98a4', b: '#3e444c' },
+    stamp: '#6a9ae0',
+  },
+  rosa: {
+    plant: { L: '#7a9060', D: '#8a4a6a', S: '#5a7040', B: '#f0a0c8', b: '#c0608e', P: '#ffd070', F: '#fff0f6' },
+    seed: { o: '#4e3a34', O: '#a08478', h: '#d0b8ac', b: '#765c52' },
+    stamp: '#f2a0c4',
+  },
+  gelo: {
+    plant: { L: '#a4cca4', D: '#6a9a7a', S: '#6a8a6a', B: '#eef6ee', b: '#a8c0b0', P: '#e8a070', F: '#ffffff' },
+    seed: { o: '#56524c', O: '#b0aca4', h: '#e4e0d8', b: '#86827a' },
+    stamp: '#e8f4f4',
+  },
+  creme: {
+    plant: { L: '#96b46e', D: '#6a8648', S: '#7a8048', B: '#f0dcae', b: '#c8a874', P: '#d8783a', F: '#fffaf0' },
+    seed: { o: '#624a30', O: '#c0a07a', h: '#ead6b4', b: '#907456' },
+    stamp: '#e8d2a0',
+  },
+};
+
+/** Paleta seca de uma família do catálogo, derivada da fresca. */
+function driedOf(plant) {
   return {
-    leaf: shift(base.leaf, a.hue * 0.25, a.light),
-    leafDark: shift(base.leafDark, a.hue * 0.25, a.light),
-    stem: shift(base.stem, a.hue * 0.25, a.light),
-    bud: shift(base.bud, a.hue, a.light * 0.5),
-    budDark: shift(base.budDark, a.hue, a.light * 0.5),
-    pistil: a.pistil,
-    seed: shift(base.seed, a.hue * 0.5, a.light),
-    seedDark: shift(base.seedDark, a.hue * 0.5, a.light),
-    seedHi: shift(base.seedHi, a.hue * 0.5, a.light),
-    dried: shift(base.dried, a.hue * 0.6, a.light * 0.5),
-    driedDark: shift(base.driedDark, a.hue * 0.6, a.light * 0.5),
-    driedPistil: shift(a.pistil, 0, -0.18),
+    L: dry(plant.L), D: dry(plant.D, { light: 0.78 }), S: '#6b5a3a',
+    B: dry(plant.B, { light: 0.8 }), b: dry(plant.b, { light: 0.72 }),
+    P: dry(plant.P, { hueMix: 0.15, sat: 0.75, light: 0.76 }), F: dry(plant.F, { hueMix: 0.3, sat: 0.6, light: 0.92 }),
   };
 }
 
-/** Paleta de cada variedade ({id, family} do manifesto), na ordem dada: id → cores. */
+// Variação de destaque determinística pela posição da variedade dentro da família (na ordem do manifesto): a 1ª usa a
+// paleta-base; as seguintes giram o tom dos botões, mudam a claridade das folhas e sementes e trocam a cor dos
+// pistilos, para duas variedades da mesma família nunca saírem iguais nos itens (AssetCompletenessTest confere).
+const ACCENTS = [
+  null,
+  { hue: 14, light: 0.05, pistil: '#f2c14e' },
+  { hue: -14, light: -0.05, pistil: '#d9653a' },
+  { hue: 28, light: -0.02, pistil: '#ff9ec4' },
+  { hue: -28, light: 0.02, pistil: '#f6e3b0' },
+  { hue: 7, light: 0.08, pistil: '#e8503a' },
+];
+
+function withAccent(family, a) {
+  if (!a) return { plant: family.plant, dried: family.dried ?? driedOf(family.plant), seed: family.seed };
+  const p = family.plant;
+  const plant = {
+    L: shift(p.L, a.hue * 0.25, a.light), D: shift(p.D, a.hue * 0.25, a.light), S: shift(p.S, a.hue * 0.25, a.light),
+    B: shift(p.B, a.hue, a.light * 0.5), b: shift(p.b, a.hue, a.light * 0.5), P: a.pistil, F: shift(p.F, a.hue * 0.5, 0),
+  };
+  const s = family.seed;
+  const seed = {
+    o: shift(s.o, a.hue * 0.5, a.light), O: shift(s.O, a.hue * 0.5, a.light),
+    h: shift(s.h, a.hue * 0.5, a.light), b: shift(s.b, a.hue * 0.5, a.light),
+  };
+  return { plant, dried: driedOf(plant), seed };
+}
+
+function familyBase(family) {
+  return NATIVE_PALETTES[family] ?? FAMILY_PALETTES[family];
+}
+
+/** Famílias de arte usadas pelas variedades ({id, family} do manifesto), na ordem de primeira aparição. */
+export function artFamilies(strains) {
+  return [...new Set(strains.map((s) => s.family))];
+}
+
+/** Paleta de cada variedade, na ordem dada: id → {plant, dried, seed}. */
 export function strainPalettes(strains) {
   const seen = {};
   const palettes = {};
@@ -187,7 +212,7 @@ export function strainPalettes(strains) {
     seen[strain.family] = index + 1;
     if (NATIVE_PALETTES[strain.family]) {
       if (index > 0) throw new Error(`família nativa compartilhada: ${strain.family}`);
-      palettes[strain.id] = NATIVE_PALETTES[strain.family];
+      palettes[strain.id] = withAccent(NATIVE_PALETTES[strain.family], null);
       continue;
     }
     const base = FAMILY_PALETTES[strain.family];
@@ -198,184 +223,245 @@ export function strainPalettes(strains) {
   return palettes;
 }
 
+// ---------------------------------------------------------------- lavoura: 8 estágios (um por idade)
+// O caule fica na coluna 7; a linha 15 encosta na farmland (o modelo crop do 26.3 começa em y=-1).
+// Folha palmada de 7 folíolos (7x5): '...L...' / 'L..L..L' / '.L.L.L.' / '..LDL..' / 'LLLDLLL'.
+const E = '................';
 const CROP_STAGES = [
-  [
+  // 0: dois cotilédones
+  [E, E, E, E, E, E, E, E, E, E, E, E,
     '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '.....L.....L....',
-    '.....LL...LL....',
-    '......LLSLL.....',
-    '........S.......',
-    '........S.......',
-  ],
-  [
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
+    '.....LL.LL......',
+    '......LSL.......',
+    '.......S........'],
+  // 1: primeira folha de 3 folíolos
+  [E, E, E, E, E, E, E, E, E, E, E,
+    '.......L........',
+    '....L.LSL.L.....',
+    '.....LLSLL......',
+    '.......S........',
+    '.......S........'],
+  // 2: dois nós (folhas de 5 folíolos em cima, a de 3 embaixo)
+  [E, E, E, E, E, E, E,
+    '.......L........',
+    '..L...LLL...L...',
+    '.L.L.L.S.L.L.L..',
+    '..LDL..S..LDL...',
+    '.LLDLL.S.LLDLL..',
+    '....DD.S.DD.....',
+    '....L.LSL.L.....',
+    '.....LLSLL......',
+    '.......S........'],
+  // 3: primeiro par de leques de 7 folíolos
+  [E, E, E, E, E,
     '.......L........',
     '......LLL.......',
     '...L...S...L....',
-    '...LL..S..LL....',
-    '....LL.S.LL.....',
-    '.L...LLSLL...L..',
-    '..LL..DSD..LL...',
-    '...LLL.S.LLL....',
+    'L..L...S...L..L.',
+    '.L.L.L.S.L.L.L..',
+    '..LDL..S..LDL...',
+    'LLLDLLLSLLLDLLL.',
+    '....DD.S.DD.....',
     '.......S........',
-  ],
-  [
-    '................',
-    '................',
+    '.......S........',
+    '.......S........'],
+  // 4: dois pares de leques, mais alta
+  [E, E, E,
     '.......L........',
     '......LLL.......',
-    '...L..LSL..L....',
-    '...LL..S..LL....',
-    '....LLLSLLL.....',
-    '.L.....S.....L..',
-    '.LL..L.S.L..LL..',
-    '..LLDL.S.LDLL...',
-    '...LLLLSLLLL....',
-    '.L.....S.....L..',
-    '.LLL..DSD..LLL..',
-    '..LLLLLSLLLLL...',
-    '....LLLSLLL.....',
+    '...L...S...L....',
+    'L..L...S...L..L.',
+    '.L.L.L.S.L.L.L..',
+    '..LDL..S..LDL...',
+    'LLLDLLLSLLLDLLL.',
+    '....DD.S.DD.....',
     '.......S........',
-  ],
-  [
-    '.......B........',
+    '.L.L.L.S.L.L.L..',
+    '..LLL.DSD.LLL...',
+    '.......S........',
+    '.......S........'],
+  // 5: pré-floração (ponta apical com pistilos)
+  [E,
+    '.......L........',
+    '......LPL.......',
+    '.......S........',
+    '...L...S...L....',
+    'L..L..LSL..L..L.',
+    '.L.L.L.S.L.L.L..',
+    '..LDL..S..LDL...',
+    'LLLDLLLSLLLDLLL.',
+    '....DD.S.DD.....',
+    '.......S........',
+    '.L.L.L.S.L.L.L..',
+    '..LLL.DSD.LLL...',
+    '.......S........',
+    '.......S........',
+    '.......S........'],
+  // 6: cacho apical pequeno e pistilos nos nós (ainda não está pronta)
+  [E,
+    '.......P........',
     '......BPB.......',
-    '......BbB.......',
-    '...B..LSL..B....',
-    '..BPB..S..BPB...',
-    '..BbLLLSLLLbB...',
-    '....L..S..L.....',
-    '.B..L.BSB.L..B..',
-    'BPB.LLBPB.L.BPB.',
-    'BbBLDL.S.LDLBbB.',
-    '..LLLLLSLLLL....',
-    '.L....BSB....L..',
-    '.LLL.BPSPB.LLL..',
-    '..LLLLBSBLLLL...',
-    '....LLLSLLL.....',
+    '......bBP.......',
+    '...L..PBb..L....',
+    'L..P..LSL..P..L.',
+    '.L.L.L.S.L.L.L..',
+    '..LDL..S..LDL...',
+    'LLLDLLLSLLLDLLL.',
+    '....DDPSPDD.....',
     '.......S........',
-  ],
+    '.L.L.LPSP.L.L.L.',
+    '..LLL.DSD.LLL...',
+    '.......S........',
+    '.......S........',
+    '.......S........'],
+  // 7: madura (cola apical, colas laterais, botões nos nós)
+  [
+    '.......Bb.......',
+    '......bPBB......',
+    '......BFPb......',
+    '..B...BBFb..B...',
+    '.bPB..bBPB.BPb..',
+    '.BFb..PBbB.bFB..',
+    'L.bBL.BbBL.BbL.L',
+    '.L.L.L.S.L.L.L..',
+    '..LDL..S..LDL...',
+    'LLLDLLLSLLLDLLL.',
+    '....DDBSBDD.....',
+    '.....bPSPb......',
+    '.L.L.LBSB.L.L.L.',
+    '..LLL.DSD..LLL..',
+    '.......S........',
+    '.......S........'],
 ];
 
-const SEEDS = [
-  '................',
-  '................',
-  '................',
-  '................',
-  '................',
+// Planta silvestre: grade própria, baixa (linhas 5–15), dois leques assimétricos e cabeças de semente secas
+const WILD_PLANT = [E, E, E, E, E,
+  '..........hk....',
+  '.........hHh....',
+  '..L.......S.k...',
+  '.L.L.....LS.hH..',
+  'L..L..L.L.SLLh..',
+  '.L.L.L..LLSDL...',
+  '..LDL....LS.L.L.',
+  'LLLDLLL...S.LL..',
+  '...D.DD..DSD....',
+  '......DDS.S.....',
+  '.........SS.....',
+];
+const WILD = { L: '#7a9a4c', D: '#4f6a2e', S: '#5f7a36', h: '#8a6a3a', H: '#6a4e28', k: '#b09060' };
+
+// ---------------------------------------------------------------- itens das variedades
+const SEEDS = [E, E, E, E, E,
   '.....oo.........',
-  '....oOOo........',
+  '....obOo........',
   '....oOho....oo..',
-  '....oOOo...oOOo.',
+  '....oObo...obOo.',
   '.....oo....oOho.',
-  '...........oOOo.',
+  '...........oObo.',
   '......oo....oo..',
-  '.....oOOo.......',
+  '.....obOo.......',
   '.....oOho.......',
-  '.....oOOo.......',
+  '.....oObo.......',
   '......oo........',
 ];
 
-const FLOWER = [
+// Flor fresca: cola alongada com folhas de açúcar, pistilos, geada e caule curvo
+const FRESH_BUD = [
   '................',
-  '.......PB.......',
-  '......BBPB......',
-  '.....BPBBbB.....',
-  '.....BbBPBB.....',
-  '....LBBPBbBL....',
-  '...LLBbBBPBLL...',
-  '....LBPBbBBL....',
-  '.....BBBPBb.....',
-  '....LLBbBBLL....',
-  '...LL.BPBB.LL...',
-  '..L....SS....L..',
-  '.......S........',
+  '.......bB.......',
+  '......BPBb......',
+  '.....LbBFBP.....',
+  '....LLBBbBB.....',
+  '.....bBPBFbL....',
+  '.....BFBbBPLL...',
+  '....LLbBBPBb....',
+  '...LL.BPbBFB....',
+  '......bBBbBL....',
+  '.....LBFPBbLL...',
+  '....LL.bBB......',
+  '........S.......',
+  '.......SL.......',
   '......S.........',
-  '................',
   '................',
 ];
 
-// ---------------------------------------------------------------- itens genéricos
+// Flor seca: menor, densa, sem folhas de açúcar e com o caule aparado (silhueta diferente da fresca)
+const DRIED_BUD = [E, E, E,
+  '.......bB.......',
+  '......bBPb......',
+  '......BFbB......',
+  '.....bBbPBb.....',
+  '.....BPBBFB.....',
+  '.....bBbBbB.....',
+  '......BPbB......',
+  '......bBFb......',
+  '.......bB.......',
+  '.......S........',
+  E, E, E,
+];
+
+// ---------------------------------------------------------------- itens genéricos e artigos
 const ITEMS = {
+  // Montinho de grânulos âmbar e três grânulos soltos
   resin: {
-    grid: [
-      '................',
-      '................',
-      '................',
-      '................',
-      '.......aa.......',
-      '.....aaAAa......',
-      '....aAhhAAa.....',
-      '...aAhAAAAAa....',
-      '...aAAAAAAAAa...',
-      '..aAAAAAAAdAa...',
-      '..aAAAAAAddAAa..',
-      '...aAAAAAAAAa...',
-      '....aaAAAAaa....',
-      '......aaaa......',
-      '................',
-      '................',
+    grid: [E, E, E, E,
+      '...........kk...',
+      '..........khAk..',
+      '...kk.....kAak..',
+      '..khAk.....kk...',
+      '..kAak..........',
+      '...kk..kkkk.....',
+      '......khAhAk....',
+      '.....khAaAAak...',
+      '....kAAhAaAhAk..',
+      '...kAaAAAhAaAAk.',
+      '...kkkkkkkkkkkk.',
+      E,
     ],
-    palette: { a: '#7a4a12', A: '#d08a2a', h: '#f6d27a', d: '#a5661c' },
-  },
-  hash: {
-    grid: [
-      '................',
-      '................',
-      '................',
-      '................',
-      '...kkkkkkkkkk...',
-      '..kHHHHHHHHHHk..',
-      '..kHhhHHHHHHHk..',
-      '..kHhHHssHHHHk..',
-      '..kHHHsHHsHHHk..',
-      '..kHHHsHHsHHHk..',
-      '..kHHHHssHHHdk..',
-      '..kHHHHHHHHddk..',
-      '...kkkkkkkkkk...',
-      '................',
-      '................',
-      '................',
-    ],
-    palette: { k: '#2e1d10', H: '#6b4423', h: '#8f6236', s: '#4a2e17', d: '#553519' },
+    palette: { k: '#6e3e10', A: '#e0a040', a: '#a8661a', h: '#ffe2a0' },
   },
   joint: {
-    grid: [
-      '................',
-      '................',
-      '............wcc.',
-      '...........wwcce',
-      '..........wwwwc.',
-      '.........wwwwg..',
-      '........wwwwg...',
-      '.......wwwwg....',
-      '......wwwwg.....',
-      '.....wwwwg......',
-      '....wwwwg.......',
-      '...wwwwg........',
-      '..fwwwg.........',
-      '.ffwgg..........',
-      '.ff.............',
-      '................',
+    grid: [E, E,
+      '.............tt.',
+      '............wwt.',
+      '...........wwwW.',
+      '..........wwwWg.',
+      '.........wwwWg..',
+      '........wwwWg...',
+      '.......wwwg.....',
+      '......wwwg......',
+      '.....wwg........',
+      '....wwg.........',
+      '...cwg..........',
+      '..ccg...........',
+      '..c.............',
+      E,
     ],
-    palette: { w: '#f1ece0', g: '#cfc6b2', c: '#7a9a46', e: '#e09a40', f: '#c8a26a' },
+    palette: { w: '#f4f0e6', W: '#d8d0bc', g: '#b8ae96', t: '#e6dcc4', c: '#c8a26a' },
   },
+  // Aceso (enquanto fuma): brasa laranja/vermelha na ponta e 1 pixel de fumaça
+  joint_lit: {
+    grid: [
+      E,
+      '.............m..',
+      '.............ye.',
+      '............wEr.',
+      '...........wwwr.',
+      '..........wwwWg.',
+      '.........wwwWg..',
+      '........wwwWg...',
+      '.......wwwg.....',
+      '......wwwg......',
+      '.....wwg........',
+      '....wwg.........',
+      '...cwg..........',
+      '..ccg...........',
+      '..c.............',
+      E,
+    ],
+    palette: { w: '#f4f0e6', W: '#d8d0bc', g: '#b8ae96', c: '#c8a26a', y: '#ffd060', E: '#ff8a2a', e: '#e85a1a', r: '#a8301a', m: '#b4b4b4' },
+  },
+  // Bong: tubo de vidro, câmara com água, downstem de 1 px e fornilho de lado
   bong: {
     grid: [
       '.....gg.........',
@@ -383,26 +469,22 @@ const ITEMS = {
       '.....gGg........',
       '.....gGg........',
       '.....gGg........',
-      '.....gGg..mm....',
-      '.....gGg.mMg....',
-      '.....gGg.gm.....',
-      '....gGGGgg......',
-      '...gGGGGGg......',
-      '..gGwwwwwGg.....',
-      '..gwWWWWWwg.....',
-      '..gwWWWWWwg.....',
-      '..gwwWWWwwg.....',
+      '.....gGg........',
+      '.....gGg...mm...',
+      '.....gGg..mMMm..',
+      '....gGGGg..mm...',
+      '...gGGGGGgm.....',
+      '..gGwwwwwmg.....',
+      '..gwWWWWmWwg....',
+      '..gwWWWWWWwg....',
+      '..gwwWWWWwwg....',
       '...ggggggg......',
-      '................',
+      E,
     ],
     palette: { g: '#4e8aa0', G: '#b9e2ee', w: '#5fa6c4', W: '#7fc4e0', m: '#5c5f66', M: '#9aa0a8' },
   },
   pipe: {
-    grid: [
-      '................',
-      '................',
-      '................',
-      '................',
+    grid: [E, E, E, E,
       '..bbbb..........',
       '.bBccBb.........',
       '.bBddBb.........',
@@ -412,9 +494,7 @@ const ITEMS = {
       '...bbbbBBBBbb...',
       '.......bbBBBBbm.',
       '.........bbbbmm.',
-      '................',
-      '................',
-      '................',
+      E, E, E,
     ],
     palette: { b: '#4a2c17', B: '#8b5a32', c: '#2a1a10', d: '#3a2416', m: '#d8c8a0' },
   },
@@ -435,98 +515,87 @@ const ITEMS = {
       '...gwWWWWWWwg...',
       '....gwWWWWwg....',
       '.....gggggg.....',
-      '................',
+      E,
     ],
     palette: { m: '#8a6a2a', M: '#d4b25a', g: '#3f6d52', G: '#9fd4b4', w: '#4e9a78', W: '#79c39f', h: '#2f2f38' },
   },
+  // Chillum: cone de cerâmica com boca larga em cima e duas faixas claras
   chillum: {
-    grid: [
-      '................',
-      '................',
-      '...........cc...',
-      '..........cCCc..',
-      '.........cCddCc.',
-      '........cCCddc..',
-      '.......cCCCCc...',
-      '......cCCCCc....',
-      '.....cCCCCc.....',
-      '....cCCCCc......',
-      '...cCCCCc.......',
-      '..cCCCCc........',
-      '..cCCCc.........',
-      '...ccc..........',
-      '................',
-      '................',
+    grid: [E,
+      '..........cccc..',
+      '.........cdddCc.',
+      '.........cdddCc.',
+      '.........ccCCc..',
+      '........cCCCc...',
+      '.......cBBBc....',
+      '......cCCCc.....',
+      '.....cCCCc......',
+      '....cBBBc.......',
+      '...cCCCc........',
+      '...cCCc.........',
+      '..cCCc..........',
+      '..ccc...........',
+      E, E,
     ],
-    palette: { c: '#7a3d22', C: '#c06a3e', d: '#3a1d10' },
+    palette: { c: '#7a3d22', C: '#c06a3e', B: '#e8b088', d: '#3a1d10' },
   },
+  // Livreto de papelão com uma folha branca saindo 3 px por cima
   rolling_paper: {
-    grid: [
-      '................',
-      '................',
-      '................',
-      '..bbbbbbbbbbbb..',
-      '..bRRRRRRRRRRb..',
-      '..bRRyyyyyyRRb..',
-      '..bRRyRRRRyRRb..',
-      '..bRRyyyyyyRRb..',
-      '..bRRRRRRRRRRb..',
-      '..bwwwwwwwwwwb..',
-      '..bWWWWWWWWWWb..',
-      '..bwwwwwwwwwwb..',
-      '..bbbbbbbbbbbb..',
-      '................',
-      '................',
-      '................',
+    grid: [E, E, E,
+      '......wwwwww....',
+      '......wWWWWw....',
+      '......wwwwww....',
+      '...kkkkkkkkkk...',
+      '...kRRRRRRRRk...',
+      '...kRyyyyyyRk...',
+      '...kRyRRRRyRk...',
+      '...kRyyyyyyRk...',
+      '...kRRRRRRRRk...',
+      '...kddddddddk...',
+      '...kkkkkkkkkk...',
+      E, E,
     ],
-    palette: { b: '#5a2a1a', R: '#b8442e', y: '#f0c860', w: '#f4efe4', W: '#d8d0c0' },
+    palette: { k: '#5a2a1a', R: '#b8442e', d: '#8a3424', y: '#f0c860', w: '#fbf8f0', W: '#dcd4c4' },
   },
+  // Piteira: um rolinho de papelão na diagonal, com o zigue-zague marrom na ponta visível
   filter_tip: {
-    grid: [
-      '................',
-      '................',
-      '................',
-      '................',
-      '...........ss...',
-      '..........sTTs..',
-      '.........sTTs...',
-      '...ss...sTTs....',
-      '..sTTs.sTTs.....',
-      '.sTTs.sTTs......',
-      'sTTs..sss.......',
-      'sss.............',
-      '................',
-      '................',
-      '................',
-      '................',
+    grid: [E, E, E,
+      '..........kkk...',
+      '.........kCzCk..',
+      '........kzCzCk..',
+      '.......kcCzCzk..',
+      '......kcccCzk...',
+      '.....kcccckk....',
+      '....kcccck......',
+      '...kcccck.......',
+      '..kccck.........',
+      '..kcck..........',
+      '...kk...........',
+      E, E,
     ],
-    palette: { s: '#b39a6a', T: '#efe2c0' },
+    palette: { k: '#8a6a3a', c: '#efe2c0', C: '#fbf3dc', z: '#9a6a34' },
   },
+  // Dichavador: cilindro de duas partes em 3/4, borda serrilhada e uma folha na tampa
   grinder: {
-    grid: [
-      '................',
-      '................',
-      '................',
+    grid: [E, E,
       '.....kkkkkk.....',
       '...kkMMMMMMkk...',
-      '..kMMhhMMMMMMk..',
-      '..kMhMMMMMMMMk..',
-      '..kMMMMMMMMMMk..',
+      '..kMMMMgMMMhMk..',
+      '..kMMMgggMMMMk..',
+      '..kMMMMgMMMMMk..',
       '..kkMMMMMMMMkk..',
-      '..kGkkkkkkkkGk..',
+      '..kHhHhHhHhHhk..',
+      '..kHhHhHhHhHhk..',
+      '..kkkkkkkkkkkk..',
       '..kGGGGGGGGGGk..',
       '..kGgGgGgGgGGk..',
-      '..kkGGGGGGGGkk..',
-      '....kkkkkkkk....',
-      '................',
-      '................',
+      '...kkkkkkkkkk...',
+      E, E,
     ],
-    palette: { k: '#2e3338', M: '#8c96a0', h: '#d6dde3', G: '#5c6670', g: '#3d454c' },
+    palette: { k: '#2e3338', M: '#9aa4ae', h: '#e2e8ec', g: '#4f9a4a', H: '#c4ccd4', G: '#6c7680' },
   },
   lighter: {
-    grid: [
-      '................',
-      '................',
+    grid: [E, E,
       '......kkkk......',
       '.....kMMMMk.....',
       '.....kMhMgk.....',
@@ -540,34 +609,31 @@ const ITEMS = {
       '.....kRRRdk.....',
       '.....kRRddk.....',
       '......kkkk......',
-      '................',
+      E,
     ],
     palette: { k: '#2a2a30', M: '#a7afb7', h: '#e4e8ec', g: '#5d6670', R: '#2f7fc1', r: '#7fb8e6', d: '#20578a' },
   },
+  // Bandeja de metal em 3/4: borda alta, cantos arredondados, fundo esmaltado verde, uma flor e uma folha
   rolling_tray: {
-    grid: [
-      '................',
-      '................',
-      '................',
-      '................',
-      '................',
-      '..kkkkkkkkkkkk..',
-      '.kTTTTTTTTTTTTk.',
-      '.kTppppppppppTk.',
-      '.kTpPPPPPPPPpTk.',
-      '.kTpPPPPPPPPpTk.',
-      '.kTppppppppppTk.',
-      '.kTTTTTTTTTTTTk.',
-      '..kkkkkkkkkkkk..',
-      '................',
-      '................',
-      '................',
+    grid: [E, E, E, E,
+      '...kkkkkkkkkk...',
+      '..kRRRRRRRRRRk..',
+      '.kRggggggggggRk.',
+      '.kRgwwwgggBbgRk.',
+      '.kRgwwwggbBBgRk.',
+      '.kRgggggggSggRk.',
+      '.kRggggggggggRk.',
+      '.krRRRRRRRRRRrk.',
+      '..krrrrrrrrrrk..',
+      '...kkkkkkkkkk...',
+      E, E,
     ],
-    palette: { k: '#2c3a2a', T: '#4f8a4a', p: '#3c6e3a', P: '#6aa863' },
+    palette: { k: '#3a3e44', R: '#b8c0c8', r: '#7c848c', g: '#3f8a5a', w: '#f6f2e8', B: '#9cc46a', b: '#5e8a3a', S: '#6b5a3a' },
   },
+  // Pote: vidro com conteúdo escuro na metade de baixo e um reflexo
   jar: {
     grid: [
-      '................',
+      E,
       '....wwwwwwww....',
       '...wWWWWWWWWw...',
       '...wwwwwwwwww...',
@@ -575,170 +641,231 @@ const ITEMS = {
       '...gGGGGGGGGg...',
       '...gGhGGGGGGg...',
       '...gGhGGGGGGg...',
-      '...gGGGGGGGGg...',
-      '...gGGGGGGGGg...',
-      '...gGGGGGGGGg...',
-      '...gGGGGGGGGg...',
-      '...gGGGGGGGGg...',
+      '...gGhGGGGGGg...',
+      '...gGcpcCcpcg...',
+      '...gcCpcpCcpg...',
+      '...gpcCcpcCcg...',
+      '...gcpcCpccCg...',
       '....gggggggg....',
-      '................',
-      '................',
+      E, E,
     ],
-    palette: { w: '#6b4a2a', W: '#a27448', g: '#6f9aa6', G: '#cfe8ee', h: '#ffffff' },
+    palette: { w: '#6b4a2a', W: '#a27448', g: '#6f9aa6', G: '#cfe8ee', h: '#ffffff', c: '#3f6a2e', C: '#5a8a3a', p: '#5e3f6e' },
   },
+  // Cinzeiro de terracota visto de cima: três entalhes na borda e cinza no meio
   ashtray: {
-    grid: [
-      '................',
-      '................',
-      '................',
-      '................',
-      '................',
-      '................',
-      '....cccccccc....',
-      '..ccCCCCCCCCcc..',
-      '.cCCaaaaaaaaCCc.',
-      '.cCaAAaAAAaAaCc.',
-      '.cCCaaaaaaaaCCc.',
-      '..cCCCCCCCCCCc..',
-      '...cccccccccc...',
-      '................',
-      '................',
-      '................',
+    grid: [E, E, E,
+      '.....cc..cc.....',
+      '...ccTT..TTcc...',
+      '..cTTttttttTTc..',
+      '..cTtaaAaaatTc..',
+      '.cTtaAaaaAaatTc.',
+      '.TTtaaaAaaaat...',
+      '.cTtaAaaaAaatTc.',
+      '..cTtaaaAaatTc..',
+      '..cTTttttttTTc..',
+      '...ccTT..TTcc...',
+      '.....cc..cc.....',
+      E, E,
     ],
-    palette: { c: '#3b3f46', C: '#7e8792', a: '#4b4f55', A: '#9a9a96' },
+    palette: { c: '#7a3a1c', T: '#b5653a', t: '#8e4a28', a: '#8a8a86', A: '#c4c4be' },
   },
 };
 
-// ---------------------------------------------------------------- blocos de estação
-const WOOD = { k: '#3b2614', W: '#8a5c33', w: '#6e4727', l: '#a87344' };
+// Haxixe: placa marrom-escura em 3/4, bisel de 1 px e uma folha de 5 folíolos carimbada (a cor do carimbo muda
+// com a família da variedade; sem variedade, neutro)
+const HASH = [E, E, E,
+  '...hhhhhhhhhh...',
+  '..hTTTTTTTTTTk..',
+  '..hTTTTsTTTTTk..',
+  '..hTTsTsTsTTTk..',
+  '..hTTTsssTTTTk..',
+  '..hTTTTsTTTTTk..',
+  '..hTTTTTTTTTTk..',
+  '..kSSSSSSSSSSk..',
+  '..kSSSSSSSSSSk..',
+  '...kkkkkkkkkk...',
+  E, E, E,
+];
+const HASH_PALETTE = { h: '#6a4a30', T: '#4a2f1c', S: '#2e1c10', k: '#1e120a' };
+const HASH_NEUTRAL_STAMP = '#7a5a3a';
+
+// ---------------------------------------------------------------- blocos das estações
+/** Gerador pseudoaleatório fixo (as texturas saem sempre iguais). */
+function lcg(seed) {
+  let x = seed >>> 0;
+  return () => {
+    x = (Math.imul(x, 1664525) + 1013904223) >>> 0;
+    return x / 4294967296;
+  };
+}
+
+/**
+ * Grade de veio horizontal: cada linha tem o tom base com riscos escuros ('w') e claros ('l') de 3 a 8 px. As
+ * linhas de "anel" (a cada 4) ganham um risco escuro longo, como as tábuas vanilla.
+ */
+function grainGrid(seed, base, dark, light) {
+  const rand = lcg(seed);
+  return Array.from({ length: 16 }, (_, y) => {
+    const row = Array(16).fill(base);
+    const streaks = y % 4 === 3 ? [[dark, 7 + Math.floor(rand() * 5)]] : [];
+    streaks.push([rand() < 0.6 ? dark : light, 3 + Math.floor(rand() * 4)]);
+    if (rand() < 0.5) streaks.push([light, 2 + Math.floor(rand() * 3)]);
+    for (const [ch, len] of streaks) {
+      const start = Math.floor(rand() * 16);
+      for (let i = 0; i < len; i++) row[(start + i) % 16] = ch;
+    }
+    return row.join('');
+  });
+}
+
+// Madeira com veio horizontal: as peças verticais giram o UV 90° no modelo para o veio seguir a peça
+const WOOD_GRID = grainGrid(7, 'W', 'w', 'l');
+// Ferro escovado: riscos horizontais claros e escuros
+const IRON_GRID = grainGrid(11, 'I', 'i', 'h');
+// Grânulos de resina (âmbar), usados na peneira pronta e na prensa trabalhando
+const RESIN_GRID = [
+  'AaAAhAAaAAAhAaAA',
+  'AAAaAAhAAaAAAAhA',
+  'hAaAAAAaAAhAaAAA',
+  'AAAAhAaAAAAAAAaA',
+  'AaAAAAAAhAaAhAAA',
+  'AAhAaAAAAAAAAaAA',
+  'aAAAAhAaAAhAAAAh',
+  'AAaAAAAAAaAAaAAA',
+  'AAAAhAaAAAAAAAhA',
+  'hAaAAAAAhAAaAAAA',
+  'AAAAaAhAAAaAAhAa',
+  'AaAAAAAAAAAAaAAA',
+  'AAAhAaAAhAAAAAhA',
+  'AhAAAAAaAAAhAaAA',
+  'AAAaAhAAAAAAAAAA',
+  'aAAAAAAAhAaAAhAa',
+];
+const RESIN_PALETTE = { A: '#d8923a', a: '#a05c1a', h: '#f6c870' };
+
+// Maço pendurado no suporte: só a janela de UV [6,2,10,10] (4x8) aparece no modelo. Barbante em cima, talos,
+// folhas e flores viradas para baixo, afinando na ponta.
+const BUNDLE = [E, E,
+  '......ssss......',
+  '......SLLS......',
+  '......LSSL......',
+  '......LBBL......',
+  '......BbPB......',
+  '......BBBb......',
+  '......bPBB......',
+  '.......Bb.......',
+  E, E, E, E, E, E,
+];
 
 const BLOCKS = {
-  drying_rack_top: {
-    grid: [
-      'kkkkkkkkkkkkkkkk',
-      'kWWWWWWWWWWWWWWk',
-      'kWkkkkkkkkkkkkWk',
-      'kWk..s..s..s.kWk',
-      'kWWWWWWWWWWWWWWk',
-      'kWk.s..s..s..kWk',
-      'kWk..s..s..s.kWk',
-      'kWWWWWWWWWWWWWWk',
-      'kWk.s..s..s..kWk',
-      'kWk..s..s..s.kWk',
-      'kWWWWWWWWWWWWWWk',
-      'kWk.s..s..s..kWk',
-      'kWk..s..s..s.kWk',
-      'kWkkkkkkkkkkkkWk',
-      'kWWWWWWWWWWWWWWk',
-      'kkkkkkkkkkkkkkkk',
-    ],
-    palette: { ...WOOD, s: '#d9cfae' },
+  drying_rack_wood: { grid: WOOD_GRID, palette: { W: '#a87c4c', w: '#8a6038', l: '#c49a66' } },
+  drying_bundle_fresh: {
+    grid: BUNDLE,
+    palette: { s: '#e6dcb4', S: '#5f8a34', L: '#6aae3e', B: '#a8cc6a', b: '#5e8a3a', P: '#f0a640' },
   },
-  drying_rack_side: {
-    grid: [
-      'kkkkkkkkkkkkkkkk',
-      'kWWWWWWWWWWWWWWk',
-      'kkkkkkkkkkkkkkkk',
-      'kWk.s..s..s..kWk',
-      'kWk.L..L..L..kWk',
-      'kWkLLLLLLLLLLkWk',
-      'kWk.L..L..L..kWk',
-      'kWk.d..d..d..kWk',
-      'kWk.s..s..s..kWk',
-      'kWk.L..L..L..kWk',
-      'kWkLLLLLLLLLLkWk',
-      'kWk.L..L..L..kWk',
-      'kWk.d..d..d..kWk',
-      'kkkkkkkkkkkkkkkk',
-      'kWWWWWWWWWWWWWWk',
-      'kkkkkkkkkkkkkkkk',
-    ],
-    palette: { ...WOOD, s: '#d9cfae', L: '#8a9a4a', d: '#5f6b30' },
+  drying_bundle_dried: {
+    grid: BUNDLE,
+    palette: { s: '#e6dcb4', S: '#6b5a3a', L: '#7f7a3a', B: '#a8a05a', b: '#6a6232', P: '#b0702c' },
   },
-  sieve_top: {
-    grid: [
-      'kkkkkkkkkkkkkkkk',
-      'kWWWWWWWWWWWWWWk',
-      'kWlWWWWWWWWWWWWk',
-      'kWWmMmMmMmMmMWWk',
-      'kWWMmMmMmMmMmWWk',
-      'kWWmMmMmMmMmMWWk',
-      'kWWMmMmMmMmMmWWk',
-      'kWWmMmMmMmMmMWWk',
-      'kWWMmMmMmMmMmWWk',
-      'kWWmMmMmMmMmMWWk',
-      'kWWMmMmMmMmMmWWk',
-      'kWWmMmMmMmMmMWWk',
-      'kWWMmMmMmMmMmWWk',
-      'kWWWWWWWWWWWWWWk',
-      'kWWWWWWWWWWWWWWk',
-      'kkkkkkkkkkkkkkkk',
-    ],
-    palette: { ...WOOD, m: '#b8b0a0', M: '#5a5248' },
+  sieve_wood: { grid: WOOD_GRID, palette: { W: '#8a5c33', w: '#6e4727', l: '#a87344' } },
+  // Tela: arame de 1 px com vãos de 2 px (cutout)
+  sieve_mesh: {
+    grid: Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
+      if (y % 3 === 0 && x % 3 === 0) return 'N';
+      return y % 3 === 0 || x % 3 === 0 ? 'm' : '.';
+    }).join('')),
+    palette: { m: '#9a9690', N: '#6a6660' },
   },
-  sieve_side: {
+  // Flores secas espalhadas na tela (cutout): moitas verdes com pontos roxos e laranja
+  sieve_flowers: {
     grid: [
-      'kkkkkkkkkkkkkkkk',
-      'kWWWWWWWWWWWWWWk',
-      'kWlWWWWWWWWWWlWk',
-      'kwwwwwwwwwwwwwwk',
-      'kkkkkkkkkkkkkkkk',
-      'kWk..........kWk',
-      'kWk..a....a..kWk',
-      'kWk....a.....kWk',
-      'kWk.a.....a..kWk',
-      'kWk.AAAAAAAA.kWk',
-      'kWkAAAAAAAAAAkWk',
-      'kWk..........kWk',
-      'kWk..........kWk',
-      'kWk..........kWk',
-      'kWk..........kWk',
-      'kkk..........kkk',
+      'GgGGgGGgGGgGGgGG',
+      '................',
+      '................',
+      '...GgG.gGG..gG..',
+      '..gGpGGGoGg.GGg.',
+      '...GGg.gGGGgGpG.',
+      '....gGGGg.GGgG..',
+      '...gGoGgGGg..gG.',
+      '..GGGgG..gGpGGg.',
+      '...gGpG.GgGGgG..',
+      '....GGgGGoGg....',
+      '...gGGgGgGGGgG..',
+      '..GgoGG.gGpGGg..',
+      '...GgGg..gGGg...',
+      '................',
+      '................',
     ],
-    palette: { ...WOOD, a: '#d08a2a', A: '#a5661c' },
+    palette: { G: '#8a9a4a', g: '#5f6b30', p: '#7a4f78', o: '#c07a30' },
   },
-  press_top: {
+  sieve_resin: { grid: RESIN_GRID, palette: RESIN_PALETTE },
+  press_wood: { grid: WOOD_GRID, palette: { W: '#6e4a2a', w: '#553820', l: '#8a5e36' } },
+  press_iron: { grid: IRON_GRID, palette: { I: '#8c96a0', i: '#5c656e', h: '#c8d0d8' } },
+  press_resin: { grid: RESIN_GRID, palette: RESIN_PALETTE },
+  // Barra de haxixe na base da prensa (topo em UV [5,5,11,11] com o carimbo)
+  press_hash: {
     grid: [
-      'kkkkkkkkkkkkkkkk',
-      'kWWWWWWWWWWWWWWk',
-      'kWwwwwwwwwwwwwWk',
-      'kWwWWWWWWWWWWwWk',
-      'kWwWWiiiiiiWWwWk',
-      'kWwWiIIIIIIiWwWk',
-      'kWwWiIhIIIIiWwWk',
-      'kWwWiIIggIIiWwWk',
-      'kWwWiIIggIIiWwWk',
-      'kWwWiIIIIIIiWwWk',
-      'kWwWiIIIIIIiWwWk',
-      'kWwWWiiiiiiWWwWk',
-      'kWwWWWWWWWWWWwWk',
-      'kWwwwwwwwwwwwwWk',
-      'kWWWWWWWWWWWWWWk',
-      'kkkkkkkkkkkkkkkk',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSShhhhhhSSSSS',
+      'SSSSShTTsTTSSSSS',
+      'SSSSShTsssTSSSSS',
+      'SSSSShTTsTTSSSSS',
+      'SSSSShTTTTTSSSSS',
+      'SSSSShTTTTTSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
+      'SSSSSSSSSSSSSSSS',
     ],
-    palette: { ...WOOD, i: '#3a3f45', I: '#8c96a0', h: '#d6dde3', g: '#4d555c' },
+    palette: { S: '#3a2414', h: '#6a4a30', T: '#4a2f1c', s: '#7a5a3a' },
   },
-  press_side: {
-    grid: [
-      'kkkkkkkkkkkkkkkk',
-      'kIIIIIIIIIIIIIIk',
-      'kkkkkkkiikkkkkkk',
-      'kWk....iI....kWk',
-      'kWk....iI....kWk',
-      'kWk..iiiiii..kWk',
-      'kWk..iIIIIi..kWk',
-      'kWk..iiiiii..kWk',
-      'kWk..wwwwww..kWk',
-      'kWk..wWWWWw..kWk',
-      'kWk..wwwwww..kWk',
-      'kWk..........kWk',
-      'kkkkkkkkkkkkkkkk',
-      'kWWWWWWWWWWWWWWk',
-      'kWlWWWWWWWWWWlWk',
-      'kkkkkkkkkkkkkkkk',
-    ],
-    palette: { ...WOOD, i: '#3a3f45', I: '#8c96a0' },
-  },
+};
+
+// ---------------------------------------------------------------- texturas dos modelos 3D na mão
+// Cada aparelho de fumo tem um modelo de elementos para a mão (o ícone plano continua no inventário). Os modelos
+// usam uma textura por material, com um padrão leve; qualquer região de UV da peça cai dentro do material.
+/** Grade 16x16 de um material: tom base com pontos/riscos determinísticos de outros tons. */
+function material(seed, base, marks) {
+  const rand = lcg(seed);
+  return Array.from({ length: 16 }, () => [...Array(16)].map(() => {
+    const r = rand();
+    let acc = 0;
+    for (const [ch, p] of marks) {
+      acc += p;
+      if (r < acc) return ch;
+    }
+    return base;
+  }).join(''));
+}
+/** Vidro: colunas de brilho fixas (o brilho aparece em pé nas faces laterais do tubo). */
+const GLASS_GRID = Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
+  if (x % 8 === 0) return 'g';
+  if (x % 8 === 2 || (x % 8 === 3 && y % 3 !== 0)) return 'h';
+  return 'G';
+}).join(''));
+const MODEL_TEXTURES = {
+  model_glass: { grid: GLASS_GRID, palette: { G: '#a8d8e8', g: '#78b0c4', h: '#e8f8ff' } },
+  model_water: { grid: material(21, 'w', [['W', 0.25], ['s', 0.06]]), palette: { w: '#4e94b4', W: '#5fa6c4', s: '#a8dcf0' } },
+  model_green_glass: { grid: GLASS_GRID, palette: { G: '#4e9a78', g: '#3f6d52', h: '#9fd4b4' } },
+  model_brass: { grid: grainGrid(23, 'M', 'm', 'h'), palette: { M: '#d4b25a', m: '#a8863a', h: '#f0d890' } },
+  model_hose: { grid: material(25, 'h', [['H', 0.3]]), palette: { h: '#2f2f38', H: '#4a4a56' } },
+  model_clay: { grid: material(27, 'C', [['c', 0.25], ['l', 0.12]]), palette: { C: '#c06a3e', c: '#9a4e2a', l: '#d88a5a' } },
+  model_clay_band: { grid: material(29, 'B', [['b', 0.3]]), palette: { B: '#e8b088', b: '#d49a72' } },
+  model_wood: { grid: grainGrid(31, 'W', 'w', 'l'), palette: { W: '#8b5a32', w: '#6e4426', l: '#a87344' } },
+  model_dark_wood: { grid: grainGrid(33, 'W', 'w', 'l'), palette: { W: '#5a3820', w: '#4a2c17', l: '#6e4a2c' } },
+  model_bone: { grid: material(35, 'm', [['M', 0.3]]), palette: { m: '#e8dcc0', M: '#d0c4a4' } },
+  model_paper: { grid: material(37, 'w', [['W', 0.12]]), palette: { w: '#f4f0e6', W: '#e2dccc' } },
+  model_cardboard: { grid: material(39, 'c', [['C', 0.3]]), palette: { c: '#c8a26a', C: '#a8824e' } },
+  model_plastic: { grid: material(41, 'R', [['r', 0.12], ['d', 0.15]]), palette: { R: '#2f7fc1', r: '#7fb8e6', d: '#20578a' } },
+  model_steel: { grid: grainGrid(43, 'M', 'g', 'h'), palette: { M: '#a7afb7', g: '#5d6670', h: '#e4e8ec' } },
+  // Cinza apagada e brasa acesa, no fornilho/ponta (o modelo "_lit" troca uma pela outra)
+  smoke_ash: { grid: material(45, 'a', [['A', 0.3]]), palette: { a: '#3a3636', A: '#6a6662' } },
+  smoke_ember: { grid: material(47, 'e', [['r', 0.3], ['y', 0.2]]), palette: { e: '#ff7a22', r: '#c83a14', y: '#ffd060' } },
 };
 
 // Ícone do efeito cultivo:high (18x18): folha estilizada com um fio de fumaça
@@ -768,24 +895,33 @@ const EFFECTS = {
   },
 };
 
-const WILD = {
-  L: '#6a9a3c', D: '#46702a', S: '#557a2e', B: '#a9c46a', b: '#7f9a46', P: '#d99b4a',
-};
+/** Número de estágios visuais da lavoura (um por idade 0–7). */
+export const CROP_STAGE_COUNT = CROP_STAGES.length;
+
+/** IDs (sem namespace) das texturas de bloco das estações e dos modelos 3D na mão, para o gerador conferir. */
+export const STATION_TEXTURES = Object.keys(BLOCKS);
+export const MODEL_TEXTURE_IDS = Object.keys(MODEL_TEXTURES);
 
 /** @param strains seção "strains" do manifesto (id e family de cada variedade) */
 export function generateAll(strains) {
   const written = [];
-  for (const [id, c] of Object.entries(strainPalettes(strains))) {
-    const plant = { L: c.leaf, D: c.leafDark, S: c.stem, B: c.bud, b: c.budDark, P: c.pistil };
-    CROP_STAGES.forEach((grid, stage) => written.push(render(`block/${id}_crop_stage${stage}`, grid, plant)));
-    written.push(render(`item/${id}_seeds`, SEEDS, { o: c.seedDark, O: c.seed, h: c.seedHi }));
-    written.push(render(`item/${id}_fresh_flower`, FLOWER, plant));
-    written.push(render(`item/${id}_dried_flower`, FLOWER, {
-      L: c.driedDark, D: c.driedDark, S: '#6b5a3a', B: c.dried, b: c.driedDark, P: c.driedPistil,
-    }));
+  // Lavoura: as texturas são por família (as variedades da mesma família compartilham a planta no campo)
+  for (const family of artFamilies(strains)) {
+    const base = familyBase(family);
+    if (!base) throw new Error(`família de arte desconhecida: ${family}`);
+    CROP_STAGES.forEach((grid, stage) => written.push(render(`block/${family}_crop_stage${stage}`, grid, base.plant)));
+    written.push(render(`item/hash_${family}`, HASH, { ...HASH_PALETTE, s: base.stamp }));
   }
-  written.push(render('block/wild_plant', CROP_STAGES[3], WILD));
+  // Sementes e flores: por variedade (paleta da família com o destaque da variedade)
+  for (const [id, c] of Object.entries(strainPalettes(strains))) {
+    written.push(render(`item/${id}_seeds`, SEEDS, c.seed));
+    written.push(render(`item/${id}_fresh_flower`, FRESH_BUD, c.plant));
+    written.push(render(`item/${id}_dried_flower`, DRIED_BUD, c.dried));
+  }
+  written.push(render('block/wild_plant', WILD_PLANT, WILD));
+  written.push(render('item/hash', HASH, { ...HASH_PALETTE, s: HASH_NEUTRAL_STAMP }));
   for (const [id, t] of Object.entries(ITEMS)) written.push(render(`item/${id}`, t.grid, t.palette));
+  for (const [id, t] of Object.entries(MODEL_TEXTURES)) written.push(render(`item/${id}`, t.grid, t.palette));
   for (const [id, t] of Object.entries(BLOCKS)) written.push(render(`block/${id}`, t.grid, t.palette));
   for (const [id, t] of Object.entries(EFFECTS)) written.push(render(`mob_effect/${id}`, t.grid, t.palette));
   return written;

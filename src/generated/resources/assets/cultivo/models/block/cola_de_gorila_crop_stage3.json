@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/crop",
-  "textures": {
-    "crop": "cultivo:block/cola_de_gorila_crop_stage3"
-  }
-}

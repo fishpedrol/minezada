@@ -1,7 +1,156 @@
 {
-  "variants": {
-    "": {
-      "model": "cultivo:block/press"
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "cultivo:block/press"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "empty|done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_up"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_down"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_hash"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "cultivo:block/press",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "empty|done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_up",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_down",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_hash",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "cultivo:block/press",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "empty|done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_up",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_down",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_hash",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "cultivo:block/press",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "empty|done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_up",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/press_platen_down",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/press_hash",
+        "y": 270
+      }
     }
-  }
+  ]
 }
