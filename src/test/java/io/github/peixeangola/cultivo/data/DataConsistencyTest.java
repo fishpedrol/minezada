@@ -44,6 +44,26 @@ class DataConsistencyTest {
         return single;
     }
 
+    // ------------------------------------------------------------- tabela de variedades
+
+    /** A seção "strains" do manifesto espelha o enum Variety: mesma ordem, mesmos IDs e todos os atributos. */
+    @Test
+    void manifestStrainsMatchJavaTable() {
+        JsonArray strains = Resources.json(StrainColumns.MANIFEST).getAsJsonArray("strains");
+        assertEquals(Variety.values().length, strains.size());
+        assertEquals(40, strains.size());
+        for (int i = 0; i < strains.size(); i++) {
+            Variety v = Variety.values()[i];
+            JsonObject row = strains.get(i).getAsJsonObject();
+            StrainColumns.assertMatches(v, row, "manifesto[" + i + "]");
+            assertTrue(row.has("origin"), v.id() + " sem origem no manifesto");
+            for (String lang : List.of("pt", "en")) {
+                assertTrue(row.has(lang) && !row.get(lang).getAsString().isBlank(), v.id() + " sem nome " + lang);
+            }
+        }
+        assertFalse(Resources.json(StrainColumns.MANIFEST).has("varieties"), "a seção antiga duplicaria a tabela");
+    }
+
     // ------------------------------------------------------------- receitas
 
     @Test
@@ -56,6 +76,9 @@ class DataConsistencyTest {
         assertEquals(expected, actual);
         Set<String> ids = new HashSet<>();
         ArticleRecipes.ALL.forEach(r -> assertTrue(ids.add(r.id()), "id repetido " + r.id()));
+        // 11 artigos + 3 estações + 1 baseado por variedade
+        assertEquals(11 + 3 + 40, ArticleRecipes.ALL.size());
+        assertEquals(40, ArticleRecipes.ALL.stream().filter(r -> r.result().equals(ContentIds.JOINT)).count());
     }
 
     @Test
@@ -175,6 +198,14 @@ class DataConsistencyTest {
             assertEquals(expected.minCount(), count.get("min").getAsInt());
             assertEquals(expected.maxCount(), count.get("max").getAsInt());
         }
+        // Todas as 40 variedades, e o vazio com a soma dos pesos (25×4 + 4×2 + 11×1 = 119): 50% dos baús rolam semente
+        assertEquals(41, entries.size());
+        assertEquals(119, empty.get("weight").getAsInt());
+        int seedWeight = 0;
+        for (int i = 1; i < entries.size(); i++) {
+            seedWeight += entries.get(i).getAsJsonObject().get("weight").getAsInt();
+        }
+        assertEquals(119, seedWeight);
     }
 
     @Test
@@ -389,6 +420,22 @@ class DataConsistencyTest {
         JsonObject joint = Resources.json(Resources.data("cultivo", "advancement/recipes/misc/joint_aurora.json"))
             .getAsJsonObject("criteria");
         assertEquals(Set.of("has_aurora_dried_flower", "has_rolling_paper", "has_the_recipe"), joint.keySet());
+        JsonObject catalogJoint = Resources.json(Resources.data("cultivo", "advancement/recipes/misc/joint_bananona.json"))
+            .getAsJsonObject("criteria");
+        assertEquals(Set.of("has_bananona_dried_flower", "has_rolling_paper", "has_the_recipe"), catalogJoint.keySet());
+    }
+
+    /** Baseado de uma variedade do catálogo: transmute da flor seca dela, gravando o ID no cultivo:strain. */
+    @Test
+    void catalogJointRecipeWritesItsStrain() {
+        JsonObject recipe = Resources.json(Resources.data("cultivo", "recipe/joint_manga_gelada.json"));
+        assertEquals("minecraft:crafting_transmute", recipe.get("type").getAsString());
+        assertEquals("cultivo:manga_gelada_dried_flower", recipe.get("input").getAsString());
+        assertEquals("cultivo:rolling_paper", recipe.get("material").getAsString());
+        assertEquals("cultivo_joint", recipe.get("group").getAsString());
+        JsonObject result = recipe.getAsJsonObject("result");
+        assertEquals("cultivo:joint", result.get("id").getAsString());
+        assertEquals("manga_gelada", result.getAsJsonObject("components").get("cultivo:strain").getAsString());
     }
 
     // ------------------------------------------------------------- entradas das estações (previsão do cliente)
@@ -429,10 +476,22 @@ class DataConsistencyTest {
             }
             assertEquals(fromRecipes, fromTag, kind.inputTagId());
         }
-        assertEquals(Set.of("cultivo:brisa_fresh_flower", "cultivo:aurora_fresh_flower", "cultivo:eclipse_fresh_flower"),
-            expand("#cultivo:drying_rack_inputs"));
-        assertEquals(Set.of("cultivo:brisa_dried_flower", "cultivo:aurora_dried_flower", "cultivo:eclipse_dried_flower"),
-            expand("#cultivo:sieve_inputs"));
+        Set<String> fresh = expand("#cultivo:drying_rack_inputs");
+        Set<String> dried = expand("#cultivo:sieve_inputs");
+        assertEquals(40, fresh.size(), "uma flor fresca por variedade");
+        assertEquals(40, dried.size(), "uma flor seca por variedade");
+        assertTrue(fresh.containsAll(Set.of("cultivo:brisa_fresh_flower", "cultivo:aurora_fresh_flower",
+            "cultivo:eclipse_fresh_flower", "cultivo:manga_gelada_fresh_flower", "cultivo:bananona_fresh_flower")));
+        assertTrue(dried.containsAll(Set.of("cultivo:brisa_dried_flower", "cultivo:aurora_dried_flower",
+            "cultivo:eclipse_dried_flower", "cultivo:manga_gelada_dried_flower", "cultivo:bananona_dried_flower")));
+        Set<String> expectedFresh = new HashSet<>();
+        Set<String> expectedDried = new HashSet<>();
+        for (Variety v : Variety.values()) {
+            expectedFresh.add("cultivo:" + v.freshFlowerId());
+            expectedDried.add("cultivo:" + v.driedFlowerId());
+        }
+        assertEquals(expectedFresh, fresh);
+        assertEquals(expectedDried, dried);
         assertEquals(Set.of("cultivo:resin"), expand("#cultivo:press_inputs"));
     }
 

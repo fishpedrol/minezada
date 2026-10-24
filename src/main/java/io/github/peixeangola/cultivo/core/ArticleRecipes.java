@@ -1,7 +1,9 @@
 package io.github.peixeangola.cultivo.core;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Receitas de crafting dos artigos e estações, como dados puros. Os JSONs em data/cultivo/recipe são
@@ -42,7 +44,8 @@ public final class ArticleRecipes {
     private static final Key PLANKS = new Key("#minecraft:planks", "minecraft:oak_planks");
     private static final Key SLABS = new Key("#minecraft:wooden_slabs", "minecraft:oak_slab");
 
-    public static final List<Recipe> ALL = List.of(
+    /** Artigos de fumo (receitas de itens vanilla). */
+    private static final List<Recipe> ARTICLES = List.of(
         shaped("bong", 1, List.of(" G ", " G ", "GWG"), Map.of('G', GLASS, 'W', Key.item("minecraft:water_bucket"))),
         shaped("pipe", 1, List.of("B  ", " BB"), Map.of('B', Key.item("minecraft:brick"))),
         shaped("hookah", 1, List.of(" I ", "SGS", "IGI"), Map.of('I', IRON, 'S', STRING, 'G', GLASS)),
@@ -53,13 +56,21 @@ public final class ArticleRecipes {
         shaped("lighter", 1, List.of("F", "N", "N"), Map.of('F', FLINT, 'N', NUGGET)),
         shaped("rolling_tray", 1, List.of("N N", "NNN"), Map.of('N', NUGGET)),
         shaped("jar", 1, List.of("S", "G", "G"), Map.of('S', SLABS, 'G', GLASS)),
-        shaped("ashtray", 1, List.of("T T", "TTT"), Map.of('T', TERRACOTTA)),
-        joint(Variety.BRISA),
-        joint(Variety.AURORA),
-        joint(Variety.ECLIPSE),
+        shaped("ashtray", 1, List.of("T T", "TTT"), Map.of('T', TERRACOTTA)));
+
+    /** Estações de processamento. */
+    private static final List<Recipe> STATIONS = List.of(
         shaped("drying_rack", 1, List.of("SSS", "T T", "SSS"), Map.of('S', STICK, 'T', STRING)),
         shaped("sieve", 1, List.of("PTP", "P P"), Map.of('P', PLANKS, 'T', STRING)),
         shaped("press", 1, List.of("III", " S ", "PPP"), Map.of('I', IRON, 'S', STICK, 'P', PLANKS)));
+
+    /** Artigos, um baseado por variedade (todas as da tabela {@link Variety}) e as três estações. */
+    public static final List<Recipe> ALL = Stream.of(
+            ARTICLES.stream(),
+            Arrays.stream(Variety.values()).map(ArticleRecipes::joint),
+            STATIONS.stream())
+        .flatMap(recipes -> recipes)
+        .toList();
 
     private ArticleRecipes() {}
 
@@ -73,7 +84,9 @@ public final class ArticleRecipes {
 
     /**
      * Baseado: folha de seda + flor seca de uma variedade. É um {@code crafting_transmute}, então a qualidade da
-     * flor passa para o baseado, e a variedade fica gravada no componente cultivo:strain.
+     * flor passa para o baseado, e a variedade fica gravada no componente cultivo:strain. Uma receita por variedade:
+     * o transmute do 26.3 só copia o patch de componentes da entrada ({@code ItemStack#getComponentsPatch}), então
+     * um componente padrão do item da flor não chegaria ao baseado e uma receita única com tag perderia a variedade.
      */
     private static Recipe joint(Variety variety) {
         Key flower = Key.item("cultivo:" + variety.driedFlowerId());

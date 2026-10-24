@@ -1,0 +1,10 @@
+{
+  "type": "cultivo:drying",
+  "ingredient": "cultivo:do_si_do_fresh_flower",
+  "input_count": 1,
+  "result": {
+    "id": "cultivo:do_si_do_dried_flower",
+    "count": 1
+  },
+  "processing_time": 600
+}

@@ -133,6 +133,37 @@ class SmokeRulesTest {
         assertFalse(find(unknown, EffectKind.REGENERATION).isPresent());
     }
 
+    /** As variedades do catálogo usam os perfis pela genética, com os mesmos números das nativas. */
+    @Test
+    void catalogStrainsReuseLineageProfiles() {
+        List<EffectSpec> sativa = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.AMNESIA_NEBLINA, 2, false), 0);
+        assertEquals(450, find(sativa, EffectKind.SPEED).orElseThrow().ticks(), "sativa: velocidade por metade da sessão");
+        assertFalse(find(sativa, EffectKind.SLOWNESS).isPresent());
+
+        List<EffectSpec> hybrid = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.BANANONA, 2, false), 0);
+        assertEquals(100, find(hybrid, EffectKind.REGENERATION).orElseThrow().ticks(), "híbrida: 5 s de regeneração");
+        assertFalse(find(hybrid, EffectKind.SPEED).isPresent());
+        assertFalse(find(hybrid, EffectKind.SLOWNESS).isPresent());
+
+        List<EffectSpec> indica = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.MIRTILO, 2, false), 0);
+        assertEquals(450, find(indica, EffectKind.SLOWNESS).orElseThrow().ticks());
+        assertEquals(200, find(indica, EffectKind.REGENERATION).orElseThrow().ticks(), "índica: 10 s de regeneração");
+
+        // Potência e raridade não mudam a duração: só artigo, qualidade e haxixe
+        assertEquals(900, high(sativa));
+        assertEquals(900, high(hybrid));
+        assertEquals(1260, SmokeRules.sessionTicks(SmokeDevice.PIPE, new Material(Variety.LUZES_DO_NORTE, 4, false)));
+        for (Variety v : Variety.values()) {
+            List<EffectSpec> effects = SmokeRules.effects(SmokeDevice.JOINT, new Material(v, 2, false), 0);
+            List<EffectSpec> sameLineage = SmokeRules.effects(SmokeDevice.JOINT, new Material(switch (v.lineage()) {
+                case SATIVA -> Variety.BRISA;
+                case HYBRID -> Variety.AURORA;
+                case INDICA -> Variety.ECLIPSE;
+            }, 2, false), 0);
+            assertEquals(sameLineage, effects, v.id() + " deveria ter o perfil da nativa da mesma genética");
+        }
+    }
+
     @Test
     void varietyById() {
         assertEquals(Optional.of(Variety.ECLIPSE), Variety.byId("eclipse"));

@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_gorilao_dried_flower": {
+      "conditions": {
+        "items": [
+          {
+            "items": "cultivo:gorilao_dried_flower"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_rolling_paper": {
+      "conditions": {
+        "items": [
+          {
+            "items": "cultivo:rolling_paper"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "cultivo:joint_gorilao"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_gorilao_dried_flower",
+      "has_rolling_paper"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "cultivo:joint_gorilao"
+    ]
+  }
+}

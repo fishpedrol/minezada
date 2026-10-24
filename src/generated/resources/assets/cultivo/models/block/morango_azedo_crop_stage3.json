@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": {
+    "crop": "cultivo:block/morango_azedo_crop_stage3"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cultivo:item/tri_campea_seeds"
+  }
+}

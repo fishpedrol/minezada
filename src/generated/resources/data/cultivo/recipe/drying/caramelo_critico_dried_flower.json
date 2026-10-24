@@ -1,0 +1,10 @@
+{
+  "type": "cultivo:drying",
+  "ingredient": "cultivo:caramelo_critico_fresh_flower",
+  "input_count": 1,
+  "result": {
+    "id": "cultivo:caramelo_critico_dried_flower",
+    "count": 1
+  },
+  "processing_time": 600
+}

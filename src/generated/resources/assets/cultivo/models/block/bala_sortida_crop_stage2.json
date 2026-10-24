@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": {
+    "crop": "cultivo:block/bala_sortida_crop_stage2"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": {
+    "crop": "cultivo:block/bolo_de_casamento_crop_stage2"
+  }
+}

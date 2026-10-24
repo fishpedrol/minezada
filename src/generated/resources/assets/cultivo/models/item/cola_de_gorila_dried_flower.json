@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cultivo:item/cola_de_gorila_dried_flower"
+  }
+}

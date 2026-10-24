@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cultivo:item/gelato_azul_42_dried_flower"
+  }
+}

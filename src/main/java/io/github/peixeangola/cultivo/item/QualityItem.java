@@ -9,7 +9,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 
-/** Flores, resina e haxixe: mostram o componente cultivo:quality no tooltip. */
+/**
+ * Resina e haxixe (e as flores, via {@link FlowerItem}): mostram a variedade gravada em cultivo:strain, se houver, e
+ * o componente cultivo:quality no tooltip.
+ */
 public class QualityItem extends Item {
     public QualityItem(Properties properties) {
         super(properties);

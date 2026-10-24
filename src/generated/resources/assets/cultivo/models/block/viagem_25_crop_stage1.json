@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": {
+    "crop": "cultivo:block/viagem_25_crop_stage1"
+  }
+}

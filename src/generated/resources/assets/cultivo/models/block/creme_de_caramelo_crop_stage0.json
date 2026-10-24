@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": {
+    "crop": "cultivo:block/creme_de_caramelo_crop_stage0"
+  }
+}

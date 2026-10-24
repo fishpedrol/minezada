@@ -23,15 +23,16 @@ const id = (path) => `${NS}:${path}`;
 const ingredient = (s) => s; // 26.3: ingrediente é string "ns:item" ou "#ns:tag"
 
 // ------------------------------------------------------------------ ids
-const varieties = M.varieties;
+// Variedades (nativas + catálogo), na ordem do enum core/Variety.java
+const strains = M.strains;
 const stations = M.stations;
 const wild = M.wild_plant;
 const qualityItems = [
-  ...varieties.flatMap((v) => [`${v.id}_fresh_flower`, `${v.id}_dried_flower`]),
+  ...strains.flatMap((v) => [`${v.id}_fresh_flower`, `${v.id}_dried_flower`]),
   'resin', 'hash',
 ];
 const flatItems = [
-  ...varieties.map((v) => `${v.id}_seeds`),
+  ...strains.map((v) => `${v.id}_seeds`),
   ...qualityItems,
   'joint',
   ...M.articles.map((a) => a.id),
@@ -39,10 +40,10 @@ const flatItems = [
 const blockItems = [...stations.map((s) => s.id), wild.id];
 
 rmSync(OUT, { recursive: true, force: true });
-const textures = generateTextures();
+const textures = generateTextures(strains);
 
 // ------------------------------------------------------------------ assets: blockstates e modelos
-for (const v of varieties) {
+for (const v of strains) {
   const variants = {};
   for (let age = 0; age <= 7; age++) variants[`age=${age}`] = { model: id(`block/${v.id}_crop_stage${Math.floor(age / 2)}`) };
   write(`assets/${NS}/blockstates/${v.id}_crop.json`, { variants });
@@ -76,12 +77,14 @@ for (const item of [...flatItems, ...blockItems]) {
 for (const lang of ['en_us', 'pt_br']) {
   const en = lang === 'en_us';
   const t = { ...M.lang[lang] };
-  for (const v of varieties) {
+  for (const v of strains) {
     const name = en ? v.en : v.pt;
     t[`item.${NS}.${v.id}_seeds`] = en ? `${name} Seeds` : `Sementes de ${name}`;
     t[`block.${NS}.${v.id}_crop`] = en ? `${name} Crop` : `Plantação de ${name}`;
     t[`item.${NS}.${v.id}_fresh_flower`] = en ? `Fresh ${name} Flower` : `Flor Fresca de ${name}`;
     t[`item.${NS}.${v.id}_dried_flower`] = en ? `Dried ${name} Flower` : `Flor Seca de ${name}`;
+    // Nome da variedade gravada em cultivo:strain (baseado, resina, haxixe)
+    t[`tooltip.${NS}.variety.${v.id}`] = name;
   }
   for (const g of [...M.generic_items, ...M.articles]) t[`item.${NS}.${g.id}`] = en ? g.en : g.pt;
   for (const b of [...stations, wild]) t[`block.${NS}.${b.id}`] = en ? b.en : b.pt;
@@ -91,7 +94,7 @@ for (const lang of ['en_us', 'pt_br']) {
 
 // ------------------------------------------------------------------ data: loot tables (formato 26.3: type/condition/modifier)
 const blockState = (block, age) => ({ type: 'minecraft:match_block', blocks: id(block), state: { age: String(age) } });
-for (const v of varieties) {
+for (const v of strains) {
   const crop = `${v.id}_crop`;
   // Mesmo formato de loot_table/blocks/wheat.json do 26.3
   write(`data/${NS}/loot_table/blocks/${crop}.json`, {
@@ -156,13 +159,20 @@ for (const s of stations) {
   });
 }
 const ss = M.seed_sources;
+// Baús de aldeia: uma entrada por variedade com peso e quantidades da raridade; vazio = soma dos pesos (50% rola semente)
+const chestEntries = strains.map((v) => {
+  const loot = ss.chest_by_rarity[v.rarity];
+  if (!loot) throw new Error(`raridade sem peso de baú: ${v.id} (${v.rarity})`);
+  return { variety: v.id, weight: loot.weight, min: loot.min, max: loot.max };
+});
+const chestEmptyWeight = chestEntries.reduce((sum, e) => sum + e.weight, 0);
 write(`data/${NS}/loot_table/inject/village_seeds.json`, {
   type: 'minecraft:chest',
   pools: [{
     rolls: 1,
     entries: [
-      { type: 'minecraft:empty', weight: ss.chest_empty_weight },
-      ...ss.chest_entries.map((e) => ({
+      { type: 'minecraft:empty', weight: chestEmptyWeight },
+      ...chestEntries.map((e) => ({
         type: 'minecraft:item',
         name: id(`${e.variety}_seeds`),
         weight: e.weight,
@@ -173,7 +183,18 @@ write(`data/${NS}/loot_table/inject/village_seeds.json`, {
 });
 
 // ------------------------------------------------------------------ data: receitas
-for (const r of M.crafting) {
+// Baseado: um crafting_transmute por variedade (o transmute só copia o patch de componentes da flor, então a
+// variedade vai fixa no resultado de cada receita)
+const crafting = [
+  ...M.crafting,
+  ...strains.map((v) => ({
+    id: `joint_${v.id}`,
+    result: 'joint',
+    count: 1,
+    transmute: { input: id(`${v.id}_dried_flower`), material: M.joint_recipe.material, strain: v.id },
+  })),
+];
+for (const r of crafting) {
   const result = { id: id(r.result), count: r.count };
   const file = `data/${NS}/recipe/${r.id ?? r.result}.json`;
   if (r.pattern) {
@@ -189,7 +210,7 @@ for (const r of M.crafting) {
     write(file, {
       type: 'minecraft:crafting_transmute',
       category: 'misc',
-      group: 'cultivo_joint',
+      group: M.joint_recipe.group,
       input: ingredient(r.transmute.input),
       material: ingredient(r.transmute.material),
       result: { ...result, components: { [id('strain')]: r.transmute.strain } },
@@ -211,7 +232,7 @@ const recipeIngredients = (r) => {
   return r.ingredients;
 };
 const criterionName = (ingredientId) => `has_${ingredientId.replace(/^#/, '').split(':').pop().replace(/\//g, '_')}`;
-for (const r of M.crafting) {
+for (const r of crafting) {
   const recipeId = id(r.id ?? r.result);
   const criteria = {};
   for (const ing of [...new Set(recipeIngredients(r))]) {
@@ -229,7 +250,7 @@ for (const r of M.crafting) {
   });
 }
 const proc = M.processing;
-for (const v of varieties) {
+for (const v of strains) {
   write(`data/${NS}/recipe/drying/${v.id}_dried_flower.json`, {
     type: id('drying'),
     ingredient: id(`${v.id}_fresh_flower`),
@@ -254,11 +275,11 @@ write(`data/${NS}/recipe/pressing/hash.json`, {
 });
 
 // ------------------------------------------------------------------ data: tags
-const crops = varieties.map((v) => id(`${v.id}_crop`));
+const crops = strains.map((v) => id(`${v.id}_crop`));
 write(`data/${NS}/tags/block/greenhouse_glass.json`, { replace: false, values: M.greenhouse_glass });
-write(`data/${NS}/tags/item/dried_flowers.json`, { replace: false, values: varieties.map((v) => id(`${v.id}_dried_flower`)) });
-write(`data/${NS}/tags/item/fresh_flowers.json`, { replace: false, values: varieties.map((v) => id(`${v.id}_fresh_flower`)) });
-write(`data/${NS}/tags/item/seeds.json`, { replace: false, values: varieties.map((v) => id(`${v.id}_seeds`)) });
+write(`data/${NS}/tags/item/dried_flowers.json`, { replace: false, values: strains.map((v) => id(`${v.id}_dried_flower`)) });
+write(`data/${NS}/tags/item/fresh_flowers.json`, { replace: false, values: strains.map((v) => id(`${v.id}_fresh_flower`)) });
+write(`data/${NS}/tags/item/seeds.json`, { replace: false, values: strains.map((v) => id(`${v.id}_seeds`)) });
 // Entradas de cada estação (cultivo:<estação>_inputs), espelhando os ingredientes das receitas acima. O cliente
 // não recebe as receitas, mas recebe as tags: o bloco usa esta tag para prever o clique.
 const stationInputs = {

@@ -78,7 +78,11 @@ public final class ContentIds {
         "station_real_ticker",
         "station_reload_resumes",
         "smoke_refused_at_finish_explains",
-        "villager_replants_mod_crop");
+        "villager_replants_mod_crop",
+        "catalog_strain_grows_and_drops",
+        "catalog_joint_carries_strain",
+        "wandering_trader_catalog_seeds",
+        "creative_tabs_split");
 
     private ContentIds() {}
 
@@ -123,5 +127,32 @@ public final class ContentIds {
 
     public static List<String> allItems() {
         return Stream.concat(flatItems().stream(), blocksWithItems().stream()).toList();
+    }
+
+    /**
+     * Itens da aba "Cultivo", em ordem: estações, planta silvestre, processados (resina, haxixe, baseado) e artigos.
+     * Sementes e flores ficam na aba "Cultivo: Genéticas".
+     */
+    public static List<String> mainTabItems() {
+        List<String> ids = new ArrayList<>(STATIONS);
+        ids.add(WILD_PLANT);
+        ids.addAll(List.of(RESIN, HASH, JOINT));
+        ids.addAll(ARTICLES);
+        return List.copyOf(ids);
+    }
+
+    /**
+     * Itens da aba "Cultivo: Genéticas": semente, flor fresca e flor seca de cada variedade (3 por variedade, então
+     * cada linha de 9 espaços mostra 3 variedades), agrupadas por origem e depois raridade
+     * ({@link Variety#byOriginThenRarity()}).
+     */
+    public static List<String> strainTabItems() {
+        List<String> ids = new ArrayList<>();
+        for (Variety v : Variety.byOriginThenRarity()) {
+            ids.add(v.seedsId());
+            ids.add(v.freshFlowerId());
+            ids.add(v.driedFlowerId());
+        }
+        return List.copyOf(ids);
     }
 }

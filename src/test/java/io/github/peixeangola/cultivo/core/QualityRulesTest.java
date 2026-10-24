@@ -22,6 +22,21 @@ class QualityRulesTest {
         assertEquals(0.50, Variety.ECLIPSE.qualityBonusChance(), 1e-9);
     }
 
+    /** No catálogo a potência define a chance do mesmo jeito: 1 → 0,20, 2 → 0,35, 3 → 0,50. */
+    @Test
+    void catalogBonusChancesFollowPotency() {
+        assertEquals(1, Variety.LUZES_DO_NORTE.potency());
+        assertEquals(0.20, Variety.LUZES_DO_NORTE.qualityBonusChance(), 1e-9);
+        assertEquals(2, Variety.MANGA_GELADA.potency());
+        assertEquals(0.35, Variety.MANGA_GELADA.qualityBonusChance(), 1e-9);
+        assertEquals(3, Variety.AMNESIA_NEBLINA.potency());
+        assertEquals(0.50, Variety.AMNESIA_NEBLINA.qualityBonusChance(), 1e-9);
+        assertEquals(3, QualityRules.harvestQuality(Variety.AMNESIA_NEBLINA, false, 0.49));
+        assertEquals(2, QualityRules.harvestQuality(Variety.MANGA_GELADA, false, 0.35));
+        assertEquals(5, QualityRules.harvestQuality(Variety.LUZES_DO_NORTE, true, 0.19));
+        assertEquals(4, QualityRules.harvestQuality(Variety.LUZES_DO_NORTE, true, 0.20));
+    }
+
     @ParameterizedTest
     @EnumSource(Variety.class)
     void rollBelowChanceAddsOne(Variety variety) {

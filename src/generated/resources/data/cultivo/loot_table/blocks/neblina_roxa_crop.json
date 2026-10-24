@@ -1,0 +1,62 @@
+{
+  "type": "minecraft:block",
+  "modifier": {
+    "type": "minecraft:explosion_decay"
+  },
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "name": "cultivo:neblina_roxa_fresh_flower",
+              "condition": {
+                "type": "minecraft:match_block",
+                "blocks": "cultivo:neblina_roxa_crop",
+                "state": {
+                  "age": "7"
+                }
+              },
+              "modifier": {
+                "type": "cultivo:set_harvest_quality"
+              }
+            },
+            {
+              "type": "minecraft:item",
+              "name": "cultivo:neblina_roxa_seeds"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:match_block",
+        "blocks": "cultivo:neblina_roxa_crop",
+        "state": {
+          "age": "7"
+        }
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "cultivo:neblina_roxa_seeds",
+          "modifier": {
+            "type": "minecraft:apply_bonus",
+            "enchantment": "minecraft:fortune",
+            "formula": "minecraft:binomial_with_bonus_count",
+            "parameters": {
+              "extra": 3,
+              "probability": 0.5714286
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "random_sequence": "cultivo:blocks/neblina_roxa_crop"
+}

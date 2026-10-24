@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cultivo:item/creme_de_caramelo_dried_flower"
+  }
+}

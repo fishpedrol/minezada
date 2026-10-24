@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": {
+    "crop": "cultivo:block/andarilho_do_ceu_crop_stage1"
+  }
+}

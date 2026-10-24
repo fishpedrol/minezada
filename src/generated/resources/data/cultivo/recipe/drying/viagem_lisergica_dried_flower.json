@@ -1,0 +1,10 @@
+{
+  "type": "cultivo:drying",
+  "ingredient": "cultivo:viagem_lisergica_fresh_flower",
+  "input_count": 1,
+  "result": {
+    "id": "cultivo:viagem_lisergica_dried_flower",
+    "count": 1
+  },
+  "processing_time": 600
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cultivo:item/ligeirinha_fresh_flower"
+  }
+}

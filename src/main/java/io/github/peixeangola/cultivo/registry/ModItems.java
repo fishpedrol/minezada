@@ -7,6 +7,7 @@ import io.github.peixeangola.cultivo.core.SmokeRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.item.DecorativeItem;
+import io.github.peixeangola.cultivo.item.FlowerItem;
 import io.github.peixeangola.cultivo.item.LighterItem;
 import io.github.peixeangola.cultivo.item.QualityItem;
 import io.github.peixeangola.cultivo.item.SeedItem;
@@ -41,8 +42,8 @@ public final class ModItems {
             // useItemDescriptionPrefix: o item-semente é o BlockItem do crop, mas usa item.cultivo.<v>_seeds
             SEEDS.put(variety, ITEMS.register(seeds, () -> new SeedItem(variety, ModBlocks.CROPS.get(variety).get(),
                 new Item.Properties().setId(ITEMS.key(seeds)).useItemDescriptionPrefix())));
-            FRESH_FLOWERS.put(variety, quality(variety.freshFlowerId()));
-            DRIED_FLOWERS.put(variety, quality(variety.driedFlowerId()));
+            FRESH_FLOWERS.put(variety, flower(variety, variety.freshFlowerId()));
+            DRIED_FLOWERS.put(variety, flower(variety, variety.driedFlowerId()));
         }
     }
 
@@ -92,16 +93,22 @@ public final class ModItems {
 
     /** Variedade de uma semente, flor fresca ou flor seca pelo item; null para outros itens. */
     public static Variety varietyOf(net.minecraft.world.item.ItemStack stack) {
-        for (Variety variety : Variety.values()) {
-            if (stack.is(SEEDS.get(variety).get()) || stack.is(FRESH_FLOWERS.get(variety).get())
-                || stack.is(DRIED_FLOWERS.get(variety).get())) {
-                return variety;
-            }
+        Item item = stack.getItem();
+        if (item instanceof SeedItem seed) {
+            return seed.variety();
+        }
+        if (item instanceof FlowerItem flower) {
+            return flower.variety();
         }
         return null;
     }
 
     private static RegistryObject<Item> quality(String name) {
         return ITEMS.register(name, () -> new QualityItem(new Item.Properties().setId(ITEMS.key(name))));
+    }
+
+    /** Flor fresca ou seca: já sabe a variedade (perfil no tooltip) e carrega cultivo:quality como os outros. */
+    private static RegistryObject<Item> flower(Variety variety, String name) {
+        return ITEMS.register(name, () -> new FlowerItem(variety, new Item.Properties().setId(ITEMS.key(name))));
     }
 }

@@ -1,7 +1,7 @@
 // Gera todas as texturas originais 16x16 do Cultivo a partir de pixel art em ASCII.
 // Uso: node tools/art/textures.mjs   (escreve em src/generated/resources/assets/cultivo/textures)
 // Cada textura é uma grade de 16 linhas x 16 colunas; '.' é transparente e os demais símbolos vêm da paleta.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodePng, parseColor } from './png.mjs';
@@ -30,7 +30,8 @@ function render(name, grid, palette) {
 }
 
 // ---------------------------------------------------------------- variedades
-const VARIETIES = {
+// Paletas próprias das nativas: a família de arte delas é o próprio ID (brisa, aurora, eclipse)
+const NATIVE_PALETTES = {
   brisa: {
     leaf: '#7cc142', leafDark: '#4e8f2a', stem: '#5f8f32',
     bud: '#cfe38a', budDark: '#9fbf55', pistil: '#e8a04a',
@@ -50,6 +51,152 @@ const VARIETIES = {
     dried: '#6e5a73', driedDark: '#45374b', driedPistil: '#a65a2c',
   },
 };
+
+// Paletas-base das famílias do catálogo (campo "family" de manifest.json). Até o estágio de arte redesenhar tudo,
+// as variedades do catálogo usam as mesmas grades das nativas com estas cores.
+const FAMILY_PALETTES = {
+  verde: {
+    leaf: '#6fb83e', leafDark: '#457f27', stem: '#548a30',
+    bud: '#b9dc78', budDark: '#84ad4a', pistil: '#e39a45',
+    seed: '#b8a07a', seedDark: '#5e4a32', seedHi: '#e0cfa6',
+    dried: '#a8b062', driedDark: '#707838', driedPistil: '#b06a34',
+  },
+  verde_escuro: {
+    leaf: '#3e7a36', leafDark: '#26522a', stem: '#355e2e',
+    bud: '#7fae5a', budDark: '#4f7a3a', pistil: '#d98a40',
+    seed: '#6e5a44', seedDark: '#33281c', seedHi: '#9c8466',
+    dried: '#6a7a44', driedDark: '#424e2a', driedPistil: '#9a5a2a',
+  },
+  limao: {
+    leaf: '#8ccf3e', leafDark: '#5a9a26', stem: '#6a9a32',
+    bud: '#e4ec7a', budDark: '#b8c444', pistil: '#f2b84a',
+    seed: '#c8b07a', seedDark: '#6a5634', seedHi: '#ece0b0',
+    dried: '#c4c068', driedDark: '#8a8638', driedPistil: '#c08a36',
+  },
+  dourado: {
+    leaf: '#7cb040', leafDark: '#4f7d28', stem: '#6b8a34',
+    bud: '#e8c85a', budDark: '#b8963a', pistil: '#f08a3a',
+    seed: '#b89a62', seedDark: '#5c4626', seedHi: '#e6d09a',
+    dried: '#c8a85a', driedDark: '#8a7034', driedPistil: '#b8662c',
+  },
+  roxo: {
+    leaf: '#4f8a40', leafDark: '#33602e', stem: '#456e34',
+    bud: '#9a6cc0', budDark: '#6a4890', pistil: '#e8904a',
+    seed: '#6a5a52', seedDark: '#2e2420', seedHi: '#9a8a80',
+    dried: '#7a6488', driedDark: '#4e3e5c', driedPistil: '#b06a34',
+  },
+  azul: {
+    leaf: '#4a8a5a', leafDark: '#2e5e3e', stem: '#3f6a46',
+    bud: '#7a9ad8', budDark: '#4e68a8', pistil: '#f0a050',
+    seed: '#5e6670', seedDark: '#2a2e34', seedHi: '#8e98a4',
+    dried: '#6e7e9e', driedDark: '#46526c', driedPistil: '#b07a3c',
+  },
+  rosa: {
+    leaf: '#5ea544', leafDark: '#3c742c', stem: '#4f7f34',
+    bud: '#e898bc', budDark: '#b8648e', pistil: '#f4c060',
+    seed: '#a08478', seedDark: '#4e3a34', seedHi: '#d0b8ac',
+    dried: '#b88aa0', driedDark: '#7e586c', driedPistil: '#c0843c',
+  },
+  gelo: {
+    leaf: '#6aa86a', leafDark: '#44784a', stem: '#557f50',
+    bud: '#e6eee6', budDark: '#b4c4b8', pistil: '#e8a868',
+    seed: '#b0aca4', seedDark: '#56524c', seedHi: '#e4e0d8',
+    dried: '#c8ccc0', driedDark: '#8e9488', driedPistil: '#b88a54',
+  },
+  creme: {
+    leaf: '#78a848', leafDark: '#4e782e', stem: '#648a3a',
+    bud: '#ecd8a8', budDark: '#c0a070', pistil: '#d8783a',
+    seed: '#c0a07a', seedDark: '#624a30', seedHi: '#ead6b4',
+    dried: '#c8b088', driedDark: '#8e7650', driedPistil: '#a8602c',
+  },
+};
+
+// Variação de destaque determinística pela posição da variedade dentro da família (na ordem do manifesto): a 1ª usa a
+// paleta-base; as seguintes giram o tom dos botões, mudam a claridade das folhas e sementes e trocam a cor dos
+// pistilos, para duas variedades da mesma família nunca saírem iguais (AssetCompletenessTest confere).
+const ACCENTS = [
+  null,
+  { hue: 14, light: 0.05, pistil: '#f2c14e' },
+  { hue: -14, light: -0.05, pistil: '#d9653a' },
+  { hue: 28, light: -0.02, pistil: '#ff9ec4' },
+  { hue: -28, light: 0.02, pistil: '#f6e3b0' },
+  { hue: 7, light: 0.08, pistil: '#e8503a' },
+];
+
+function rgbToHsl([r, g, b]) {
+  const [rn, gn, bn] = [r / 255, g / 255, b / 255];
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h;
+  if (max === rn) h = (gn - bn) / d + (gn < bn ? 6 : 0);
+  else if (max === gn) h = (bn - rn) / d + 2;
+  else h = (rn - gn) / d + 4;
+  return [h * 60, s, l];
+}
+
+function hslToRgb([h, s, l]) {
+  if (s === 0) return [l, l, l].map((v) => Math.round(v * 255));
+  const hn = (((h % 360) + 360) % 360) / 360;
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const channel = (t) => {
+    const u = t < 0 ? t + 1 : t > 1 ? t - 1 : t;
+    if (u < 1 / 6) return p + (q - p) * 6 * u;
+    if (u < 1 / 2) return q;
+    if (u < 2 / 3) return p + (q - p) * (2 / 3 - u) * 6;
+    return p;
+  };
+  return [channel(hn + 1 / 3), channel(hn), channel(hn - 1 / 3)].map((v) => Math.round(v * 255));
+}
+
+/** Gira o tom (graus) e soma à claridade (0–1) de uma cor '#rrggbb'. */
+function shift(hex, dHue, dLight) {
+  const [h, s, l] = rgbToHsl(parseColor(hex).slice(0, 3));
+  const rgb = hslToRgb([h + dHue, s, Math.min(0.95, Math.max(0.05, l + dLight))]);
+  return '#' + rgb.map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+function withAccent(base, a) {
+  if (!a) return base;
+  return {
+    leaf: shift(base.leaf, a.hue * 0.25, a.light),
+    leafDark: shift(base.leafDark, a.hue * 0.25, a.light),
+    stem: shift(base.stem, a.hue * 0.25, a.light),
+    bud: shift(base.bud, a.hue, a.light * 0.5),
+    budDark: shift(base.budDark, a.hue, a.light * 0.5),
+    pistil: a.pistil,
+    seed: shift(base.seed, a.hue * 0.5, a.light),
+    seedDark: shift(base.seedDark, a.hue * 0.5, a.light),
+    seedHi: shift(base.seedHi, a.hue * 0.5, a.light),
+    dried: shift(base.dried, a.hue * 0.6, a.light * 0.5),
+    driedDark: shift(base.driedDark, a.hue * 0.6, a.light * 0.5),
+    driedPistil: shift(a.pistil, 0, -0.18),
+  };
+}
+
+/** Paleta de cada variedade ({id, family} do manifesto), na ordem dada: id → cores. */
+export function strainPalettes(strains) {
+  const seen = {};
+  const palettes = {};
+  for (const strain of strains) {
+    const index = seen[strain.family] ?? 0;
+    seen[strain.family] = index + 1;
+    if (NATIVE_PALETTES[strain.family]) {
+      if (index > 0) throw new Error(`família nativa compartilhada: ${strain.family}`);
+      palettes[strain.id] = NATIVE_PALETTES[strain.family];
+      continue;
+    }
+    const base = FAMILY_PALETTES[strain.family];
+    if (!base) throw new Error(`família de arte desconhecida: ${strain.family} (${strain.id})`);
+    if (index >= ACCENTS.length) throw new Error(`família ${strain.family} passou de ${ACCENTS.length} variedades`);
+    palettes[strain.id] = withAccent(base, ACCENTS[index]);
+  }
+  return palettes;
+}
 
 const CROP_STAGES = [
   [
@@ -625,9 +772,10 @@ const WILD = {
   L: '#6a9a3c', D: '#46702a', S: '#557a2e', B: '#a9c46a', b: '#7f9a46', P: '#d99b4a',
 };
 
-export function generateAll() {
+/** @param strains seção "strains" do manifesto (id e family de cada variedade) */
+export function generateAll(strains) {
   const written = [];
-  for (const [id, c] of Object.entries(VARIETIES)) {
+  for (const [id, c] of Object.entries(strainPalettes(strains))) {
     const plant = { L: c.leaf, D: c.leafDark, S: c.stem, B: c.bud, b: c.budDark, P: c.pistil };
     CROP_STAGES.forEach((grid, stage) => written.push(render(`block/${id}_crop_stage${stage}`, grid, plant)));
     written.push(render(`item/${id}_seeds`, SEEDS, { o: c.seedDark, O: c.seed, h: c.seedHi }));
@@ -644,6 +792,7 @@ export function generateAll() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const files = generateAll();
+  const manifest = JSON.parse(readFileSync(join(ROOT, 'tools', 'gen', 'manifest.json'), 'utf8'));
+  const files = generateAll(manifest.strains);
   console.log(`${files.length} texturas geradas em ${OUT}`);
 }

@@ -14,7 +14,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -83,6 +85,7 @@ class AssetCompletenessTest {
                 assertTranslated(t, "block.cultivo." + block, lang);
             }
             assertTranslated(t, "itemGroup.cultivo", lang);
+            assertTranslated(t, "itemGroup.cultivo.strains", lang);
         }
     }
 
@@ -128,6 +131,36 @@ class AssetCompletenessTest {
                 assertTranslated(t, "tooltip.cultivo.rarity." + v.rarity().name().toLowerCase(), lang);
                 assertTranslated(t, "tooltip.cultivo.cycle." + v.cycle().name().toLowerCase(), lang);
                 assertTranslated(t, "tooltip.cultivo.lineage." + v.lineage().name().toLowerCase(), lang);
+                assertTranslated(t, "tooltip.cultivo.potency." + v.potency(), lang);
+            }
+            // Raridade · ciclo · genética · potência
+            assertEquals("%s · %s · %s · %s", t.get("tooltip.cultivo.strain_profile").getAsString(), lang);
+        }
+        JsonObject pt = Resources.json(Resources.assets("lang/pt_br.json"));
+        assertEquals("Comum", pt.get("tooltip.cultivo.rarity.common").getAsString());
+        assertEquals("Automática", pt.get("tooltip.cultivo.cycle.autoflowering").getAsString());
+        assertEquals("Sativa", pt.get("tooltip.cultivo.lineage.sativa").getAsString());
+        assertEquals("Potência ★☆☆", pt.get("tooltip.cultivo.potency.1").getAsString());
+        assertEquals("Potência ★★☆", pt.get("tooltip.cultivo.potency.2").getAsString());
+        assertEquals("Potência ★★★", pt.get("tooltip.cultivo.potency.3").getAsString());
+        assertEquals("Cultivo: Genéticas", pt.get("itemGroup.cultivo.strains").getAsString());
+    }
+
+    /**
+     * Até o estágio de arte, as variedades do catálogo usam as grades das nativas com a paleta da família e uma
+     * variação por variedade: nenhuma textura de variedade pode sair idêntica à de outra.
+     */
+    @Test
+    void strainTexturesAreDistinct() throws IOException {
+        List<String> kinds = List.of("block/%s_crop_stage0", "block/%s_crop_stage1", "block/%s_crop_stage2",
+            "block/%s_crop_stage3", "item/%s_seeds", "item/%s_fresh_flower", "item/%s_dried_flower");
+        for (String kind : kinds) {
+            Map<String, String> seen = new HashMap<>();
+            for (Variety v : Variety.values()) {
+                Path png = Resources.assets("textures/" + String.format(kind, v.id()) + ".png");
+                String bytes = HexFormat.of().formatHex(Files.readAllBytes(png));
+                String other = seen.putIfAbsent(bytes, v.id());
+                assertTrue(other == null, String.format(kind, v.id()) + " igual à de " + other);
             }
         }
     }

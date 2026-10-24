@@ -12,9 +12,11 @@ import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModLootFunctions;
 import io.github.peixeangola.cultivo.registry.ModRecipes;
 import io.github.peixeangola.cultivo.village.FarmerReplant;
+import io.github.peixeangola.cultivo.village.WanderingTraderSeeds;
 import net.minecraft.resources.Identifier;
 import net.minecraftforge.event.LootTableLoadEvent;
 import net.minecraftforge.event.VanillaGameEvent;
+import net.minecraftforge.event.entity.living.MobSpawnEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -41,6 +43,8 @@ public final class Cultivo {
         LootTableLoadEvent.BUS.addListener(SeedLootInjector::onLootTableLoad);
         // Fazendeiros replantam a lavoura do mod que colhem, em vez de trocá-la por trigo
         VanillaGameEvent.BUS.addListener(FarmerReplant::onGameEvent);
+        // Mascate novo ganha 2 ofertas de sementes do catálogo (só no servidor)
+        MobSpawnEvent.FinalizeSpawn.BUS.addListener(WanderingTraderSeeds::onFinalizeSpawn);
     }
 
     public static Identifier id(String path) {

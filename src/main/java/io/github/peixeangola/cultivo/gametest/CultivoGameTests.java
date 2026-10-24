@@ -4,21 +4,26 @@ import io.github.peixeangola.cultivo.Cultivo;
 import io.github.peixeangola.cultivo.block.GreenhouseDetector;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlockEntity;
 import io.github.peixeangola.cultivo.core.ArticleRecipes;
+import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.SeedSources;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.core.SmokeRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
+import io.github.peixeangola.cultivo.item.SeedItem;
 import io.github.peixeangola.cultivo.registry.ModBlocks;
 import io.github.peixeangola.cultivo.registry.ModComponents;
+import io.github.peixeangola.cultivo.registry.ModCreativeTabs;
 import io.github.peixeangola.cultivo.registry.ModEffects;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,15 +36,19 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -47,6 +56,7 @@ import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
@@ -105,6 +115,10 @@ public final class CultivoGameTests {
         TESTS.register("station_reload_resumes", () -> CultivoGameTests::stationReloadResumes);
         TESTS.register("smoke_refused_at_finish_explains", () -> CultivoGameTests::smokeRefusedAtFinishExplains);
         TESTS.register("villager_replants_mod_crop", () -> CultivoGameTests::villagerReplantsModCrop);
+        TESTS.register("catalog_strain_grows_and_drops", () -> CultivoGameTests::catalogStrainGrowsAndDrops);
+        TESTS.register("catalog_joint_carries_strain", () -> CultivoGameTests::catalogJointCarriesStrain);
+        TESTS.register("wandering_trader_catalog_seeds", () -> CultivoGameTests::wanderingTraderCatalogSeeds);
+        TESTS.register("creative_tabs_split", () -> CultivoGameTests::creativeTabsSplit);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -258,15 +272,19 @@ public final class CultivoGameTests {
                 check(count(young, flower) == 0, "imatura deu flor");
                 check(count(young, seeds) == 1, "imatura deu " + count(young, seeds) + " sementes");
             }
-            // Planta silvestre dá alguma semente do mod
+            // Planta silvestre: 1 semente por colheita, sempre de uma variedade nativa (as do catálogo não brotam no mato)
             helper.setBlock(SOIL, Blocks.GRASS_BLOCK.defaultBlockState());
             helper.setBlock(PLANT, ModBlocks.WILD_PLANT.get().defaultBlockState());
-            List<ItemStack> wild = harvest(helper);
             int seeds = 0;
-            for (Variety variety : Variety.values()) {
-                seeds += count(wild, ModItems.SEEDS.get(variety).get());
+            for (int i = 0; i < 40; i++) {
+                for (ItemStack drop : harvest(helper)) {
+                    check(drop.getItem() instanceof SeedItem, "planta silvestre deu " + drop);
+                    Variety variety = ((SeedItem) drop.getItem()).variety();
+                    check(variety.isNative(), "planta silvestre deu semente do catálogo: " + variety);
+                    seeds += drop.getCount();
+                }
             }
-            check(seeds >= 1, "planta silvestre sem sementes");
+            check(seeds == 40, "planta silvestre deu " + seeds + " sementes em 40 colheitas");
         });
     }
 
@@ -389,11 +407,19 @@ public final class CultivoGameTests {
 
     // ------------------------------------------------------------------ fontes e receitas
 
-    /** As tabelas de baú das 4 aldeias cobertas geram sementes, com Brisa mais comum que Eclipse. */
+    /**
+     * As tabelas de baú das 4 aldeias cobertas geram sementes de todas as variedades, nativas e do catálogo: cerca de
+     * metade dos baús tem semente e, por variedade, as comuns rendem mais que as incomuns, que rendem mais que as raras.
+     * O sorteio usa uma semente fixa, então o resultado é sempre o mesmo e as margens (esperado: 50% dos baús; 54, 20 e
+     * 7 sementes por variedade comum, incomum e rara em 1600 baús) ficam longe dos limites.
+     */
     public static void villageChestSeeds(GameTestHelper helper) {
         run(helper, () -> {
             ServerLevel level = helper.getLevel();
+            RandomSource random = RandomSource.create(20_261_024L);
             Map<Variety, Integer> totals = new EnumMap<>(Variety.class);
+            int chests = 0;
+            int chestsWithSeeds = 0;
             for (String tableId : SeedSources.chestTables()) {
                 LootTable table = level.getServer().reloadableRegistries()
                     .getLootTable(ResourceKey.create(Registries.LOOT_TABLE, Identifier.parse(tableId)));
@@ -402,21 +428,32 @@ public final class CultivoGameTests {
                     .create(LootContextParamSets.CHEST);
                 int found = 0;
                 for (int roll = 0; roll < 400; roll++) {
-                    for (ItemStack stack : table.getRandomItems(params)) {
-                        for (Variety variety : Variety.values()) {
-                            if (stack.is(ModItems.SEEDS.get(variety).get())) {
-                                totals.merge(variety, stack.getCount(), Integer::sum);
-                                found++;
-                            }
+                    chests++;
+                    int seedStacks = 0;
+                    for (ItemStack stack : table.getRandomItems(params, random)) {
+                        if (stack.getItem() instanceof SeedItem seed) {
+                            totals.merge(seed.variety(), stack.getCount(), Integer::sum);
+                            seedStacks++;
                         }
                     }
+                    check(seedStacks <= 1, "a rolagem injetada deu " + seedStacks + " pilhas de semente num baú");
+                    chestsWithSeeds += seedStacks;
+                    found += seedStacks;
                 }
                 check(found > 0, "sem sementes em " + tableId);
             }
-            int brisa = totals.getOrDefault(Variety.BRISA, 0);
-            int eclipse = totals.getOrDefault(Variety.ECLIPSE, 0);
-            check(eclipse > 0, "eclipse nunca apareceu");
-            check(brisa > eclipse * 3, "raridade: brisa " + brisa + " vs eclipse " + eclipse);
+            double share = chestsWithSeeds / (double) chests;
+            check(share > 0.45 && share < 0.55, "baús com semente: " + chestsWithSeeds + "/" + chests);
+            long catalogSeen = totals.keySet().stream().filter(v -> !v.isNative()).count();
+            check(catalogSeen >= 30, "só " + catalogSeen + " variedades do catálogo apareceram");
+            Map<Variety.Rarity, Integer> byRarity = new EnumMap<>(Variety.Rarity.class);
+            totals.forEach((variety, n) -> byRarity.merge(variety.rarity(), n, Integer::sum));
+            // Média por variedade: 25 comuns, 4 incomuns e 11 raras
+            double common = byRarity.getOrDefault(Variety.Rarity.COMMON, 0) / 25.0;
+            double uncommon = byRarity.getOrDefault(Variety.Rarity.UNCOMMON, 0) / 4.0;
+            double rare = byRarity.getOrDefault(Variety.Rarity.RARE, 0) / 11.0;
+            check(common > uncommon && uncommon > rare && rare > 0,
+                "sementes por variedade: comum " + common + ", incomum " + uncommon + ", rara " + rare);
         });
     }
 
@@ -1187,6 +1224,186 @@ public final class CultivoGameTests {
             check(level.getBlockState(pos).isAir(), "replantou sem aldeão");
             level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D)).forEach(ItemEntity::discard);
             villager.discard();
+        });
+    }
+
+    // ------------------------------------------------------------------ variedades do catálogo
+
+    /**
+     * Uma variedade do catálogo (Manga Gelada) segue o caminho real do jogo: a semente é plantada pelo clique na
+     * farmland, cresce só com random ticks e, quebrada madura, derruba a própria flor fresca (qualidade outdoor 2–3) e
+     * as próprias sementes, sem itens de outra variedade.
+     */
+    public static void catalogStrainGrowsAndDrops(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            Variety strain = Variety.MANGA_GELADA;
+            check(!strain.isNative(), "preparo: variedade do catálogo");
+            ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            helper.setBlock(SOIL, Blocks.FARMLAND.defaultBlockState().setValue(FarmlandBlock.MOISTURE, FarmlandBlock.MAX_MOISTURE));
+            helper.setBlock(PLANT, Blocks.AIR.defaultBlockState());
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SEEDS.get(strain).get(), 4));
+            BlockPos soil = helper.absolutePos(SOIL);
+            BlockHitResult top = new BlockHitResult(Vec3.atCenterOf(soil).add(0.0D, 0.5D, 0.0D), Direction.UP, soil, false);
+            InteractionResult planted = player.gameMode.useItemOn(player, level, player.getMainHandItem(),
+                InteractionHand.MAIN_HAND, top);
+            check(planted.consumesAction(), "a semente não foi plantada: " + planted);
+            BlockPos pos = helper.absolutePos(PLANT);
+            BlockState seedling = level.getBlockState(pos);
+            check(seedling.is(ModBlocks.CROPS.get(strain).get()) && seedling.getValue(CropBlock.AGE) == 0,
+                "plantou " + seedling);
+            check(player.getMainHandItem().getCount() == 3, "a semente plantada não saiu da mão");
+
+            int ticks = 0;
+            while (ticks < 20_000 && level.getBlockState(pos).getValue(CropBlock.AGE) < 7) {
+                level.getBlockState(pos).randomTick(level, pos, level.getRandom());
+                ticks++;
+            }
+            check(level.getBlockState(pos).getValue(CropBlock.AGE) == 7, strain + " não amadureceu");
+
+            check(level.destroyBlock(pos, true, player), "não colheu");
+            List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D));
+            int flowers = 0;
+            int seeds = 0;
+            for (ItemEntity entity : drops) {
+                ItemStack stack = entity.getItem();
+                Variety dropped = ModItems.varietyOf(stack);
+                check(dropped == strain, "a colheita deu item de outra variedade: " + stack);
+                if (stack.is(ModItems.FRESH_FLOWERS.get(strain).get())) {
+                    Integer q = quality(stack);
+                    check(q != null && q >= 2 && q <= 3, "qualidade outdoor " + q);
+                    flowers += stack.getCount();
+                } else if (stack.is(ModItems.SEEDS.get(strain).get())) {
+                    seeds += stack.getCount();
+                }
+            }
+            check(flowers == 1, "flores da colheita: " + flowers);
+            check(seeds >= 1, "a colheita madura não deu sementes");
+            drops.forEach(ItemEntity::discard);
+        });
+    }
+
+    /**
+     * Flor do catálogo pela cadeia toda: a secagem mantém a variedade e a qualidade, o baseado da receita grava a
+     * variedade e a qualidade, e fumar usa o perfil da genética (Bananona é híbrida: só Regeneração). A peneira também
+     * guarda a variedade na resina. Outras genéticas do catálogo: Amnésia Neblina (sativa) e Luzes do Norte (índica).
+     */
+    public static void catalogJointCarriesStrain(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            Variety strain = Variety.BANANONA;
+            ProcessingStationBlockEntity drying = placeStation(helper, StationKind.DRYING);
+            check(drying.insert(level, withQuality(ModItems.FRESH_FLOWERS.get(strain).get(), 2, 4)) == 2, "secagem recusou");
+            tick(helper, drying, StationKind.DRYING.defaultTicks());
+            ItemStack dried = drying.extract();
+            check(dried.is(ModItems.DRIED_FLOWERS.get(strain).get()) && dried.getCount() == 1, "secou em " + dried);
+            check(Integer.valueOf(4).equals(quality(dried)), "a secagem mudou a qualidade: " + quality(dried));
+
+            ItemStack joint = craftJoint(helper, dried);
+            check(joint.get(ModComponents.STRAIN.get()) == strain, "variedade do baseado: " + joint.get(ModComponents.STRAIN.get()));
+            check(Integer.valueOf(4).equals(quality(joint)), "qualidade do baseado: " + quality(joint));
+            Player hybrid = smoker(helper, joint, lighter());
+            check(smokeOnce(helper, hybrid) == InteractionResult.CONSUME, "uso recusado");
+            check(highTicks(hybrid) == 1260, "baseado q4: " + highTicks(hybrid));
+            check(hybrid.hasEffect(MobEffects.REGENERATION) && !hybrid.hasEffect(MobEffects.SPEED)
+                && !hybrid.hasEffect(MobEffects.SLOWNESS), "perfil híbrido");
+
+            ProcessingStationBlockEntity sieve = placeStationAt(helper, StationKind.SIEVING, SOIL.east(2));
+            sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(strain).get(), 1, 3));
+            tick(helper, sieve, StationKind.SIEVING.defaultTicks());
+            ItemStack resin = sieve.extract();
+            check(resin.is(ModItems.RESIN.get()) && resin.get(ModComponents.STRAIN.get()) == strain, "resina " + resin);
+
+            ItemStack sativaJoint = craftJoint(helper, withQuality(ModItems.DRIED_FLOWERS.get(Variety.AMNESIA_NEBLINA).get(), 1, 5));
+            check(sativaJoint.get(ModComponents.STRAIN.get()) == Variety.AMNESIA_NEBLINA
+                && Integer.valueOf(5).equals(quality(sativaJoint)), "baseado sativa " + sativaJoint);
+            Player sativa = smoker(helper, sativaJoint, lighter());
+            smokeOnce(helper, sativa);
+            check(highTicks(sativa) == 1440, "baseado q5: " + highTicks(sativa));
+            check(sativa.hasEffect(MobEffects.SPEED) && !sativa.hasEffect(MobEffects.SLOWNESS), "perfil sativa");
+
+            Player indica = smoker(helper, craftJoint(helper,
+                withQuality(ModItems.DRIED_FLOWERS.get(Variety.LUZES_DO_NORTE).get(), 1, 2)), lighter());
+            smokeOnce(helper, indica);
+            check(highTicks(indica) == 900, "baseado q2: " + highTicks(indica));
+            check(indica.hasEffect(MobEffects.SLOWNESS) && indica.hasEffect(MobEffects.REGENERATION)
+                && !indica.hasEffect(MobEffects.SPEED), "perfil índica");
+        });
+    }
+
+    /** Monta o baseado pela receita de crafting (flor seca + folha de seda), como na bancada. */
+    private static ItemStack craftJoint(GameTestHelper helper, ItemStack driedFlower) {
+        ServerLevel level = helper.getLevel();
+        CraftingInput input = CraftingInput.of(2, 1,
+            List.of(driedFlower, new ItemStack(ModItems.ARTICLES.get("rolling_paper").get())));
+        Optional<RecipeHolder<CraftingRecipe>> recipe = level.recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, level);
+        check(recipe.isPresent(), "sem receita de baseado para " + driedFlower);
+        ItemStack joint = recipe.get().value().assemble(input);
+        check(joint.is(ModItems.JOINT.get()) && joint.getCount() == 1, "resultado " + joint);
+        return joint;
+    }
+
+    /**
+     * Mascate novo (o mesmo caminho do spawn natural: finalizeSpawn com o evento do Forge) ganha 2 ofertas de sementes
+     * do catálogo, de variedades diferentes, 2–3 sementes por esmeraldas pela raridade (comum 2, incomum 4, rara 8),
+     * além das ofertas vanilla.
+     */
+    public static void wanderingTraderCatalogSeeds(GameTestHelper helper) {
+        run(helper, () -> {
+            Map<Variety.Rarity, Integer> price = Map.of(Variety.Rarity.COMMON, 2, Variety.Rarity.UNCOMMON, 4,
+                Variety.Rarity.RARE, 8);
+            for (int i = 0; i < 8; i++) {
+                WanderingTrader trader = helper.spawn(EntityTypes.WANDERING_TRADER, PLANT, EntitySpawnReason.EVENT);
+                List<MerchantOffer> seedOffers = trader.getOffers().stream()
+                    .filter(offer -> offer.getResult().getItem() instanceof SeedItem)
+                    .toList();
+                check(seedOffers.size() == 2, "ofertas de semente: " + seedOffers.size());
+                check(trader.getOffers().size() > 2, "as ofertas vanilla sumiram");
+                Set<Variety> strains = EnumSet.noneOf(Variety.class);
+                for (MerchantOffer offer : seedOffers) {
+                    Variety variety = ((SeedItem) offer.getResult().getItem()).variety();
+                    strains.add(variety);
+                    check(!variety.isNative(), "o mascate vendeu uma nativa: " + variety);
+                    int count = offer.getResult().getCount();
+                    check(count == 2 || count == 3, variety + ": " + count + " sementes");
+                    check(offer.getItemCostA().item().value() == Items.EMERALD, "custo em " + offer.getItemCostA());
+                    check(offer.getItemCostA().count() == price.get(variety.rarity()),
+                        variety + " (" + variety.rarity() + ") custa " + offer.getItemCostA().count());
+                    check(offer.getItemCostB().isEmpty(), "segundo custo inesperado");
+                    check(offer.getMaxUses() == 4, "usos " + offer.getMaxUses());
+                }
+                check(strains.size() == 2, "as duas ofertas são da mesma variedade: " + strains);
+                trader.discard();
+            }
+        });
+    }
+
+    /**
+     * Aba "Cultivo": estações, planta silvestre, processados e artigos, sem sementes nem flores. Aba "Cultivo:
+     * Genéticas": as 120 sementes e flores, nativas antes do catálogo e comuns antes das raras.
+     */
+    public static void creativeTabsSplit(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            CreativeModeTab.ItemDisplayParameters parameters =
+                new CreativeModeTab.ItemDisplayParameters(level.enabledFeatures(), true, level.registryAccess());
+            CreativeModeTab main = ModCreativeTabs.CULTIVO.get();
+            CreativeModeTab strains = ModCreativeTabs.STRAINS.get();
+            main.buildContents(parameters);
+            strains.buildContents(parameters);
+            List<String> mainIds = main.getDisplayItems().stream()
+                .map(stack -> BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath()).toList();
+            List<String> strainIds = strains.getDisplayItems().stream()
+                .map(stack -> BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath()).toList();
+            check(mainIds.equals(ContentIds.mainTabItems()), "aba Cultivo: " + mainIds);
+            check(strainIds.equals(ContentIds.strainTabItems()), "aba Genéticas: " + strainIds);
+            check(strainIds.size() == 120, "itens na aba Genéticas: " + strainIds.size());
+            check(strainIds.get(0).equals("brisa_seeds") && strainIds.get(9).equals("manga_gelada_seeds")
+                && strainIds.get(119).equals("bananona_dried_flower"), "ordem da aba Genéticas");
+            check(main.getDisplayItems().stream().noneMatch(stack -> ModItems.varietyOf(stack) != null),
+                "semente ou flor na aba Cultivo");
+            check(strains.getDisplayItems().stream().allMatch(stack -> ModItems.varietyOf(stack) != null),
+                "item sem variedade na aba Genéticas");
         });
     }
 }
