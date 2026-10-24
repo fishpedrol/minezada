@@ -13,6 +13,8 @@ public final class ModTags {
     /** Vidros, vidros tingidos e painéis que formam teto e paredes da estufa. */
     public static final TagKey<Block> GREENHOUSE_GLASS = TagKey.create(Registries.BLOCK, Cultivo.id("greenhouse_glass"));
     public static final TagKey<Item> DRIED_FLOWERS = TagKey.create(Registries.ITEM, Cultivo.id("dried_flowers"));
+    /** O que o pote guarda: flores secas, resina, haxixe e baseado (gerado pelo tools/gen). */
+    public static final TagKey<Item> JAR_STORABLE = TagKey.create(Registries.ITEM, Cultivo.id("jar_storable"));
 
     /**
      * Entradas aceitas por estação (cultivo:&lt;estação&gt;_inputs), geradas a partir das receitas. As tags

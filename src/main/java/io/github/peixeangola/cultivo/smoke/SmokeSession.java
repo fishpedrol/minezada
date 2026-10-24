@@ -1,5 +1,6 @@
 package io.github.peixeangola.cultivo.smoke;
 
+import io.github.peixeangola.cultivo.block.AshtrayBlock;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.core.SmokeRules;
 import io.github.peixeangola.cultivo.core.SmokeRules.EffectSpec;
@@ -36,8 +37,9 @@ import net.minecraftforge.event.ForgeEventFactory;
 
 /**
  * Fumar no jogo, sempre decidido no servidor: confere isqueiro e material, consome o baseado ou 1 flor
- * seca/haxixe, gasta 1 de durabilidade do isqueiro, aplica os efeitos calculados por {@link SmokeRules} e solta
- * fumaça. O cliente só mostra a animação e as mensagens.
+ * seca/haxixe, gasta 1 de durabilidade do isqueiro, aplica os efeitos calculados por {@link SmokeRules}, solta
+ * fumaça e deixa 1 de cinza no cinzeiro mais próximo ({@link AshtrayBlock#catchAsh}). O cliente só mostra a animação
+ * e as mensagens.
  */
 public final class SmokeSession {
     private SmokeSession() {}
@@ -108,7 +110,7 @@ public final class SmokeSession {
         return refusal;
     }
 
-    /** O que está sendo fumado: o próprio baseado ou o material do inventário. */
+    /** O que está sendo fumado: o próprio baseado (com ou sem piteira) ou o material do inventário. */
     public static Material materialOf(ItemStack smoked) {
         Integer quality = smoked.get(ModComponents.QUALITY.get());
         if (smoked.is(ModItems.HASH.get())) {
@@ -116,7 +118,7 @@ public final class SmokeSession {
         }
         Variety flower = ModItems.varietyOf(smoked);
         Variety variety = flower != null ? flower : smoked.get(ModComponents.STRAIN.get());
-        return new Material(variety, quality, false);
+        return new Material(variety, quality, false, smoked.has(ModComponents.FILTERED.get()));
     }
 
     static Holder<MobEffect> holder(SmokeRules.EffectKind kind) {
@@ -167,6 +169,8 @@ public final class SmokeSession {
             0.12D, 0.08D, 0.12D, 0.01D);
         level.playSound(null, player.blockPosition(), SoundEvents.FLINTANDSTEEL_USE, SoundSource.PLAYERS, 0.5F, 1.2F);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.15F, 1.6F);
+        // A cinza da sessão cai no cinzeiro mais próximo que não está cheio (também no criativo: nada é gasto)
+        AshtrayBlock.catchAsh(level, player.blockPosition());
         return Optional.of(effects);
     }
 

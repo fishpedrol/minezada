@@ -24,10 +24,11 @@ public final class ArticleRecipes {
      * @param pattern linhas da receita shaped; vazio nos outros tipos
      * @param key mapa símbolo → ingrediente (shaped)
      * @param ingredients ingredientes (shapeless) ou [entrada, material] (transmute)
-     * @param strain variedade gravada no resultado (só transmute do baseado), ou null
+     * @param components componentes gravados no resultado (só transmute), com o valor de cada um em JSON: por exemplo
+     *     {@code "cultivo:strain" → "\"brisa\""} no baseado e {@code "cultivo:filtered" → "{}"} na piteira
      */
     public record Recipe(String id, Kind kind, String result, int count, List<String> pattern, Map<Character, Key> key,
-                         List<Key> ingredients, String strain) {
+                         List<Key> ingredients, Map<String, String> components) {
         public boolean shaped() {
             return kind == Kind.SHAPED;
         }
@@ -64,10 +65,19 @@ public final class ArticleRecipes {
         shaped("sieve", 1, List.of("PTP", "P P"), Map.of('P', PLANKS, 'T', STRING)),
         shaped("press", 1, List.of("III", " S ", "PPP"), Map.of('I', IRON, 'S', STICK, 'P', PLANKS)));
 
-    /** Artigos, um baseado por variedade (todas as da tabela {@link Variety}) e as três estações. */
+    /**
+     * Baseado com piteira: transmute do baseado (qualquer variedade e qualidade, que passam adiante porque o transmute
+     * copia os componentes da entrada) com a piteira, gravando cultivo:filtered. Um baseado que já tem piteira não
+     * casa: o TransmuteRecipe do 26.3 recusa um resultado igual à entrada.
+     */
+    public static final Recipe JOINT_FILTERED = new Recipe("joint_filtered", Kind.TRANSMUTE, "joint", 1, List.of(),
+        Map.of(), List.of(Key.item("cultivo:joint"), Key.item("cultivo:filter_tip")), Map.of("cultivo:filtered", "{}"));
+
+    /** Artigos, um baseado por variedade (todas as da tabela {@link Variety}), a piteira e as três estações. */
     public static final List<Recipe> ALL = Stream.of(
             ARTICLES.stream(),
             Arrays.stream(Variety.values()).map(ArticleRecipes::joint),
+            Stream.of(JOINT_FILTERED),
             STATIONS.stream())
         .flatMap(recipes -> recipes)
         .toList();
@@ -75,11 +85,11 @@ public final class ArticleRecipes {
     private ArticleRecipes() {}
 
     private static Recipe shaped(String result, int count, List<String> pattern, Map<Character, Key> key) {
-        return new Recipe(result, Kind.SHAPED, result, count, pattern, key, List.of(), null);
+        return new Recipe(result, Kind.SHAPED, result, count, pattern, key, List.of(), Map.of());
     }
 
     private static Recipe shapeless(String result, int count, List<Key> ingredients) {
-        return new Recipe(result, Kind.SHAPELESS, result, count, List.of(), Map.of(), ingredients, null);
+        return new Recipe(result, Kind.SHAPELESS, result, count, List.of(), Map.of(), ingredients, Map.of());
     }
 
     /**
@@ -91,7 +101,7 @@ public final class ArticleRecipes {
     private static Recipe joint(Variety variety) {
         Key flower = Key.item("cultivo:" + variety.driedFlowerId());
         return new Recipe("joint_" + variety.id(), Kind.TRANSMUTE, "joint", 1, List.of(), Map.of(),
-            List.of(flower, Key.item("cultivo:rolling_paper")), variety.id());
+            List.of(flower, Key.item("cultivo:rolling_paper")), Map.of("cultivo:strain", "\"" + variety.id() + "\""));
     }
 
     public static Recipe byId(String id) {

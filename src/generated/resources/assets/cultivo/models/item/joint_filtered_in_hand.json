@@ -1,0 +1,6 @@
+{
+  "parent": "cultivo:item/joint_in_hand",
+  "textures": {
+    "crutch": "cultivo:item/model_cardboard"
+  }
+}

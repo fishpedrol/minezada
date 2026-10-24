@@ -401,6 +401,50 @@ const DRIED_BUD = [E, E, E,
 ];
 
 // ---------------------------------------------------------------- itens genéricos e artigos
+// Baseado: corpo (linhas 2–11 apagado, 1–11 aceso) e a boca (linhas 12–14), que muda com a piteira
+const JOINT_BODY = [
+  '.............tt.',
+  '............wwt.',
+  '...........wwwW.',
+  '..........wwwWg.',
+  '.........wwwWg..',
+  '........wwwWg...',
+  '.......wwwg.....',
+  '......wwwg......',
+  '.....wwg........',
+  '....wwg.........',
+];
+const JOINT_LIT_BODY = [
+  '.............m..',
+  '.............ye.',
+  '............wEr.',
+  '...........wwwr.',
+  '..........wwwWg.',
+  '.........wwwWg..',
+  '........wwwWg...',
+  '.......wwwg.....',
+  '......wwwg......',
+  '.....wwg........',
+  '....wwg.........',
+];
+// Sem piteira: o papel só afina e torce na boca
+const JOINT_PAPER_END = [
+  '...WWg..........',
+  '..WWg...........',
+  '..g.............',
+];
+// Com piteira: rolinho de papelão creme com o zigue-zague marrom, saindo 1 px além do papel
+const JOINT_FILTER_END = [
+  '...zcg..........',
+  '..czk...........',
+  '.zck............',
+];
+const JOINT_PALETTE = {
+  w: '#f4f0e6', W: '#d8d0bc', g: '#b8ae96', t: '#e6dcc4',
+  c: '#efe2c0', z: '#9a6a34', k: '#8a6a3a',
+  y: '#ffd060', E: '#ff8a2a', e: '#e85a1a', r: '#a8301a', m: '#b4b4b4',
+};
+
 const ITEMS = {
   // Montinho de grânulos âmbar e três grânulos soltos
   resin: {
@@ -420,46 +464,24 @@ const ITEMS = {
     ],
     palette: { k: '#6e3e10', A: '#e0a040', a: '#a8661a', h: '#ffe2a0' },
   },
+  // Baseado: cone na diagonal, fino na boca (papel torcido, embaixo à esquerda) e largo na ponta torcida
   joint: {
-    grid: [E, E,
-      '.............tt.',
-      '............wwt.',
-      '...........wwwW.',
-      '..........wwwWg.',
-      '.........wwwWg..',
-      '........wwwWg...',
-      '.......wwwg.....',
-      '......wwwg......',
-      '.....wwg........',
-      '....wwg.........',
-      '...cwg..........',
-      '..ccg...........',
-      '..c.............',
-      E,
-    ],
-    palette: { w: '#f4f0e6', W: '#d8d0bc', g: '#b8ae96', t: '#e6dcc4', c: '#c8a26a' },
+    grid: [E, E, ...JOINT_BODY, ...JOINT_PAPER_END, E],
+    palette: JOINT_PALETTE,
   },
   // Aceso (enquanto fuma): brasa laranja/vermelha na ponta e 1 pixel de fumaça
   joint_lit: {
-    grid: [
-      E,
-      '.............m..',
-      '.............ye.',
-      '............wEr.',
-      '...........wwwr.',
-      '..........wwwWg.',
-      '.........wwwWg..',
-      '........wwwWg...',
-      '.......wwwg.....',
-      '......wwwg......',
-      '.....wwg........',
-      '....wwg.........',
-      '...cwg..........',
-      '..ccg...........',
-      '..c.............',
-      E,
-    ],
-    palette: { w: '#f4f0e6', W: '#d8d0bc', g: '#b8ae96', c: '#c8a26a', y: '#ffd060', E: '#ff8a2a', e: '#e85a1a', r: '#a8301a', m: '#b4b4b4' },
+    grid: [E, ...JOINT_LIT_BODY, ...JOINT_PAPER_END, E],
+    palette: JOINT_PALETTE,
+  },
+  // Com piteira (cultivo:filtered): a boca é um rolinho de papelão creme com o zigue-zague marrom, 1 px mais comprido
+  joint_filtered: {
+    grid: [E, E, ...JOINT_BODY, ...JOINT_FILTER_END, E],
+    palette: JOINT_PALETTE,
+  },
+  joint_filtered_lit: {
+    grid: [E, ...JOINT_LIT_BODY, ...JOINT_FILTER_END, E],
+    palette: JOINT_PALETTE,
   },
   // Bong: tubo de vidro, câmara com água, downstem de 1 px e fornilho de lado
   bong: {
@@ -823,6 +845,112 @@ const BLOCKS = {
       'SSSSSSSSSSSSSSSS',
     ],
     palette: { S: '#3a2414', h: '#6a4a30', T: '#4a2f1c', s: '#7a5a3a' },
+  },
+  // Dichavador na peneira (cilindro 4x4x2, UV 1:1): tampa em cima com a borda arredondada e a folha [0,0,4,4], fundo
+  // [4,0,8,4]; a lateral (linhas 8–9, uma região de 4 px por face) tem a tampa serrilhada e o corpo mais escuro
+  grinder_block: {
+    grid: [
+      'kMMkdGGdMMMMMMMM',
+      'MhMMGGGGMMMMMMMM',
+      'MMgMGGGGMMMMMMMM',
+      'kMMkdGGdMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'HkHkHkHkHkHkHkHk',
+      'GGdGGGdGGGdGGGdG',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMM',
+    ],
+    palette: { k: '#4a525a', M: '#9aa4ae', h: '#e2e8ec', g: '#4f9a4a', H: '#d4dce2', G: '#6c7680', d: '#4a525a' },
+  },
+  // Bandeja colocada: fundo esmaltado verde [0,0,12,10], folha de seda [12,0,15,4] com a faixa de cola, botão em cima
+  // [12,4,14,6] e de lado [12,6,16,7.5], beirada do fundo (linha 10), borda: topo (linha 12) e lado (linha 13)
+  rolling_tray_block: {
+    grid: [
+      'GGGGGGGGGGGGwwyw',
+      'GggggggggggGwwyW',
+      'GgghgggggggGwwyw',
+      'GggggggggggGwwyW',
+      'GgggggghgggGbBPB',
+      'GggggggggggGBbBb',
+      'GgggghgggggGbBBb',
+      'GggggggggggGBPbB',
+      'GggggggggggGGGGG',
+      'GGGGGGGGGGGGGGGG',
+      'rrrrrrrrrrrrrrrr',
+      'kkkkkkkkkkkkkkkk',
+      'RRHRRRRRRHRRRRRR',
+      'MMMMMMMMMMMMMMMM',
+      'kkkkkkkkkkkkkkkk',
+      'kkkkkkkkkkkkkkkk',
+    ],
+    palette: {
+      G: '#2f6e48', g: '#3f8a5a', h: '#5aa874', w: '#f6f2e8', W: '#e6e0d2', y: '#ece0b8',
+      B: '#9cc46a', b: '#5e8a3a', P: '#f0a640', r: '#7c848c', k: '#3a3e44', R: '#c4ccd4', H: '#eef2f6', M: '#8e969e',
+    },
+  },
+  // Vidro do pote (cutout): lateral [5,8,11,16] com borda, reflexo e fundo opacos e o resto transparente; anel do fundo
+  // em [5,1,11,7]. Nada de alfa parcial (TextureArtTest): o vidro some onde não é borda.
+  jar_glass: {
+    grid: [
+      E,
+      '.....DDDDDD.....',
+      '.....D....D.....',
+      '.....D....D.....',
+      '.....D....D.....',
+      '.....D....D.....',
+      '.....DDDDDD.....',
+      E,
+      '.....eeeeee.....',
+      '.....Eh...E.....',
+      '.....Eh...E.....',
+      '.....Ehh..E.....',
+      '.....Eh...E.....',
+      '.....E....E.....',
+      '.....E...hE.....',
+      '.....DDDDDD.....',
+    ],
+    palette: { e: '#e4f4f8', E: '#a8d0d8', h: '#ffffff', D: '#7fa8b2' },
+  },
+  jar_lid: { grid: grainGrid(51, 'W', 'w', 'l'), palette: { W: '#a27448', w: '#6b4a2a', l: '#b88a5c' } },
+  // Flores secas atrás do vidro do pote: botões oliva com pontos roxos, laranja e de geada
+  jar_contents: {
+    grid: material(53, 'B', [['b', 0.32], ['p', 0.09], ['o', 0.06], ['F', 0.05]]),
+    palette: { B: '#7f9450', b: '#56662e', p: '#7d4f78', o: '#c07a30', F: '#d8d0b0' },
+  },
+  // Cinzeiro colocado: o topo (linhas 4–11, colunas 4–11) é a borda clara com três entalhes escuros e o fundo por
+  // dentro; as laterais (linhas 14–15) vão do claro ao escuro
+  ashtray_block: {
+    grid: [
+      'TTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTT',
+      'TTTTlllcclllTTTT',
+      'TTTTltffffflTTTT',
+      'TTTTlfffffflTTTT',
+      'TTTTcfftfffcTTTT',
+      'TTTTcffffffcTTTT',
+      'TTTTlfffffflTTTT',
+      'TTTTlffffftlTTTT',
+      'TTTTllllllllTTTT',
+      'TTTTTTTTTTTTTTTT',
+      'TTTTTTTTTTTTTTTT',
+      'TTlTTTlTTTTlTTTT',
+      'tttttttttttttttt',
+    ],
+    palette: { T: '#b5653a', t: '#8e4a28', l: '#cf8456', c: '#6a2e14', f: '#9a5530' },
+  },
+  // Cinza: cinza-claro com pontos escuros e claros
+  ashtray_ash: {
+    grid: material(55, 'a', [['A', 0.3], ['d', 0.16]]),
+    palette: { a: '#8a8a86', A: '#b4b4ae', d: '#5c5c58' },
   },
 };
 

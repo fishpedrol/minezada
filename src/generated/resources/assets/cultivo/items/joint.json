@@ -1,49 +1,102 @@
 {
   "model": {
     "type": "minecraft:condition",
-    "property": "minecraft:using_item",
+    "property": "minecraft:has_component",
+    "component": "cultivo:filtered",
     "on_true": {
-      "type": "minecraft:select",
-      "property": "minecraft:display_context",
-      "cases": [
-        {
-          "when": [
-            "gui",
-            "ground",
-            "fixed",
-            "on_shelf"
-          ],
-          "model": {
-            "type": "minecraft:model",
-            "model": "cultivo:item/joint_lit"
+      "type": "minecraft:condition",
+      "property": "minecraft:using_item",
+      "on_true": {
+        "type": "minecraft:select",
+        "property": "minecraft:display_context",
+        "cases": [
+          {
+            "when": [
+              "gui",
+              "ground",
+              "fixed",
+              "on_shelf"
+            ],
+            "model": {
+              "type": "minecraft:model",
+              "model": "cultivo:item/joint_filtered_lit"
+            }
           }
+        ],
+        "fallback": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/joint_filtered_in_hand_lit"
         }
-      ],
-      "fallback": {
-        "type": "minecraft:model",
-        "model": "cultivo:item/joint_in_hand_lit"
+      },
+      "on_false": {
+        "type": "minecraft:select",
+        "property": "minecraft:display_context",
+        "cases": [
+          {
+            "when": [
+              "gui",
+              "ground",
+              "fixed",
+              "on_shelf"
+            ],
+            "model": {
+              "type": "minecraft:model",
+              "model": "cultivo:item/joint_filtered"
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/joint_filtered_in_hand"
+        }
       }
     },
     "on_false": {
-      "type": "minecraft:select",
-      "property": "minecraft:display_context",
-      "cases": [
-        {
-          "when": [
-            "gui",
-            "ground",
-            "fixed",
-            "on_shelf"
-          ],
-          "model": {
-            "type": "minecraft:model",
-            "model": "cultivo:item/joint"
+      "type": "minecraft:condition",
+      "property": "minecraft:using_item",
+      "on_true": {
+        "type": "minecraft:select",
+        "property": "minecraft:display_context",
+        "cases": [
+          {
+            "when": [
+              "gui",
+              "ground",
+              "fixed",
+              "on_shelf"
+            ],
+            "model": {
+              "type": "minecraft:model",
+              "model": "cultivo:item/joint_lit"
+            }
           }
+        ],
+        "fallback": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/joint_in_hand_lit"
         }
-      ],
-      "fallback": {
-        "type": "minecraft:model",
-        "model": "cultivo:item/joint_in_hand"
+      },
+      "on_false": {
+        "type": "minecraft:select",
+        "property": "minecraft:display_context",
+        "cases": [
+          {
+            "when": [
+              "gui",
+              "ground",
+              "fixed",
+              "on_shelf"
+            ],
+            "model": {
+              "type": "minecraft:model",
+              "model": "cultivo:item/joint"
+            }
+          }
+        ],
+        "fallback": {
+          "type": "minecraft:model",
+          "model": "cultivo:item/joint_in_hand"
+        }
       }
     }
   }

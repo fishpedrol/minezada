@@ -5,7 +5,10 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artFamilies, CROP_STAGE_COUNT, generateAll as generateTextures } from '../art/textures.mjs';
-import { handModels, LIT_DEVICES, LIT_DISPLAY, LIT_TEXTURE_VAR, stationBlockstate, stationModels } from './models.mjs';
+import {
+  articleBlockstate, articleModels, FILTERED_HAND, handModels, LIT_DEVICES, LIT_DISPLAY, LIT_TEXTURE_VAR,
+  stationBlockstate, stationModels,
+} from './models.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'src', 'generated', 'resources');
@@ -39,6 +42,8 @@ const flatItems = [
   ...M.articles.map((a) => a.id),
 ];
 const blockItems = [...stations.map((s) => s.id), wild.id];
+// Artigos que viram bloco (bandeja, pote, cinzeiro): o item continua plano, o bloco tem modelo próprio
+const placeables = M.articles.filter((a) => a.placeable);
 
 rmSync(OUT, { recursive: true, force: true });
 const textures = generateTextures(strains);
@@ -77,12 +82,23 @@ for (const s of stations) {
   write(`assets/${NS}/models/item/${s.id}.json`, { parent: id(`block/${s.id}`) });
 }
 
+// Artigos colocáveis: modelos 3D do bloco (o item usa o ícone plano, como o vaso de flor vanilla)
+const articleDefs = articleModels();
+for (const a of placeables) {
+  const def = articleDefs[a.id];
+  if (!def) throw new Error(`artigo colocável sem modelo: ${a.id}`);
+  write(`assets/${NS}/models/block/${a.id}.json`, def.base);
+  for (const [part, p] of Object.entries(def.parts)) write(`assets/${NS}/models/block/${a.id}_${part}.json`, p.model);
+  write(`assets/${NS}/blockstates/${a.id}.json`, articleBlockstate(a.id, def));
+}
+
 // Itens planos (ícone gerado da textura)
 const flatModel = (item, texture = item) => write(`assets/${NS}/models/item/${item}.json`, {
   parent: 'minecraft:item/generated', textures: { layer0: id(`item/${texture}`) },
 });
 for (const item of flatItems) flatModel(item);
-flatModel('joint_lit');
+// Baseado aceso, com piteira e com piteira aceso
+for (const variant of ['joint_lit', 'joint_filtered', 'joint_filtered_lit']) flatModel(variant);
 for (const family of families) flatModel(`hash_${family}`);
 
 // Modelos 3D na mão dos aparelhos de fumo e do isqueiro (+ variante acesa com brasa)
@@ -97,6 +113,7 @@ for (const [device, model] of Object.entries(hand)) {
     });
   }
 }
+for (const [name, model] of Object.entries(FILTERED_HAND)) write(`assets/${NS}/models/item/${name}.json`, model);
 
 // Definições de item (assets/cultivo/items): modelo simples, ou árvore de seleção do 26.3
 const model = (path) => ({ type: 'minecraft:model', model: id(path) });
@@ -118,11 +135,19 @@ itemDefinitions.hash = {
   })),
   fallback: model('item/hash'),
 };
-// Baseado: aceso (brasa e fumaça) enquanto o jogador fuma, também no ícone da hotbar
-itemDefinitions.joint = usingItem(
-  flatOrHand(model('item/joint_lit'), model('item/joint_in_hand_lit')),
-  flatOrHand(model('item/joint'), model('item/joint_in_hand')),
-);
+// Baseado: com piteira (cultivo:filtered) ou não e, em cada caso, aceso (brasa e fumaça) enquanto o jogador fuma,
+// também no ícone da hotbar (o mesmo idioma de condições aninhadas do items/bow.json vanilla)
+itemDefinitions.joint = {
+  type: 'minecraft:condition', property: 'minecraft:has_component', component: id('filtered'),
+  on_true: usingItem(
+    flatOrHand(model('item/joint_filtered_lit'), model('item/joint_filtered_in_hand_lit')),
+    flatOrHand(model('item/joint_filtered'), model('item/joint_filtered_in_hand')),
+  ),
+  on_false: usingItem(
+    flatOrHand(model('item/joint_lit'), model('item/joint_in_hand_lit')),
+    flatOrHand(model('item/joint'), model('item/joint_in_hand')),
+  ),
+};
 for (const device of Object.keys(hand)) {
   if (device === 'joint') continue;
   const inHand = LIT_DEVICES.includes(device)
@@ -146,7 +171,8 @@ for (const lang of ['en_us', 'pt_br']) {
     t[`tooltip.${NS}.variety.${v.id}`] = name;
   }
   for (const g of [...M.generic_items, ...M.articles]) t[`item.${NS}.${g.id}`] = en ? g.en : g.pt;
-  for (const b of [...stations, wild]) t[`block.${NS}.${b.id}`] = en ? b.en : b.pt;
+  // Artigos colocáveis: o bloco tem o mesmo nome do item
+  for (const b of [...stations, wild, ...placeables]) t[`block.${NS}.${b.id}`] = en ? b.en : b.pt;
   for (const e of M.effects) t[`effect.${NS}.${e.id}`] = en ? e.en : e.pt;
   write(`assets/${NS}/lang/${lang}.json`, Object.fromEntries(Object.entries(t).sort(([a], [b]) => a.localeCompare(b))));
 }
@@ -206,16 +232,26 @@ write(`data/${NS}/loot_table/blocks/${wild.id}.json`, {
   }],
   random_sequence: id(`blocks/${wild.id}`),
 });
+// Estações e artigos colocáveis derrubam o próprio item (como o vaso de flor vanilla); a cinza do cinzeiro se perde
+const dropsSelf = (blockId) => ({
+  rolls: 1,
+  condition: { type: 'minecraft:survives_explosion' },
+  entries: [{ type: 'minecraft:item', name: id(blockId) }],
+});
 for (const s of stations) {
-  write(`data/${NS}/loot_table/blocks/${s.id}.json`, {
-    type: 'minecraft:block',
-    pools: [{
+  const pools = [dropsSelf(s.id)];
+  if (s.id === 'sieve') {
+    // A peneira com o dichavador instalado derruba o dichavador junto (mesmo formato de match_block das lavouras)
+    pools.push({
       rolls: 1,
-      condition: { type: 'minecraft:survives_explosion' },
-      entries: [{ type: 'minecraft:item', name: id(s.id) }],
-    }],
-    random_sequence: id(`blocks/${s.id}`),
-  });
+      condition: { type: 'minecraft:match_block', blocks: id('sieve'), state: { grinder: 'true' } },
+      entries: [{ type: 'minecraft:item', name: id('grinder') }],
+    });
+  }
+  write(`data/${NS}/loot_table/blocks/${s.id}.json`, { type: 'minecraft:block', pools, random_sequence: id(`blocks/${s.id}`) });
+}
+for (const a of placeables) {
+  write(`data/${NS}/loot_table/blocks/${a.id}.json`, { type: 'minecraft:block', pools: [dropsSelf(a.id)], random_sequence: id(`blocks/${a.id}`) });
 }
 const ss = M.seed_sources;
 // Baús de aldeia: uma entrada por variedade com peso e quantidades da raridade; vazio = soma dos pesos (50% rola semente)
@@ -243,14 +279,17 @@ write(`data/${NS}/loot_table/inject/village_seeds.json`, {
 
 // ------------------------------------------------------------------ data: receitas
 // Baseado: um crafting_transmute por variedade (o transmute só copia o patch de componentes da flor, então a
-// variedade vai fixa no resultado de cada receita)
+// variedade vai fixa no resultado de cada receita). O baseado com piteira (joint_filtered) vem do manifesto.
 const crafting = [
   ...M.crafting,
   ...strains.map((v) => ({
     id: `joint_${v.id}`,
     result: 'joint',
     count: 1,
-    transmute: { input: id(`${v.id}_dried_flower`), material: M.joint_recipe.material, strain: v.id },
+    transmute: {
+      input: id(`${v.id}_dried_flower`), material: M.joint_recipe.material, group: M.joint_recipe.group,
+      components: { [id('strain')]: v.id },
+    },
   })),
 ];
 for (const r of crafting) {
@@ -265,14 +304,15 @@ for (const r of crafting) {
       result,
     });
   } else if (r.transmute) {
-    // Baseado: transmute copia os componentes da flor seca (qualidade) e grava a variedade (cultivo:strain)
+    // Transmute: o resultado copia os componentes da entrada (qualidade, variedade) e aplica os da receita por cima
+    // (cultivo:strain no baseado de cada variedade, cultivo:filtered no baseado com piteira)
     write(file, {
       type: 'minecraft:crafting_transmute',
       category: 'misc',
-      group: M.joint_recipe.group,
+      group: r.transmute.group,
       input: ingredient(r.transmute.input),
       material: ingredient(r.transmute.material),
-      result: { ...result, components: { [id('strain')]: r.transmute.strain } },
+      result: { ...result, components: r.transmute.components },
     });
   } else {
     write(file, {
@@ -339,6 +379,8 @@ write(`data/${NS}/tags/block/greenhouse_glass.json`, { replace: false, values: M
 write(`data/${NS}/tags/item/dried_flowers.json`, { replace: false, values: strains.map((v) => id(`${v.id}_dried_flower`)) });
 write(`data/${NS}/tags/item/fresh_flowers.json`, { replace: false, values: strains.map((v) => id(`${v.id}_fresh_flower`)) });
 write(`data/${NS}/tags/item/seeds.json`, { replace: false, values: strains.map((v) => id(`${v.id}_seeds`)) });
+// O que o pote guarda (flores secas, resina, haxixe, baseado); a tag chega ao cliente, que prevê o clique por ela
+write(`data/${NS}/tags/item/jar_storable.json`, { replace: false, values: M.jar_storable });
 // Entradas de cada estação (cultivo:<estação>_inputs), espelhando os ingredientes das receitas acima. O cliente
 // não recebe as receitas, mas recebe as tags: o bloco usa esta tag para prever o clique.
 const stationInputs = {

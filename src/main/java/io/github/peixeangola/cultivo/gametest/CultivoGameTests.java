@@ -1,18 +1,27 @@
 package io.github.peixeangola.cultivo.gametest;
 
 import io.github.peixeangola.cultivo.Cultivo;
+import io.github.peixeangola.cultivo.block.AshtrayBlock;
 import io.github.peixeangola.cultivo.block.GreenhouseDetector;
+import io.github.peixeangola.cultivo.block.JarBlock;
+import io.github.peixeangola.cultivo.block.JarBlockEntity;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlock;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlockEntity;
+import io.github.peixeangola.cultivo.block.RollingTrayBlock;
+import io.github.peixeangola.cultivo.block.SieveBlock;
 import io.github.peixeangola.cultivo.block.StationContents;
 import io.github.peixeangola.cultivo.core.ArticleRecipes;
 import io.github.peixeangola.cultivo.core.ContentIds;
+import io.github.peixeangola.cultivo.core.CuringRules;
 import io.github.peixeangola.cultivo.core.SeedSources;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.core.SmokeRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
+import io.github.peixeangola.cultivo.item.ArticleBlockItem;
 import io.github.peixeangola.cultivo.item.SeedItem;
+import io.github.peixeangola.cultivo.item.TooltipItem;
+import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import io.github.peixeangola.cultivo.registry.ModBlocks;
 import io.github.peixeangola.cultivo.registry.ModComponents;
 import io.github.peixeangola.cultivo.registry.ModCreativeTabs;
@@ -122,6 +131,13 @@ public final class CultivoGameTests {
         TESTS.register("wandering_trader_catalog_seeds", () -> CultivoGameTests::wanderingTraderCatalogSeeds);
         TESTS.register("creative_tabs_split", () -> CultivoGameTests::creativeTabsSplit);
         TESTS.register("station_visual_state", () -> CultivoGameTests::stationVisualState);
+        TESTS.register("joint_filter_recipe", () -> CultivoGameTests::jointFilterRecipe);
+        TESTS.register("smoke_filtered_joint", () -> CultivoGameTests::smokeFilteredJoint);
+        TESTS.register("sieve_grinder", () -> CultivoGameTests::sieveGrinder);
+        TESTS.register("tray_rolls_joints", () -> CultivoGameTests::trayRollsJoints);
+        TESTS.register("jar_cures_flowers", () -> CultivoGameTests::jarCuresFlowers);
+        TESTS.register("ashtray_collects_ash", () -> CultivoGameTests::ashtrayCollectsAsh);
+        TESTS.register("placeable_articles_drop_self", () -> CultivoGameTests::placeableArticlesDropSelf);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -929,7 +945,10 @@ public final class CultivoGameTests {
         });
     }
 
-    /** Cada SmokeDevice está registrado como item fumável e funciona (inclui chillum e narguilé). */
+    /**
+     * Cada SmokeDevice está registrado como item fumável e funciona (inclui chillum e narguilé); os outros artigos têm
+     * dica de uso ou colocam o próprio bloco (nenhum é só decorativo).
+     */
     public static void smokeDevicesRegistered(GameTestHelper helper) {
         run(helper, () -> {
             for (SmokeDevice device : SmokeDevice.values()) {
@@ -946,15 +965,19 @@ public final class CultivoGameTests {
                 check(highTicks(player) == expected, device + ": " + highTicks(player) + " esperado " + expected);
             }
             check(ModItems.LIGHTER.get() instanceof io.github.peixeangola.cultivo.item.LighterItem, "isqueiro");
-            for (String article : List.of("filter_tip", "grinder", "rolling_tray", "jar", "ashtray")) {
-                check(ModItems.ARTICLES.get(article).get() instanceof io.github.peixeangola.cultivo.item.DecorativeItem,
-                    article + " deveria ser decorativo");
+            // Nenhum artigo é só decorativo: folha de seda, piteira e dichavador têm dica com o uso
+            for (String article : List.of("rolling_paper", "filter_tip", "grinder")) {
+                Item tipItem = ModItems.ARTICLES.get(article).get();
+                check(tipItem instanceof TooltipItem tip && tip.tooltipKey().equals("tooltip.cultivo." + article),
+                    article + " sem a dica de uso");
             }
-            // A folha de seda é ingrediente do baseado: dica própria, nunca "Item decorativo"
-            Item paper = ModItems.ARTICLES.get("rolling_paper").get();
-            check(!(paper instanceof io.github.peixeangola.cultivo.item.DecorativeItem), "folha de seda marcada como decorativa");
-            check(paper instanceof io.github.peixeangola.cultivo.item.TooltipItem tip
-                && tip.tooltipKey().equals("tooltip.cultivo.rolling_paper"), "folha de seda sem a dica de ingrediente");
+            // Bandeja, pote e cinzeiro colocam o próprio bloco (e também têm dica)
+            for (String article : ContentIds.PLACEABLE_ARTICLES) {
+                Item blockItem = ModItems.ARTICLES.get(article).get();
+                check(blockItem instanceof ArticleBlockItem placed
+                    && placed.getBlock() == ModBlocks.PLACEABLE_ARTICLES.get(article).get()
+                    && placed.tooltipKey().equals("tooltip.cultivo." + article), article + " não coloca o bloco certo");
+            }
         });
     }
 
@@ -1477,6 +1500,492 @@ public final class CultivoGameTests {
             BlockPos east = placeStationFacing(helper, StationKind.SIEVING, new BlockPos(7, 1, 7), 90.0F);
             check(level.getBlockState(helper.absolutePos(east)).getValue(ProcessingStationBlock.FACING) == Direction.EAST,
                 "jogador olhando para o oeste deveria deixar facing=east");
+        });
+    }
+
+    // ------------------------------------------------------------------ usos dos artigos (mecânica fictícia de jogo)
+
+    /** Baseado + piteira na bancada (transmute joint_filtered); confere que a receita é essa e devolve o resultado. */
+    private static ItemStack craftFilter(GameTestHelper helper, ItemStack joint) {
+        ServerLevel level = helper.getLevel();
+        CraftingInput input = CraftingInput.of(2, 1, List.of(joint, new ItemStack(ModItems.FILTER_TIP.get())));
+        Optional<RecipeHolder<CraftingRecipe>> recipe = level.recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, level);
+        check(recipe.isPresent(), "sem receita de piteira para " + joint);
+        check(recipe.get().id().identifier().equals(Cultivo.id("joint_filtered")), "receita " + recipe.get().id());
+        ItemStack result = recipe.get().value().assemble(input);
+        check(result.is(ModItems.JOINT.get()) && result.getCount() == 1, "resultado " + result);
+        return result;
+    }
+
+    private static boolean filtered(ItemStack stack) {
+        return stack.has(ModComponents.FILTERED.get());
+    }
+
+    /**
+     * Piteira na bancada: o baseado de qualquer variedade sai com cultivo:filtered e mantém variedade e qualidade (o
+     * transmute copia os componentes da entrada). Um baseado que já tem piteira não aceita outra: a receita não casa.
+     */
+    public static void jointFilterRecipe(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            for (Variety variety : Variety.values()) {
+                ItemStack result = craftFilter(helper, joint(variety, 4));
+                check(filtered(result), variety + ": sem cultivo:filtered");
+                check(result.get(ModComponents.STRAIN.get()) == variety, variety + ": variedade " + result.get(ModComponents.STRAIN.get()));
+                check(Integer.valueOf(4).equals(quality(result)), variety + ": qualidade " + quality(result));
+            }
+            ItemStack aurora = craftFilter(helper, joint(Variety.AURORA, 4));
+            CraftingInput again = CraftingInput.of(2, 1, List.of(aurora, new ItemStack(ModItems.FILTER_TIP.get())));
+            check(level.recipeAccess().getRecipeFor(RecipeType.CRAFTING, again, level).isEmpty(),
+                "um baseado com piteira aceitou outra piteira");
+            // Baseado sem variedade (de /give) também ganha piteira e continua sem variedade
+            ItemStack legacy = craftFilter(helper, new ItemStack(ModItems.JOINT.get()));
+            check(filtered(legacy) && legacy.get(ModComponents.STRAIN.get()) == null, "baseado sem variedade: " + legacy);
+            // A marca sobrevive a salvar (NBT) e à rede, como {} no JSON
+            var ops = level.registryAccess().createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE);
+            com.google.gson.JsonElement json = ItemStack.CODEC.encodeStart(ops, aurora).getOrThrow();
+            check(json.getAsJsonObject().getAsJsonObject("components").get("cultivo:filtered").isJsonObject(), "formato salvo: " + json);
+            check(ItemStack.matches(aurora, ItemStack.CODEC.parse(ops, json).getOrThrow()), "não persistiu: " + json);
+            net.minecraft.network.RegistryFriendlyByteBuf buf = new net.minecraft.network.RegistryFriendlyByteBuf(
+                io.netty.buffer.Unpooled.buffer(), level.registryAccess());
+            ItemStack.STREAM_CODEC.encode(buf, aurora);
+            check(ItemStack.matches(aurora, ItemStack.STREAM_CODEC.decode(buf)), "não sincronizou o baseado com piteira");
+        });
+    }
+
+    private static int nauseaTicks(Player player) {
+        MobEffectInstance nausea = player.getEffect(MobEffects.NAUSEA);
+        return nausea == null ? 0 : nausea.getDuration();
+    }
+
+    /**
+     * Fumar o baseado com piteira (Brisa qualidade 2): chapado 1125 (900 × 1,25) e náusea 80 (160 ÷ 2); o comum dá 900
+     * e 160. Variedade do catálogo com piteira segue o perfil da genética com a sessão mais longa.
+     */
+    public static void smokeFilteredJoint(GameTestHelper helper) {
+        run(helper, () -> {
+            Player filtered = smoker(helper, craftFilter(helper, joint(Variety.BRISA, 2)), lighter());
+            check(smokeOnce(helper, filtered) == InteractionResult.CONSUME, "uso recusado");
+            check(highTicks(filtered) == 1125, "chapado com piteira: " + highTicks(filtered));
+            check(nauseaTicks(filtered) == 80, "náusea com piteira: " + nauseaTicks(filtered));
+            check(filtered.hasEffect(MobEffects.SPEED), "a sativa ainda dá Velocidade");
+            check(filtered.getMainHandItem().isEmpty(), "o baseado com piteira deveria ser consumido");
+            check(lighterDamage(filtered) == 1, "isqueiro não gastou");
+
+            Player plain = smoker(helper, joint(Variety.BRISA, 2), lighter());
+            check(smokeOnce(helper, plain) == InteractionResult.CONSUME, "uso recusado (comum)");
+            check(highTicks(plain) == 900 && nauseaTicks(plain) == 160,
+                "baseado comum: " + highTicks(plain) + " / " + nauseaTicks(plain));
+
+            Player indica = smoker(helper, craftFilter(helper, joint(Variety.MIRTILO, 2)), lighter());
+            check(smokeOnce(helper, indica) == InteractionResult.CONSUME, "uso recusado (catálogo)");
+            MobEffectInstance slowness = indica.getEffect(MobEffects.SLOWNESS);
+            check(highTicks(indica) == 1125 && slowness != null && slowness.getDuration() == 563,
+                "índica do catálogo com piteira: " + highTicks(indica) + " / " + slowness);
+        });
+    }
+
+    private static boolean grinderAt(GameTestHelper helper, BlockPos rel) {
+        return SieveBlock.hasGrinder(helper.getLevel().getBlockState(helper.absolutePos(rel)));
+    }
+
+    /**
+     * Dichavador pelo clique real: instalar gasta 1 e liga grinder=true (um segundo não entra); flor qualidade 2 rende
+     * 2 resinas e qualidade 4 rende 3; sem agachar a mão vazia ainda retira a saída; agachado e de mãos vazias o
+     * dichavador volta ao inventário; quebrar a peneira com ele derruba a peneira e o dichavador.
+     */
+    public static void sieveGrinder(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            player.getInventory().setSelectedSlot(8);
+            ProcessingStationBlockEntity sieve = placeStation(helper, StationKind.SIEVING);
+            BlockPos pos = helper.absolutePos(SOIL);
+            check(!grinderAt(helper, SOIL), "peneira nova já com dichavador");
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.GRINDER.get(), 2));
+            check(rightClick(helper, player, SOIL).consumesAction(), "não instalou o dichavador");
+            check(grinderAt(helper, SOIL), "grinder deveria virar true");
+            check(player.getMainHandItem().getCount() == 1, "instalar deveria gastar 1 dichavador");
+            check(level.getBlockEntity(pos) == sieve, "instalar recriou a BlockEntity");
+            rightClick(helper, player, SOIL);
+            check(player.getMainHandItem().getCount() == 1, "gastou um segundo dichavador");
+
+            check(sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 2)) == 1, "recusou a flor");
+            check(contentsAt(helper, SOIL) == StationContents.WORKING && grinderAt(helper, SOIL),
+                "trabalhando deveria manter o dichavador no blockstate");
+            sieve.setProgress(StationKind.SIEVING.defaultTicks() - 1);
+            sieve.serverTick(level);
+            ItemStack resin = sieve.getItem(ProcessingStationBlockEntity.OUTPUT);
+            check(resin.is(ModItems.RESIN.get()) && resin.getCount() == 2 && Integer.valueOf(2).equals(quality(resin)),
+                "qualidade 2 com dichavador deveria render 2: " + resin);
+            check(grinderAt(helper, SOIL), "terminar o ciclo tirou o dichavador do blockstate");
+
+            // Sem agachar, a mão vazia retira a saída e o dichavador fica
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            check(rightClick(helper, player, SOIL).consumesAction(), "mão vazia não retirou a resina");
+            check(countInInventory(player, ModItems.RESIN.get()) == 2 && grinderAt(helper, SOIL), "a mão vazia mexeu no dichavador");
+
+            // Qualidade 4 de uma variedade do catálogo: 1 + bônus de qualidade + dichavador = 3
+            sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(Variety.MANGA_GELADA).get(), 1, 4));
+            sieve.setProgress(StationKind.SIEVING.defaultTicks() - 1);
+            sieve.serverTick(level);
+            ItemStack bonus = sieve.extract();
+            check(bonus.getCount() == 3 && bonus.get(ModComponents.STRAIN.get()) == Variety.MANGA_GELADA,
+                "qualidade 4 com dichavador deveria render 3: " + bonus);
+
+            player.setShiftKeyDown(true);
+            check(rightClick(helper, player, SOIL).consumesAction(), "agachado de mãos vazias não tirou o dichavador");
+            check(!grinderAt(helper, SOIL), "grinder deveria voltar a false");
+            check(countInInventory(player, ModItems.GRINDER.get()) == 1, "o dichavador não voltou ao inventário");
+            player.setShiftKeyDown(false);
+
+            // Sem dichavador a mesma flor qualidade 2 volta a render 1
+            sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 2));
+            sieve.setProgress(StationKind.SIEVING.defaultTicks() - 1);
+            sieve.serverTick(level);
+            check(sieve.extract().getCount() == 1, "sem dichavador a qualidade 2 rende 1");
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.GRINDER.get()));
+            rightClick(helper, player, SOIL);
+            check(grinderAt(helper, SOIL), "não reinstalou o dichavador");
+            level.destroyBlock(pos, true);
+            List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D));
+            int sieves = 0;
+            int grinders = 0;
+            for (ItemEntity entity : drops) {
+                if (entity.getItem().is(ModItems.STATIONS.get(StationKind.SIEVING).get())) {
+                    sieves += entity.getItem().getCount();
+                } else if (entity.getItem().is(ModItems.GRINDER.get())) {
+                    grinders += entity.getItem().getCount();
+                }
+            }
+            check(sieves == 1 && grinders == 1, "quebrar com dichavador: " + sieves + " peneira(s), " + grinders + " dichavador(es)");
+            drops.forEach(ItemEntity::discard);
+        });
+    }
+
+    /** ServerPlayer de teste que guarda as chaves das mensagens acima da barra de itens (o mock comum não tem conexão). */
+    private static ServerPlayer capturingServerPlayer(GameTestHelper helper, GameType type, List<String> keys) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = new ServerPlayer(level.getServer(), level,
+            new com.mojang.authlib.GameProfile(java.util.UUID.randomUUID(), "tray-msg"),
+            net.minecraft.server.level.ClientInformation.createDefault()) {
+            @Override
+            public GameType gameMode() {
+                return type;
+            }
+
+            @Override
+            public boolean isClientAuthoritative() {
+                return false;
+            }
+
+            @Override
+            public void sendOverlayMessage(Component message) {
+                if (message.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t) {
+                    keys.add(t.getKey());
+                }
+            }
+        };
+        type.updatePlayerAbilities(player.getAbilities());
+        return player;
+    }
+
+    private static ItemStack firstStack(Player player, Item item) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (stack.is(item)) {
+                return stack;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * Bandeja pelo clique real: 3 flores Aurora qualidade 3 na mão e 4 folhas de seda → gasta 2 flores e 3 folhas e
+     * entrega 3 baseados Aurora qualidade 3, iguais (mesma pilha) ao baseado da bancada feito da mesma flor. Com 1 flor,
+     * com 2 folhas ou com qualidades misturadas nas mãos, avisa e não gasta nada. No criativo não gasta nada.
+     */
+    public static void trayRollsJoints(GameTestHelper helper) {
+        run(helper, () -> {
+            helper.setBlock(SOIL, ModBlocks.ROLLING_TRAY.get().defaultBlockState());
+            Item aurora = ModItems.DRIED_FLOWERS.get(Variety.AURORA).get();
+            Item paper = ModItems.ROLLING_PAPER.get();
+            Item joint = ModItems.JOINT.get();
+            List<String> keys = new ArrayList<>();
+            ServerPlayer player = capturingServerPlayer(helper, GameType.SURVIVAL, keys);
+            player.getInventory().setSelectedSlot(8);
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(aurora, 3, 3));
+            player.getInventory().add(new ItemStack(paper, 4));
+
+            check(rightClick(helper, player, SOIL).consumesAction(), "a bandeja não enrolou");
+            check(keys.isEmpty(), "aviso ao enrolar: " + keys);
+            check(player.getMainHandItem().getCount() == 1, "deveria gastar 2 flores, sobrou " + player.getMainHandItem());
+            check(countInInventory(player, paper) == 1, "deveria gastar 3 folhas, sobraram " + countInInventory(player, paper));
+            check(countInInventory(player, joint) == 3, "baseados: " + countInInventory(player, joint));
+            ItemStack rolled = firstStack(player, joint);
+            check(rolled.get(ModComponents.STRAIN.get()) == Variety.AURORA && Integer.valueOf(3).equals(quality(rolled)),
+                "baseado da bandeja: " + rolled);
+            check(ItemStack.isSameItemSameComponents(rolled, craftJoint(helper, withQuality(aurora, 1, 3))),
+                "o baseado da bandeja não empilha com o da bancada");
+
+            // Só 1 flor na mão: avisa e não gasta
+            keys.clear();
+            check(rightClick(helper, player, SOIL).consumesAction(), "a recusa deveria tratar o clique");
+            check(keys.equals(List.of("message.cultivo.tray_need_flowers")), "aviso com 1 flor: " + keys);
+            check(player.getMainHandItem().getCount() == 1 && countInInventory(player, paper) == 1
+                && countInInventory(player, joint) == 3, "gastou algo com 1 flor");
+
+            // 2 flores e só 2 folhas: avisa e não gasta
+            keys.clear();
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(aurora, 2, 3));
+            player.getInventory().add(new ItemStack(paper, 1));
+            rightClick(helper, player, SOIL);
+            check(keys.equals(List.of("message.cultivo.tray_need_papers")), "aviso com 2 folhas: " + keys);
+            check(player.getMainHandItem().getCount() == 2 && countInInventory(player, paper) == 2
+                && countInInventory(player, joint) == 3, "gastou algo com 2 folhas");
+
+            // Qualidades misturadas nas duas mãos (1 de cada): não junta pilhas diferentes, avisa e não gasta
+            keys.clear();
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(aurora, 1, 3));
+            player.setItemInHand(InteractionHand.OFF_HAND, withQuality(aurora, 1, 2));
+            player.getInventory().add(new ItemStack(paper, 3));
+            rightClick(helper, player, SOIL);
+            check(keys.equals(List.of("message.cultivo.tray_need_flowers")), "aviso com qualidades misturadas: " + keys);
+            check(player.getMainHandItem().getCount() == 1 && player.getOffhandItem().getCount() == 1
+                && countInInventory(player, paper) == 5 && countInInventory(player, joint) == 3, "misturou qualidades");
+
+            // Criativo: enrola uma variedade do catálogo sem gastar flores nem folhas
+            List<String> creativeKeys = new ArrayList<>();
+            ServerPlayer creative = capturingServerPlayer(helper, GameType.CREATIVE, creativeKeys);
+            creative.getInventory().setSelectedSlot(8);
+            check(creative.hasInfiniteMaterials(), "preparo: jogador criativo");
+            creative.setItemInHand(InteractionHand.MAIN_HAND, withQuality(ModItems.DRIED_FLOWERS.get(Variety.MANGA_GELADA).get(), 2, 4));
+            creative.getInventory().add(new ItemStack(paper, 3));
+            check(rightClick(helper, creative, SOIL).consumesAction(), "a bandeja não enrolou no criativo");
+            check(creativeKeys.isEmpty(), "aviso no criativo: " + creativeKeys);
+            check(creative.getMainHandItem().getCount() == 2 && countInInventory(creative, paper) == 3, "o criativo gastou itens");
+            ItemStack creativeJoints = firstStack(creative, joint);
+            check(creativeJoints.getCount() == 3 && creativeJoints.get(ModComponents.STRAIN.get()) == Variety.MANGA_GELADA
+                && Integer.valueOf(4).equals(quality(creativeJoints)), "baseados do criativo: " + creativeJoints);
+        });
+    }
+
+    private static JarBlockEntity placeJar(GameTestHelper helper, BlockPos rel) {
+        helper.setBlock(rel, ModBlocks.JAR.get().defaultBlockState());
+        BlockEntity be = helper.getLevel().getBlockEntity(helper.absolutePos(rel));
+        check(be instanceof JarBlockEntity, "pote sem BlockEntity");
+        return (JarBlockEntity) be;
+    }
+
+    private static boolean jarFilled(GameTestHelper helper, BlockPos rel) {
+        return helper.getLevel().getBlockState(helper.absolutePos(rel)).getValue(JarBlock.FILLED);
+    }
+
+    private static int comparator(GameTestHelper helper, BlockPos rel) {
+        BlockPos pos = helper.absolutePos(rel);
+        return helper.getLevel().getBlockState(pos).getAnalogOutputSignal(helper.getLevel(), pos, Direction.NORTH);
+    }
+
+    /**
+     * Pote pelo clique real: guarda 10 flores Brisa qualidade 2 (filled=true, comparador 3, ticker ligado); o contador
+     * no penúltimo tick cura a pilha inteira para qualidade 3 com cultivo:cured, uma vez só; a pilha curada não junta
+     * com flores não curadas; a mão vazia retira tudo; mudar o conteúdo zera o contador; resina não cura; uma variedade
+     * do catálogo vai de 4 a 5; quebrar o pote derruba a pilha.
+     */
+    public static void jarCuresFlowers(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            player.getInventory().setSelectedSlot(8);
+            JarBlockEntity jar = placeJar(helper, SOIL);
+            BlockPos pos = helper.absolutePos(SOIL);
+            Item brisa = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
+            check(!jarFilled(helper, SOIL) && comparator(helper, SOIL) == 0, "pote novo deveria estar vazio");
+            check(level.getBlockState(pos).getTicker(level, ModBlockEntities.JAR.get()) == null, "pote vazio não precisa de ticker");
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(brisa, 10, 2));
+            check(rightClick(helper, player, SOIL).consumesAction(), "o pote não guardou as flores");
+            check(jar.getItem().getCount() == 10 && player.getMainHandItem().isEmpty(), "guardou " + jar.getItem());
+            check(jarFilled(helper, SOIL), "filled deveria virar true");
+            check(level.getBlockEntity(pos) == jar, "filled recriou a BlockEntity");
+            check(comparator(helper, SOIL) == 3, "comparador com 10 de 64: " + comparator(helper, SOIL));
+            check(level.getBlockState(pos).getTicker(level, ModBlockEntities.JAR.get()) != null, "pote cheio sem ticker");
+
+            // Flor fresca não entra no pote (não está na tag)
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(ModItems.FRESH_FLOWERS.get(Variety.BRISA).get(), 3, 2));
+            rightClick(helper, player, SOIL);
+            check(jar.getItem().getCount() == 10 && player.getMainHandItem().getCount() == 3, "flor fresca entrou no pote");
+
+            jar.setCureProgress(CuringRules.CURE_TICKS - 1);
+            jar.serverTick(level);
+            ItemStack cured = jar.getItem();
+            check(cured.getCount() == 10 && Integer.valueOf(3).equals(quality(cured)) && cured.has(ModComponents.CURED.get()),
+                "a cura deveria dar qualidade 3 e cultivo:cured: " + cured);
+            check(jar.cureProgress() == 0, "o contador deveria zerar depois da cura");
+
+            jar.setCureProgress(CuringRules.CURE_TICKS - 1);
+            jar.serverTick(level);
+            check(Integer.valueOf(3).equals(quality(jar.getItem())) && jar.cureProgress() == 0, "curou duas vezes: " + jar.getItem());
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(brisa, 5, 3));
+            rightClick(helper, player, SOIL);
+            check(jar.getItem().getCount() == 10 && player.getMainHandItem().getCount() == 5,
+                "a pilha curada juntou com flores não curadas");
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            check(rightClick(helper, player, SOIL).consumesAction(), "a mão vazia não retirou");
+            check(countInInventory(player, brisa) == 10 && firstStack(player, brisa).has(ModComponents.CURED.get()),
+                "a pilha curada não voltou inteira");
+            check(jar.getItem().isEmpty() && !jarFilled(helper, SOIL) && comparator(helper, SOIL) == 0, "o pote deveria esvaziar");
+
+            // Mudar o conteúdo zera o contador
+            jar.insert(withQuality(brisa, 4, 2));
+            jar.setCureProgress(2000);
+            check(jar.insert(withQuality(brisa, 1, 2)) == 1 && jar.cureProgress() == 0, "inserir não zerou o contador");
+
+            // Resina não cura
+            jar.setItem(withQuality(ModItems.RESIN.get(), 4, 2));
+            jar.setCureProgress(CuringRules.CURE_TICKS - 1);
+            jar.serverTick(level);
+            check(Integer.valueOf(2).equals(quality(jar.getItem())) && !jar.getItem().has(ModComponents.CURED.get())
+                && jar.cureProgress() == 0, "resina curou: " + jar.getItem());
+
+            // Variedade do catálogo: estufa 4 → 5
+            jar.setItem(withQuality(ModItems.DRIED_FLOWERS.get(Variety.GELATO_AZUL_42).get(), 3, 4));
+            jar.setCureProgress(CuringRules.CURE_TICKS - 1);
+            jar.serverTick(level);
+            check(Integer.valueOf(5).equals(quality(jar.getItem())) && jar.getItem().has(ModComponents.CURED.get()),
+                "catálogo 4 → 5: " + jar.getItem());
+
+            jar.setItem(withQuality(brisa, 7, 2));
+            level.destroyBlock(pos, true);
+            List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D));
+            int flowers = 0;
+            int jars = 0;
+            for (ItemEntity entity : drops) {
+                if (entity.getItem().is(brisa)) {
+                    flowers += entity.getItem().getCount();
+                } else if (entity.getItem().is(ModItems.ARTICLES.get(ContentIds.JAR).get())) {
+                    jars += entity.getItem().getCount();
+                }
+            }
+            check(flowers == 7 && jars == 1, "quebrar o pote: " + flowers + " flores, " + jars + " pote(s)");
+            drops.forEach(ItemEntity::discard);
+        });
+    }
+
+    private static int ashAt(GameTestHelper helper, BlockPos rel) {
+        return helper.getLevel().getBlockState(helper.absolutePos(rel)).getValue(AshtrayBlock.ASH);
+    }
+
+    /**
+     * Cinzeiro a 2 blocos: 4 baseados Brisa qualidade 2 (4 × 900 = 3600 ticks, abaixo do limite de 6600) enchem até
+     * ash=4 (comparador 12). A 5ª sessão não passa de 4 e cai no próximo cinzeiro mais perto (a 3 blocos); o de 6
+     * blocos fica em 0. Segurar um item não esvazia; a mão vazia tira 1 farinha de osso e zera.
+     */
+    public static void ashtrayCollectsAsh(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockPos near = new BlockPos(3, 1, 4);
+            BlockPos next = new BlockPos(1, 1, 7);
+            BlockPos far = new BlockPos(7, 1, 4);
+            for (BlockPos rel : List.of(near, next, far)) {
+                helper.setBlock(rel, ModBlocks.ASHTRAY.get().defaultBlockState());
+            }
+            ItemStack joints = joint(Variety.BRISA, 2);
+            joints.setCount(5);
+            Player player = smoker(helper, joints, lighter());
+            player.setPos(Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(1, 1, 4))));
+            for (int session = 1; session <= 4; session++) {
+                check(smokeOnce(helper, player) == InteractionResult.CONSUME, "sessão " + session + " recusada");
+                check(ashAt(helper, near) == session, "sessão " + session + ": cinza " + ashAt(helper, near));
+            }
+            check(highTicks(player) == 3600, "4 sessões de 900: " + highTicks(player));
+            check(comparator(helper, near) == 12, "comparador cheio: " + comparator(helper, near));
+            check(ashAt(helper, next) == 0, "a cinza foi para o cinzeiro mais longe antes de encher o mais perto");
+
+            check(smokeOnce(helper, player) == InteractionResult.CONSUME, "5ª sessão recusada");
+            check(ashAt(helper, near) == 4, "passou de 4: " + ashAt(helper, near));
+            check(ashAt(helper, next) == 1, "a 5ª sessão deveria cair no próximo cinzeiro: " + ashAt(helper, next));
+            check(ashAt(helper, far) == 0, "o cinzeiro a 6 blocos pegou cinza: " + ashAt(helper, far));
+
+            ServerPlayer emptier = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            emptier.getInventory().setSelectedSlot(8);
+            emptier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STICK));
+            rightClick(helper, emptier, near);
+            check(ashAt(helper, near) == 4, "segurar um graveto esvaziou o cinzeiro");
+
+            BlockPos pos = helper.absolutePos(near);
+            level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D)).forEach(ItemEntity::discard);
+            emptier.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            check(rightClick(helper, emptier, near).consumesAction(), "a mão vazia não esvaziou o cinzeiro cheio");
+            check(ashAt(helper, near) == 0 && comparator(helper, near) == 0, "o cinzeiro deveria zerar");
+            List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D));
+            int boneMeal = drops.stream().filter(e -> e.getItem().is(Items.BONE_MEAL)).mapToInt(e -> e.getItem().getCount()).sum();
+            check(boneMeal == 1, "farinha de osso: " + boneMeal);
+            drops.forEach(ItemEntity::discard);
+            check(!rightClick(helper, emptier, next).consumesAction(), "esvaziou um cinzeiro que não estava cheio");
+            check(ashAt(helper, next) == 1, "a mão vazia mexeu num cinzeiro com 1 de cinza");
+        });
+    }
+
+    /** Coloca um item de bloco pelo caminho real (clique no topo de um bloco de pedra) com o jogador olhando para yRot. */
+    private static BlockPos placeWithItem(GameTestHelper helper, ItemStack stack, BlockPos floorRel, float yRot) {
+        ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        player.setYRot(yRot);
+        helper.setBlock(floorRel, Blocks.STONE.defaultBlockState());
+        BlockPos floor = helper.absolutePos(floorRel);
+        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(floor).add(0.0D, 0.5D, 0.0D), Direction.UP, floor, false);
+        InteractionResult result = player.gameMode.useItemOn(player, helper.getLevel(), player.getMainHandItem(),
+            InteractionHand.MAIN_HAND, hit);
+        check(result.consumesAction(), stack + " não foi colocado: " + result);
+        return floorRel.above();
+    }
+
+    /**
+     * Bandeja, pote e cinzeiro: o item coloca o bloco pelo caminho real (a bandeja olha para quem colocou), o bloco
+     * devolve o item ao ser escolhido (pick) e, quebrado, derruba exatamente o próprio item. O cinzeiro cheio derruba
+     * só a si mesmo: a cinza se perde.
+     */
+    public static void placeableArticlesDropSelf(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            int x = 1;
+            for (String article : ContentIds.PLACEABLE_ARTICLES) {
+                Item item = ModItems.ARTICLES.get(article).get();
+                Block block = ModBlocks.PLACEABLE_ARTICLES.get(article).get();
+                check(block.asItem() == item, article + ": o bloco não aponta para o item");
+                BlockPos placed = placeWithItem(helper, new ItemStack(item), new BlockPos(x, 1, 2), 0.0F);
+                x += 3;
+                BlockPos pos = helper.absolutePos(placed);
+                BlockState state = level.getBlockState(pos);
+                check(state.is(block), article + " colocou " + state);
+                if (state.hasProperty(RollingTrayBlock.FACING)) {
+                    check(state.getValue(RollingTrayBlock.FACING) == Direction.NORTH, "bandeja olhando para " + state);
+                }
+                level.destroyBlock(pos, true);
+                List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D));
+                int self = drops.stream().filter(e -> e.getItem().is(item)).mapToInt(e -> e.getItem().getCount()).sum();
+                int others = drops.stream().filter(e -> !e.getItem().is(item)).mapToInt(e -> e.getItem().getCount()).sum();
+                check(self == 1 && others == 0, article + " derrubou " + self + " de si e " + others + " outro(s)");
+                drops.forEach(ItemEntity::discard);
+            }
+            BlockPos east = placeWithItem(helper, new ItemStack(ModItems.ARTICLES.get(ContentIds.ROLLING_TRAY).get()),
+                new BlockPos(1, 1, 6), 90.0F);
+            check(level.getBlockState(helper.absolutePos(east)).getValue(RollingTrayBlock.FACING) == Direction.EAST,
+                "jogador olhando para o oeste deveria deixar a bandeja com facing=east");
+
+            BlockPos full = new BlockPos(6, 1, 6);
+            helper.setBlock(full, ModBlocks.ASHTRAY.get().defaultBlockState().setValue(AshtrayBlock.ASH, 4));
+            BlockPos fullPos = helper.absolutePos(full);
+            level.destroyBlock(fullPos, true);
+            List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(fullPos).inflate(2.0D));
+            check(drops.size() == 1 && drops.get(0).getItem().is(ModItems.ARTICLES.get(ContentIds.ASHTRAY).get())
+                && drops.get(0).getItem().getCount() == 1, "cinzeiro cheio derrubou " + drops);
+            drops.forEach(ItemEntity::discard);
         });
     }
 }

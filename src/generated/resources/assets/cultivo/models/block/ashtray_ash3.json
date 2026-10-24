@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cultivo:block/ashtray_ash",
+    "ash": "cultivo:block/ashtray_ash"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        0.5,
+        5
+      ],
+      "to": [
+        11,
+        1.25,
+        11
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#ash"
+        }
+      }
+    }
+  ]
+}

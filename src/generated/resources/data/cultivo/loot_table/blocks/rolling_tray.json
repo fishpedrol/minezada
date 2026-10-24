@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "cultivo:rolling_tray"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "cultivo:blocks/rolling_tray"
+}

@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 
-/** Item simples com uma linha de dica própria (ex.: a folha de seda, ingrediente do baseado). */
+/** Item simples com uma linha de dica própria: folha de seda e piteira (ingredientes) e dichavador (melhoria). */
 public class TooltipItem extends Item {
     private final String tooltipKey;
 

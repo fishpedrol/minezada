@@ -8,6 +8,7 @@ import io.github.peixeangola.cultivo.core.Variety;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.util.Unit;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
@@ -36,6 +37,20 @@ public final class ModComponents {
             .networkSynchronized(ByteBufCodecs.STRING_UTF8.map(
                 id -> Variety.byId(id).orElseThrow(), Variety::id))
             .build());
+
+    /**
+     * cultivo:filtered — marca do baseado com piteira (receita transmute joint_filtered). Sem valor: no JSON é
+     * {@code {}}. Persistente e sincronizado (o modelo do item e o tooltip mudam no cliente).
+     */
+    public static final RegistryObject<DataComponentType<Unit>> FILTERED = COMPONENTS.register("filtered",
+        () -> DataComponentType.<Unit>builder().persistent(Unit.CODEC).networkSynchronized(Unit.STREAM_CODEC).build());
+
+    /**
+     * cultivo:cured — marca da flor seca que já passou pela cura no pote (+1 de qualidade uma vez só). Sem valor;
+     * persistente e sincronizado. Como muda os componentes, uma pilha curada não junta com flores não curadas.
+     */
+    public static final RegistryObject<DataComponentType<Unit>> CURED = COMPONENTS.register("cured",
+        () -> DataComponentType.<Unit>builder().persistent(Unit.CODEC).networkSynchronized(Unit.STREAM_CODEC).build());
 
     private ModComponents() {}
 }

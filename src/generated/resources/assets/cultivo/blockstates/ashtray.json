@@ -1,0 +1,41 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "cultivo:block/ashtray"
+      }
+    },
+    {
+      "when": {
+        "ash": "1"
+      },
+      "apply": {
+        "model": "cultivo:block/ashtray_ash1"
+      }
+    },
+    {
+      "when": {
+        "ash": "2"
+      },
+      "apply": {
+        "model": "cultivo:block/ashtray_ash2"
+      }
+    },
+    {
+      "when": {
+        "ash": "3"
+      },
+      "apply": {
+        "model": "cultivo:block/ashtray_ash3"
+      }
+    },
+    {
+      "when": {
+        "ash": "4"
+      },
+      "apply": {
+        "model": "cultivo:block/ashtray_ash4"
+      }
+    }
+  ]
+}

@@ -112,6 +112,78 @@ class TextureArtTest {
         assertTrue(solid > 0 && solid < mask.length, "a tela precisa de arame e de vãos: " + solid);
     }
 
+    /**
+     * O vidro do pote é cutout de verdade: na região da lateral (UV [5,8,11,16]) as colunas da borda são opacas e o
+     * miolo tem furos para o conteúdo aparecer; fora das regiões usadas, tudo transparente.
+     */
+    @Test
+    void jarGlassIsCutoutWithOpaqueEdges() {
+        Png glass = texture("block/jar_glass");
+        int holes = 0;
+        for (int y = 8; y < 16; y++) {
+            assertEquals(255, glass.alpha(5, y), "borda esquerda do vidro em y=" + y);
+            assertEquals(255, glass.alpha(10, y), "borda direita do vidro em y=" + y);
+            for (int x = 6; x < 10; x++) {
+                if (glass.alpha(x, y) == 0) {
+                    holes++;
+                }
+            }
+        }
+        assertTrue(holes >= 12, "o vidro precisa deixar ver o conteúdo: " + holes + " furos");
+        for (int x = 0; x < 16; x++) {
+            assertEquals(0, glass.alpha(x, 0), "linha 0 fora das regiões usadas");
+            if (x < 5 || x > 10) {
+                for (int y = 0; y < 16; y++) {
+                    assertEquals(0, glass.alpha(x, y), "coluna " + x + " fora das regiões usadas");
+                }
+            }
+        }
+    }
+
+    /**
+     * O baseado com piteira tem o mesmo corpo do comum (linhas 0–11) e só muda a boca (linhas 12–14): a piteira cor de
+     * papelão com o zigue-zague marrom sai 1 px além do papel. Vale apagado e aceso.
+     */
+    @Test
+    void filteredJointOnlyChangesTheMouthEnd() {
+        for (String suffix : List.of("", "_lit")) {
+            Png plain = texture("item/joint" + suffix);
+            Png filtered = texture("item/joint_filtered" + suffix);
+            for (int y = 0; y < 12; y++) {
+                for (int x = 0; x < 16; x++) {
+                    assertEquals(plain.argb()[y * 16 + x], filtered.argb()[y * 16 + x], suffix + " corpo diferente em " + x + "," + y);
+                }
+            }
+            assertFalse(Arrays.equals(plain.mask(), filtered.mask()), suffix + ": a piteira deveria aparecer na silhueta");
+            assertEquals(0, plain.alpha(1, 14), suffix + ": o baseado comum termina na coluna 2");
+            assertEquals(255, filtered.alpha(1, 14), suffix + ": a piteira sai 1 px além");
+            // Marrom do zigue-zague só na piteira
+            assertFalse(hasColor(plain, 0x9a6a34), suffix + ": baseado comum com cor de piteira");
+            assertTrue(hasColor(filtered, 0x9a6a34), suffix + ": piteira sem o zigue-zague marrom");
+        }
+    }
+
+    /** A cinza do cinzeiro é cinza (a cor mais frequente não tem tom): não pode parecer terra ou areia. */
+    @Test
+    void ashLooksGrey() {
+        int ash = texture("block/ashtray_ash").dominantColor();
+        int r = (ash >> 16) & 0xFF;
+        int g = (ash >> 8) & 0xFF;
+        int b = ash & 0xFF;
+        assertTrue(Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) <= 8, String.format("cinza com tom: %06x", ash));
+    }
+
+    private static boolean hasColor(Png png, int rgb) {
+        for (int y = 0; y < png.height(); y++) {
+            for (int x = 0; x < png.width(); x++) {
+                if (png.alpha(x, y) != 0 && png.rgb(x, y) == rgb) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private static int count(boolean[] mask) {
         int n = 0;
         for (boolean b : mask) {

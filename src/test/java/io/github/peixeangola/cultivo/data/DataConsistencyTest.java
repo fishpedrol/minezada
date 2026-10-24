@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.github.peixeangola.cultivo.core.ArticleRecipes;
 import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.SeedSources;
@@ -76,9 +77,9 @@ class DataConsistencyTest {
         assertEquals(expected, actual);
         Set<String> ids = new HashSet<>();
         ArticleRecipes.ALL.forEach(r -> assertTrue(ids.add(r.id()), "id repetido " + r.id()));
-        // 11 artigos + 3 estações + 1 baseado por variedade
-        assertEquals(11 + 3 + 40, ArticleRecipes.ALL.size());
-        assertEquals(40, ArticleRecipes.ALL.stream().filter(r -> r.result().equals(ContentIds.JOINT)).count());
+        // 11 artigos + 3 estações + 1 baseado por variedade + o baseado com piteira
+        assertEquals(11 + 3 + 40 + 1, ArticleRecipes.ALL.size());
+        assertEquals(41, ArticleRecipes.ALL.stream().filter(r -> r.result().equals(ContentIds.JOINT)).count());
     }
 
     @Test
@@ -112,10 +113,42 @@ class DataConsistencyTest {
                     assertEquals("minecraft:crafting_transmute", json.get("type").getAsString());
                     assertEquals(r.ingredients().get(0).ingredient(), json.get("input").getAsString(), r.id());
                     assertEquals(r.ingredients().get(1).ingredient(), json.get("material").getAsString(), r.id());
-                    assertEquals(r.strain(), result.getAsJsonObject("components").get("cultivo:strain").getAsString());
+                    JsonObject components = result.getAsJsonObject("components");
+                    assertEquals(r.components().keySet(), components.keySet(), r.id());
+                    for (Map.Entry<String, String> c : r.components().entrySet()) {
+                        assertEquals(JsonParser.parseString(c.getValue()), components.get(c.getKey()), r.id() + " " + c.getKey());
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Baseado com piteira (plano 1.2): transmute do baseado com a piteira, no grupo dos baseados, gravando
+     * cultivo:filtered vazio ({}). Variedade e qualidade não aparecem na receita: vêm da entrada.
+     */
+    @Test
+    void filteredJointRecipe() {
+        ArticleRecipes.Recipe r = ArticleRecipes.byId("joint_filtered");
+        assertEquals(ArticleRecipes.Kind.TRANSMUTE, r.kind());
+        assertEquals(List.of("cultivo:joint", "cultivo:filter_tip"), r.ingredients().stream().map(ArticleRecipes.Key::ingredient).toList());
+        assertEquals(Map.of("cultivo:filtered", "{}"), r.components());
+
+        JsonObject json = Resources.json(Resources.data("cultivo", "recipe/joint_filtered.json"));
+        assertEquals("minecraft:crafting_transmute", json.get("type").getAsString());
+        assertEquals("cultivo_joint", json.get("group").getAsString());
+        assertEquals("cultivo:joint", json.get("input").getAsString());
+        assertEquals("cultivo:filter_tip", json.get("material").getAsString());
+        JsonObject result = json.getAsJsonObject("result");
+        assertEquals("cultivo:joint", result.get("id").getAsString());
+        assertEquals(1, result.get("count").getAsInt());
+        JsonObject components = result.getAsJsonObject("components");
+        assertEquals(Set.of("cultivo:filtered"), components.keySet(), "variedade e qualidade vêm do baseado de entrada");
+        assertEquals(new JsonObject(), components.get("cultivo:filtered"));
+
+        JsonObject criteria = Resources.json(Resources.data("cultivo", "advancement/recipes/misc/joint_filtered.json"))
+            .getAsJsonObject("criteria");
+        assertEquals(Set.of("has_joint", "has_filter_tip", "has_the_recipe"), criteria.keySet());
     }
 
     @Test
@@ -126,8 +159,9 @@ class DataConsistencyTest {
             assertEquals("joint", joint.result());
             assertEquals(List.of("cultivo:" + v.driedFlowerId(), "cultivo:rolling_paper"),
                 joint.ingredients().stream().map(ArticleRecipes.Key::ingredient).toList());
-            assertEquals(v.id(), joint.strain());
+            assertEquals(Map.of("cultivo:strain", "\"" + v.id() + "\""), joint.components());
         }
+        assertEquals(Map.of("cultivo:strain", "\"brisa\""), ArticleRecipes.byId("joint_brisa").components());
         assertFalse(Files.exists(Resources.data("cultivo", "recipe/joint.json")),
             "a receita shapeless antiga conflitaria com as transmute");
         Set<String> dried = values(Resources.data("cultivo", "tags/item/dried_flowers.json"));
@@ -495,7 +529,7 @@ class DataConsistencyTest {
         assertEquals(Set.of("cultivo:resin"), expand("#cultivo:press_inputs"));
     }
 
-    // ------------------------------------------------------------- artigos: ingrediente x decorativo
+    // ------------------------------------------------------------- artigos: um papel para cada um
 
     @Test
     void articlesArePartitionedByUse() {
@@ -506,28 +540,113 @@ class DataConsistencyTest {
         for (String article : ContentIds.ARTICLES) {
             int roles = (devices.contains(article) ? 1 : 0) + (article.equals(ContentIds.LIGHTER) ? 1 : 0)
                 + (ContentIds.INGREDIENT_ARTICLES.contains(article) ? 1 : 0)
-                + (ContentIds.DECORATIVE_ARTICLES.contains(article) ? 1 : 0);
+                + (ContentIds.UPGRADE_ARTICLES.contains(article) ? 1 : 0)
+                + (ContentIds.PLACEABLE_ARTICLES.contains(article) ? 1 : 0);
             assertEquals(1, roles, article + " precisa ter exatamente um papel");
         }
-        assertEquals(List.of("rolling_paper"), ContentIds.INGREDIENT_ARTICLES);
+        assertEquals(List.of("rolling_paper", "filter_tip"), ContentIds.INGREDIENT_ARTICLES);
+        assertEquals(List.of("grinder"), ContentIds.UPGRADE_ARTICLES);
+        assertEquals(List.of("rolling_tray", "jar", "ashtray"), ContentIds.PLACEABLE_ARTICLES);
     }
 
+    /** Todo artigo do mod usado como material de receita está entre os ingredientes (com dica própria). */
     @Test
-    void noArticleUsedAsRecipeMaterialIsDecorative() {
+    void articlesUsedAsRecipeMaterialAreIngredients() {
+        Set<String> materials = new HashSet<>();
         for (ArticleRecipes.Recipe r : ArticleRecipes.ALL) {
             for (String ingredient : ingredientsOf(r)) {
-                if (ingredient.startsWith("cultivo:")) {
-                    String id = ingredient.substring("cultivo:".length());
-                    assertFalse(ContentIds.DECORATIVE_ARTICLES.contains(id), id + " é ingrediente de " + r.id());
+                String id = ingredient.startsWith("cultivo:") ? ingredient.substring("cultivo:".length()) : null;
+                if (id != null && ContentIds.ARTICLES.contains(id)) {
+                    materials.add(id);
                 }
             }
         }
+        assertEquals(Set.of("rolling_paper", "filter_tip"), materials);
+        assertTrue(ContentIds.INGREDIENT_ARTICLES.containsAll(materials));
+    }
+
+    /**
+     * Nenhum artigo é mais "decorativo": a chave antiga sumiu, e todo artigo sem tooltip próprio de aparelho (fumáveis
+     * e isqueiro) tem a dica tooltip.cultivo.&lt;id&gt; com o uso, nas duas línguas.
+     */
+    @Test
+    void everyNonSmokingArticleHasAUseTooltip() {
         for (String lang : List.of("en_us", "pt_br")) {
             JsonObject t = Resources.json(Resources.assets("lang/" + lang + ".json"));
-            for (String article : ContentIds.INGREDIENT_ARTICLES) {
+            assertFalse(t.has("tooltip.cultivo.decorative"), lang + ": a dica de item decorativo não deveria existir");
+            List<String> withTip = new ArrayList<>(ContentIds.INGREDIENT_ARTICLES);
+            withTip.addAll(ContentIds.UPGRADE_ARTICLES);
+            withTip.addAll(ContentIds.PLACEABLE_ARTICLES);
+            for (String article : withTip) {
                 JsonElement tip = t.get("tooltip.cultivo." + article);
                 assertTrue(tip != null && !tip.getAsString().isBlank(), lang + " sem dica de " + article);
             }
+        }
+        JsonObject pt = Resources.json(Resources.assets("lang/pt_br.json"));
+        assertEquals("Enrole com flor seca para fazer um baseado · 3 folhas na bandeja enrolam 3 baseados",
+            pt.get("tooltip.cultivo.rolling_paper").getAsString());
+        JsonObject en = Resources.json(Resources.assets("lang/en_us.json"));
+        assertEquals("Add to a joint: lasts longer, less nausea", en.get("tooltip.cultivo.filter_tip").getAsString());
+        assertEquals("Stores one stack · cures dried flowers: +1 quality, once", en.get("tooltip.cultivo.jar").getAsString());
+    }
+
+    /** O manifesto marca como colocáveis exatamente os artigos de ContentIds.PLACEABLE_ARTICLES. */
+    @Test
+    void manifestPlaceablesMatchContentIds() {
+        List<String> placeable = new ArrayList<>();
+        for (JsonElement a : Resources.json(StrainColumns.MANIFEST).getAsJsonArray("articles")) {
+            JsonObject article = a.getAsJsonObject();
+            if (article.has("placeable") && article.get("placeable").getAsBoolean()) {
+                placeable.add(article.get("id").getAsString());
+            }
+        }
+        assertEquals(ContentIds.PLACEABLE_ARTICLES, placeable);
+    }
+
+    // ------------------------------------------------------------- usos dos artigos: loot e tags
+
+    /** O pote guarda flores secas (as 40, pela tag), resina, haxixe e baseado; nada fresco, nem sementes. */
+    @Test
+    void jarStorableTag() {
+        assertEquals(Set.of("#cultivo:dried_flowers", "cultivo:resin", "cultivo:hash", "cultivo:joint"),
+            values(Resources.data("cultivo", "tags/item/jar_storable.json")));
+        Set<String> expanded = expand("#cultivo:jar_storable");
+        assertEquals(40 + 3, expanded.size());
+        assertTrue(expanded.containsAll(Set.of("cultivo:brisa_dried_flower", "cultivo:bananona_dried_flower",
+            "cultivo:resin", "cultivo:hash", "cultivo:joint")));
+        assertFalse(expanded.contains("cultivo:brisa_fresh_flower"));
+        assertFalse(expanded.contains("cultivo:brisa_seeds"));
+    }
+
+    /** A peneira com dichavador derruba o dichavador junto (pool com match_block grinder=true). */
+    @Test
+    void sieveDropsTheGrinderWhenInstalled() {
+        JsonArray pools = Resources.json(Resources.data("cultivo", "loot_table/blocks/sieve.json")).getAsJsonArray("pools");
+        assertEquals(2, pools.size());
+        JsonObject self = pools.get(0).getAsJsonObject();
+        assertEquals("cultivo:sieve", self.getAsJsonArray("entries").get(0).getAsJsonObject().get("name").getAsString());
+        JsonObject grinder = pools.get(1).getAsJsonObject();
+        JsonObject condition = grinder.getAsJsonObject("condition");
+        assertEquals("minecraft:match_block", condition.get("type").getAsString());
+        assertEquals("cultivo:sieve", condition.get("blocks").getAsString());
+        assertEquals("true", condition.getAsJsonObject("state").get("grinder").getAsString());
+        assertEquals("cultivo:grinder", grinder.getAsJsonArray("entries").get(0).getAsJsonObject().get("name").getAsString());
+        for (String other : List.of("drying_rack", "press")) {
+            assertEquals(1, Resources.json(Resources.data("cultivo", "loot_table/blocks/" + other + ".json"))
+                .getAsJsonArray("pools").size(), other);
+        }
+    }
+
+    /** Bandeja, pote e cinzeiro derrubam o próprio item (o conteúdo do pote cai pela BlockEntity; a cinza se perde). */
+    @Test
+    void placeableArticlesDropThemselves() {
+        for (String article : ContentIds.PLACEABLE_ARTICLES) {
+            JsonArray pools = Resources.json(Resources.data("cultivo", "loot_table/blocks/" + article + ".json"))
+                .getAsJsonArray("pools");
+            assertEquals(1, pools.size(), article);
+            JsonArray entries = pools.get(0).getAsJsonObject().getAsJsonArray("entries");
+            assertEquals(1, entries.size(), article);
+            assertEquals("cultivo:" + article, entries.get(0).getAsJsonObject().get("name").getAsString(), article);
         }
     }
 }

@@ -28,6 +28,15 @@
     },
     {
       "when": {
+        "facing": "north",
+        "grinder": "true"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_grinder"
+      }
+    },
+    {
+      "when": {
         "facing": "east"
       },
       "apply": {
@@ -52,6 +61,16 @@
       },
       "apply": {
         "model": "cultivo:block/sieve_done",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "grinder": "true"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_grinder",
         "y": 90
       }
     },
@@ -86,6 +105,16 @@
     },
     {
       "when": {
+        "facing": "south",
+        "grinder": "true"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_grinder",
+        "y": 180
+      }
+    },
+    {
+      "when": {
         "facing": "west"
       },
       "apply": {
@@ -110,6 +139,16 @@
       },
       "apply": {
         "model": "cultivo:block/sieve_done",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "grinder": "true"
+      },
+      "apply": {
+        "model": "cultivo:block/sieve_grinder",
         "y": 270
       }
     }

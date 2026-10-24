@@ -69,7 +69,10 @@ export function box(from, to, texture, { grain = null, faces = ALL_FACES, uv = {
 }
 
 // ------------------------------------------------------------------ estações
-/** Propriedades do blockstate das estações e seus valores (espelhadas em ContentIds.STATION_STATE_PROPERTIES). */
+/**
+ * Propriedades do blockstate das estações e seus valores (espelhadas em ContentIds.stateProperties; a peneira também
+ * tem grinder = true|false).
+ */
 export const STATION_PROPERTIES = {
   facing: ['north', 'east', 'south', 'west'],
   contents: ['empty', 'working', 'done'],
@@ -79,9 +82,8 @@ const FACING_Y = { north: 0, east: 90, south: 180, west: 270 };
 const blockParent = (textures, elements, extra = {}) => ({ parent: 'minecraft:block/block', textures, ...extra, elements });
 
 /**
- * Modelos de cada estação: base (sempre) e partes ligadas a `contents`. Cada parte diz em que valores aparece.
- * Para a peneira ganhar o dichavador depois, basta uma parte com `when: {grinder: 'true'}` e a propriedade em
- * STATION_PROPERTIES/ContentIds.
+ * Modelos de cada estação: base (sempre) e partes ligadas a propriedades do blockstate. Cada parte diz em que valores
+ * aparece (`when: {contents: [...]}`); o dichavador da peneira é a parte com `when: {grinder: ['true']}`.
  */
 export function stationModels() {
   const rackWood = '#wood';
@@ -118,8 +120,8 @@ export function stationModels() {
         drying_rack_bundles: { parent: 'minecraft:block/block', ambientocclusion: false, textures: { particle: '#bundle' }, elements: bundles },
       },
       parts: {
-        working: { when: ['working'], model: { parent: id('block/drying_rack_bundles'), textures: { bundle: id('block/drying_bundle_fresh') } } },
-        done: { when: ['done'], model: { parent: id('block/drying_rack_bundles'), textures: { bundle: id('block/drying_bundle_dried') } } },
+        working: { when: { contents: ['working'] }, model: { parent: id('block/drying_rack_bundles'), textures: { bundle: id('block/drying_bundle_fresh') } } },
+        done: { when: { contents: ['done'] }, model: { parent: id('block/drying_rack_bundles'), textures: { bundle: id('block/drying_bundle_dried') } } },
       },
     },
     sieve: {
@@ -138,7 +140,7 @@ export function stationModels() {
       templates: {},
       parts: {
         working: {
-          when: ['working'],
+          when: { contents: ['working'] },
           model: blockParent({ particle: id('block/sieve_flowers'), flowers: id('block/sieve_flowers') }, [
             box([3, 11, 3], [13, 12, 13], '#flowers', {
               faces: ['up', 'north', 'south', 'west', 'east'],
@@ -147,10 +149,19 @@ export function stationModels() {
           ]),
         },
         done: {
-          when: ['done'],
+          when: { contents: ['done'] },
           model: blockParent({ particle: id('block/sieve_resin'), resin: id('block/sieve_resin') }, [
             box([4, 3, 4], [12, 4, 12], '#resin', { faces: ['up', 'north', 'south', 'west', 'east'] }),
             box([6, 4, 6], [10, 5, 10], '#resin', { faces: ['up', 'north', 'south', 'west', 'east'] }),
+          ]),
+        },
+        // Dichavador instalado: cilindro de metal 4x4x2 apoiado no canto da moldura (tampa serrilhada em cima, UV 1:1)
+        grinder: {
+          when: { grinder: ['true'] },
+          model: blockParent({ particle: id('block/grinder_block'), grinder: id('block/grinder_block') }, [
+            box([11, 13, 11], [15, 15, 15], '#grinder', {
+              uv: { up: [0, 0, 4, 4], down: [4, 0, 8, 4], north: [0, 8, 4, 10], south: [4, 8, 8, 10], west: [8, 8, 12, 10], east: [12, 8, 16, 10] },
+            }),
           ]),
         },
       },
@@ -167,14 +178,14 @@ export function stationModels() {
       parts: {
         // Placa em cima (vazia ou pronta) e embaixo apertando a resina (trabalhando)
         platen_up: {
-          when: ['empty', 'done'],
+          when: { contents: ['empty', 'done'] },
           model: blockParent({ particle: id('block/press_iron'), iron: id('block/press_iron') }, [
             box([7.5, 8.5, 7.5], [8.5, 12, 8.5], '#iron', { grain: 'y', faces: ['north', 'south', 'west', 'east'] }),
             box([4, 7, 4], [12, 8.5, 12], '#iron', { grain: 'x' }),
           ]),
         },
         platen_down: {
-          when: ['working'],
+          when: { contents: ['working'] },
           model: blockParent({ particle: id('block/press_iron'), iron: id('block/press_iron'), resin: id('block/press_resin') }, [
             box([7.5, 6, 7.5], [8.5, 12, 8.5], '#iron', { grain: 'y', faces: ['north', 'south', 'west', 'east'] }),
             box([4, 4.5, 4], [12, 6, 12], '#iron', { grain: 'x' }),
@@ -182,7 +193,7 @@ export function stationModels() {
           ]),
         },
         hash: {
-          when: ['done'],
+          when: { contents: ['done'] },
           model: blockParent({ particle: id('block/press_hash'), hash: id('block/press_hash') }, [
             box([5, 3, 5], [11, 4.5, 11], '#hash', {
               faces: ['up', 'north', 'south', 'west', 'east'],
@@ -195,7 +206,10 @@ export function stationModels() {
   };
 }
 
-/** Blockstate multipart de uma estação: base girada pelo facing e cada parte só nos valores de `contents` dela. */
+/** Condição multipart de uma parte: {propriedade: [valores]} vira {propriedade: "a|b"}. */
+const whenOf = (when) => Object.fromEntries(Object.entries(when).map(([prop, values]) => [prop, values.join('|')]));
+
+/** Blockstate multipart de uma estação: base girada pelo facing e cada parte só nos valores da condição dela. */
 export function stationBlockstate(stationId, parts) {
   const multipart = [];
   for (const facing of STATION_PROPERTIES.facing) {
@@ -203,8 +217,132 @@ export function stationBlockstate(stationId, parts) {
     const apply = (model) => (y ? { model, y } : { model });
     multipart.push({ when: { facing }, apply: apply(id(`block/${stationId}`)) });
     for (const [part, def] of Object.entries(parts)) {
-      multipart.push({ when: { facing, contents: def.when.join('|') }, apply: apply(id(`block/${stationId}_${part}`)) });
+      multipart.push({ when: { facing, ...whenOf(def.when) }, apply: apply(id(`block/${stationId}_${part}`)) });
     }
+  }
+  return { multipart };
+}
+
+// ------------------------------------------------------------------ artigos colocáveis (plano 2.5)
+/** Nível máximo de cinza do cinzeiro (espelho de AshtrayRules.MAX_ASH). */
+export const ASHTRAY_MAX_ASH = 4;
+
+/** Face com UV explícito: as peças pequenas usam regiões próprias da textura, sempre 1:1. */
+const face = (texture, uv, extra = {}) => ({ uv, texture, ...extra });
+
+/**
+ * Modelos dos artigos que viram bloco: base (sempre) e partes por propriedade. A bandeja gira com o facing (variantes,
+ * como as estações); o pote mostra o conteúdo atrás do vidro com filled=true; o cinzeiro empilha a cinza por nível,
+ * como os conteúdos da composteira vanilla.
+ */
+export function articleModels() {
+  const tray = '#tray';
+  // Bandeja (frente para o norte): fundo esmaltado, borda de 1 px, uma folha de seda e um botão em cima
+  const rim = (from, to, long) => {
+    const top = long ? [0, 12, 12, 13] : [0, 12, 8, 13];
+    const side = long ? [0, 13, 12, 14] : [0, 13, 8, 14];
+    const end = [0, 13, 1, 14];
+    return {
+      from, to,
+      faces: long
+        ? { up: face(tray, top), north: face(tray, side), south: face(tray, side), west: face(tray, end), east: face(tray, end) }
+        : { up: face(tray, top, { rotation: 90 }), west: face(tray, side), east: face(tray, side) },
+    };
+  };
+  const rollingTray = blockParent({ particle: id('block/rolling_tray_block'), tray: id('block/rolling_tray_block') }, [
+    {
+      from: [2, 0, 3], to: [14, 0.5, 13],
+      faces: {
+        up: face(tray, [0, 0, 12, 10]),
+        down: face(tray, [0, 10, 12, 11], { cullface: 'down' }),
+        north: face(tray, [0, 10, 12, 10.5]), south: face(tray, [0, 10, 12, 10.5]),
+        west: face(tray, [0, 10, 10, 10.5]), east: face(tray, [0, 10, 10, 10.5]),
+      },
+    },
+    rim([2, 0.5, 3], [14, 1.5, 4], true),
+    rim([2, 0.5, 12], [14, 1.5, 13], true),
+    rim([2, 0.5, 4], [3, 1.5, 12], false),
+    rim([13, 0.5, 4], [14, 1.5, 12], false),
+    {
+      from: [9, 0.5, 5], to: [12, 0.75, 9],
+      faces: {
+        up: face(tray, [12, 0, 15, 4]),
+        north: face(tray, [12, 0, 15, 0.25]), south: face(tray, [12, 3.75, 15, 4]),
+        west: face(tray, [12, 0, 16, 0.25]), east: face(tray, [12, 3.75, 16, 4]),
+      },
+    },
+    {
+      from: [4, 0.5, 6], to: [6, 2, 8],
+      faces: {
+        up: face(tray, [12, 4, 14, 6]),
+        north: face(tray, [12, 6, 14, 7.5]), south: face(tray, [14, 6, 16, 7.5]),
+        west: face(tray, [14, 6, 16, 7.5]), east: face(tray, [12, 6, 14, 7.5]),
+      },
+    },
+  ]);
+
+  // Pote: vidro com borda e reflexo opacos e o resto transparente (cutout), tampa de madeira; conteúdo atrás do vidro
+  const glassSide = [5, 8, 11, 16];
+  const jar = blockParent({ particle: id('block/jar_glass'), glass: id('block/jar_glass'), lid: id('block/jar_lid') }, [
+    {
+      from: [5, 0, 5], to: [11, 8, 11],
+      faces: {
+        down: face('#glass', [5, 1, 11, 7], { cullface: 'down' }),
+        north: face('#glass', glassSide), south: face('#glass', glassSide),
+        west: face('#glass', glassSide), east: face('#glass', glassSide),
+      },
+    },
+    box([4.5, 8, 4.5], [11.5, 9.5, 11.5], '#lid', { grain: 'x' }),
+  ]);
+  const jarFilled = blockParent({ particle: id('block/jar_contents'), contents: id('block/jar_contents') }, [
+    box([5.5, 0.5, 5.5], [10.5, 6.5, 10.5], '#contents', { faces: ['up', 'north', 'south', 'west', 'east'] }),
+  ]);
+
+  // Cinzeiro: prato raso de terracota (fundo e quatro paredes) e a cinza subindo 0,25 por nível
+  const clay = '#clay';
+  const ashtray = blockParent({ particle: id('block/ashtray_block'), clay: id('block/ashtray_block') }, [
+    box([4, 0, 4], [12, 0.5, 12], clay),
+    box([4, 0.5, 4], [12, 2, 5], clay, { faces: ['up', 'north', 'south', 'west', 'east'] }),
+    box([4, 0.5, 11], [12, 2, 12], clay, { faces: ['up', 'north', 'south', 'west', 'east'] }),
+    box([4, 0.5, 5], [5, 2, 11], clay, { faces: ['up', 'west', 'east'] }),
+    box([11, 0.5, 5], [12, 2, 11], clay, { faces: ['up', 'west', 'east'] }),
+  ]);
+  const ashParts = {};
+  for (let n = 1; n <= ASHTRAY_MAX_ASH; n++) {
+    const elements = [box([5, 0.5, 5], [11, 0.5 + 0.25 * n, 11], '#ash', { faces: ['up'] })];
+    if (n === ASHTRAY_MAX_ASH) {
+      // Cheio: um montinho no meio
+      elements.push(box([6.5, 1.5, 6.5], [9.5, 2.25, 9.5], '#ash', { faces: ['up', 'north', 'south', 'west', 'east'] }));
+    }
+    ashParts[`ash${n}`] = {
+      when: { ash: [String(n)] },
+      model: blockParent({ particle: id('block/ashtray_ash'), ash: id('block/ashtray_ash') }, elements),
+    };
+  }
+
+  return {
+    rolling_tray: { facing: true, base: rollingTray, parts: {} },
+    jar: { facing: false, base: jar, parts: { filled: { when: { filled: ['true'] }, model: jarFilled } } },
+    ashtray: { facing: false, base: ashtray, parts: ashParts },
+  };
+}
+
+/**
+ * Blockstate de um artigo colocável. Com facing (bandeja), só a base girada, em variantes por facing; sem facing,
+ * multipart com a base sempre e cada parte só nos valores da condição dela.
+ */
+export function articleBlockstate(articleId, def) {
+  if (def.facing) {
+    const variants = {};
+    for (const facing of STATION_PROPERTIES.facing) {
+      const y = FACING_Y[facing];
+      variants[`facing=${facing}`] = y ? { model: id(`block/${articleId}`), y } : { model: id(`block/${articleId}`) };
+    }
+    return { variants };
+  }
+  const multipart = [{ apply: { model: id(`block/${articleId}`) } }];
+  for (const [part, p] of Object.entries(def.parts)) {
+    multipart.push({ when: whenOf(p.when), apply: { model: id(`block/${articleId}_${part}`) } });
   }
   return { multipart };
 }
@@ -293,8 +431,9 @@ export function handModels() {
       ),
     },
     joint: {
-      // Cone deitado no eixo X: piteira de papelão, corpo de papel que engrossa e a ponta torcida (acesa: brasa)
-      textures: { particle: m('paper'), paper: m('paper'), crutch: m('cardboard'), tip: m('paper') },
+      // Cone deitado no eixo X: ponta da boca de papel torcido (com piteira, papelão: FILTERED_HAND), corpo de papel
+      // que engrossa e a ponta torcida (acesa: brasa)
+      textures: { particle: m('paper'), paper: m('paper'), crutch: m('paper'), tip: m('paper') },
       elements: [
         part([3, 7.6, 7.6], [4.2, 8.4, 8.4], '#crutch', ['up', 'down', 'north', 'south', 'west']),
         part([4.2, 7.55, 7.55], [10, 8.45, 8.45], '#paper', ['up', 'down', 'north', 'south']),
@@ -332,6 +471,15 @@ export const LIT_DISPLAY = {
   pipe: HAND({ rotation: [0, -90, 0], translation: [0, 1, -2], scale: [0.6, 0.6, 0.6] }, { rotation: [0, -90, 0], translation: [-6, 3, -1], scale: [0.65, 0.65, 0.65] }),
   chillum: HAND({ rotation: [0, 0, 0], translation: [0, 3, -1], scale: [0.6, 0.6, 0.6] }, { rotation: [0, -20, -10], translation: [-5, 4, -2], scale: [0.6, 0.6, 0.6] }),
   joint: HAND({ rotation: [0, 90, 0], translation: [0, 2, -2], scale: [0.7, 0.7, 0.7] }, { rotation: [0, 90, 0], translation: [-7, 2, -2], scale: [0.7, 0.7, 0.7] }),
+};
+
+/**
+ * Baseado com piteira (cultivo:filtered): os modelos na mão herdam os do baseado (geometria e exibição, aceso ou não)
+ * e só trocam a ponta da boca de papel pela piteira de papelão.
+ */
+export const FILTERED_HAND = {
+  joint_filtered_in_hand: { parent: id('item/joint_in_hand'), textures: { crutch: id('item/model_cardboard') } },
+  joint_filtered_in_hand_lit: { parent: id('item/joint_in_hand_lit'), textures: { crutch: id('item/model_cardboard') } },
 };
 
 /** Aparelhos cujo modelo na mão ganha a variante "_lit" (brasa) enquanto o jogador fuma. */

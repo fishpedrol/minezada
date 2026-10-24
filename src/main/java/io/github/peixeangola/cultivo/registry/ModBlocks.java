@@ -1,8 +1,12 @@
 package io.github.peixeangola.cultivo.registry;
 
 import io.github.peixeangola.cultivo.Cultivo;
+import io.github.peixeangola.cultivo.block.AshtrayBlock;
 import io.github.peixeangola.cultivo.block.CannabisCropBlock;
+import io.github.peixeangola.cultivo.block.JarBlock;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlock;
+import io.github.peixeangola.cultivo.block.RollingTrayBlock;
+import io.github.peixeangola.cultivo.block.SieveBlock;
 import io.github.peixeangola.cultivo.block.WildPlantBlock;
 import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.StationKind;
@@ -11,8 +15,10 @@ import java.util.EnumMap;
 import java.util.Map;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -32,8 +38,12 @@ public final class ModBlocks {
         }
         for (StationKind kind : StationKind.values()) {
             String name = kind.blockId();
-            STATIONS.put(kind, BLOCKS.register(name, () -> new ProcessingStationBlock(kind,
-                BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).noOcclusion().setId(BLOCKS.key(name)))));
+            // A peneira é uma subclasse: tem a propriedade do dichavador
+            STATIONS.put(kind, BLOCKS.register(name, () -> {
+                BlockBehaviour.Properties properties =
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).noOcclusion().setId(BLOCKS.key(name));
+                return kind == StationKind.SIEVING ? new SieveBlock(properties) : new ProcessingStationBlock(kind, properties);
+            }));
         }
     }
 
@@ -41,6 +51,32 @@ public final class ModBlocks {
         () -> new WildPlantBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DEAD_BUSH)
             .mapColor(MapColor.PLANT)
             .setId(BLOCKS.key(ContentIds.WILD_PLANT))));
+
+    // Artigos colocáveis: pequenos, sem oclusão e estourados por pistão (como o vaso de flor e o pote decorado)
+
+    /** Bandeja de enrolar: metal, gira com o facing. */
+    public static final RegistryObject<RollingTrayBlock> ROLLING_TRAY = BLOCKS.register(ContentIds.ROLLING_TRAY,
+        () -> new RollingTrayBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).strength(0.5F).sound(SoundType.METAL).noOcclusion().pushReaction(PushReaction.POPPED)
+            .setId(BLOCKS.key(ContentIds.ROLLING_TRAY))));
+
+    /** Pote de vidro: guarda uma pilha e cura flores secas (BlockEntity própria). */
+    public static final RegistryObject<JarBlock> JAR = BLOCKS.register(ContentIds.JAR,
+        () -> new JarBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.NONE).strength(0.3F).sound(SoundType.GLASS).noOcclusion().pushReaction(PushReaction.POPPED)
+            .setId(BLOCKS.key(ContentIds.JAR))));
+
+    /** Cinzeiro de terracota: junta cinza das sessões de fumo por perto. */
+    public static final RegistryObject<AshtrayBlock> ASHTRAY = BLOCKS.register(ContentIds.ASHTRAY,
+        () -> new AshtrayBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.TERRACOTTA_ORANGE).strength(0.5F).sound(SoundType.DECORATED_POT).noOcclusion()
+            .pushReaction(PushReaction.POPPED).setId(BLOCKS.key(ContentIds.ASHTRAY))));
+
+    /** Bloco de cada artigo colocável, pelo ID (o mesmo do item). */
+    public static final Map<String, RegistryObject<? extends Block>> PLACEABLE_ARTICLES = Map.of(
+        ContentIds.ROLLING_TRAY, ROLLING_TRAY,
+        ContentIds.JAR, JAR,
+        ContentIds.ASHTRAY, ASHTRAY);
 
     private ModBlocks() {}
 }

@@ -2,7 +2,7 @@
   "textures": {
     "particle": "cultivo:item/model_paper",
     "paper": "cultivo:item/model_paper",
-    "crutch": "cultivo:item/model_cardboard",
+    "crutch": "cultivo:item/model_paper",
     "tip": "cultivo:item/model_paper"
   },
   "elements": [

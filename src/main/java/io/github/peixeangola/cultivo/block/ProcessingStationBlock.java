@@ -46,9 +46,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Blockstate: {@link #FACING} (a frente olha para quem colocou) e {@link #CONTENTS} (vazia, trabalhando ou pronta,
  * calculado por {@link StationVisualRules} e gravado pela BlockEntity só quando muda). O modelo é multipart: a base
- * gira com o facing e as partes de conteúdo aparecem conforme contents. Uma subclasse pode somar outra propriedade
- * (por exemplo um booleano na peneira) sobrescrevendo {@link #createBlockStateDefinition} e chamando o super: o
- * construtor daqui não lê campos da subclasse, e a BlockEntity só troca contents, preservando as outras.
+ * gira com o facing e as partes de conteúdo aparecem conforme contents. Uma subclasse soma outra propriedade
+ * sobrescrevendo {@link #createBlockStateDefinition} e chamando o super, como a {@link SieveBlock} faz com o
+ * dichavador: o construtor daqui não lê campos da subclasse, e a BlockEntity só troca contents, preservando as outras.
  */
 public class ProcessingStationBlock extends Block implements EntityBlock {
     public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;

@@ -1,0 +1,77 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cultivo:block/grinder_block",
+    "grinder": "cultivo:block/grinder_block"
+  },
+  "elements": [
+    {
+      "from": [
+        11,
+        13,
+        11
+      ],
+      "to": [
+        15,
+        15,
+        15
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            4,
+            0,
+            8,
+            4
+          ],
+          "texture": "#grinder"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            4,
+            4
+          ],
+          "texture": "#grinder"
+        },
+        "north": {
+          "uv": [
+            0,
+            8,
+            4,
+            10
+          ],
+          "texture": "#grinder"
+        },
+        "south": {
+          "uv": [
+            4,
+            8,
+            8,
+            10
+          ],
+          "texture": "#grinder"
+        },
+        "west": {
+          "uv": [
+            8,
+            8,
+            12,
+            10
+          ],
+          "texture": "#grinder"
+        },
+        "east": {
+          "uv": [
+            12,
+            8,
+            16,
+            10
+          ],
+          "texture": "#grinder"
+        }
+      }
+    }
+  ]
+}

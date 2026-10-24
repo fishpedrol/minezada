@@ -57,10 +57,12 @@
     { "id": "filter_tip", "en": "Filter Tip", "pt": "Piteira" },
     { "id": "grinder", "en": "Grinder", "pt": "Dichavador" },
     { "id": "lighter", "en": "Lighter", "pt": "Isqueiro" },
-    { "id": "rolling_tray", "en": "Rolling Tray", "pt": "Bandeja" },
-    { "id": "jar", "en": "Stash Jar", "pt": "Pote" },
-    { "id": "ashtray", "en": "Ashtray", "pt": "Cinzeiro" }
+    { "id": "rolling_tray", "en": "Rolling Tray", "pt": "Bandeja", "placeable": true },
+    { "id": "jar", "en": "Stash Jar", "pt": "Pote", "placeable": true },
+    { "id": "ashtray", "en": "Ashtray", "pt": "Cinzeiro", "placeable": true }
   ],
+  "_placeable_comment": "Artigos com \"placeable\": true viram bloco (mesmo ID do item, que mantém o ícone plano): blockstate, modelos (tools/gen/models.mjs), loot que derruba o próprio item e o nome block.cultivo.<id>. Espelho de ContentIds.PLACEABLE_ARTICLES.",
+  "jar_storable": ["#cultivo:dried_flowers", "cultivo:resin", "cultivo:hash", "cultivo:joint"],
   "stations": [
     { "id": "drying_rack", "type": "drying", "en": "Drying Rack", "pt": "Suporte de Secagem" },
     { "id": "sieve", "type": "sieving", "en": "Bench Sieve", "pt": "Peneira de Bancada" },
@@ -89,7 +91,8 @@
     { "result": "ashtray", "count": 1, "pattern": ["T T", "TTT"], "key": { "T": "minecraft:terracotta" } },
     { "result": "drying_rack", "count": 1, "pattern": ["SSS", "T T", "SSS"], "key": { "S": "minecraft:stick", "T": "minecraft:string" } },
     { "result": "sieve", "count": 1, "pattern": ["PTP", "P P"], "key": { "P": "#minecraft:planks", "T": "minecraft:string" } },
-    { "result": "press", "count": 1, "pattern": ["III", " S ", "PPP"], "key": { "I": "minecraft:iron_ingot", "S": "minecraft:stick", "P": "#minecraft:planks" } }
+    { "result": "press", "count": 1, "pattern": ["III", " S ", "PPP"], "key": { "I": "minecraft:iron_ingot", "S": "minecraft:stick", "P": "#minecraft:planks" } },
+    { "id": "joint_filtered", "result": "joint", "count": 1, "transmute": { "input": "cultivo:joint", "material": "cultivo:filter_tip", "group": "cultivo_joint", "components": { "cultivo:filtered": {} } } }
   ],
   "joint_recipe": { "_comment": "Um crafting_transmute joint_<variedade> por variedade: flor seca + material; grava cultivo:strain.", "material": "cultivo:rolling_paper", "group": "cultivo_joint" },
   "seed_sources": {
@@ -180,7 +183,14 @@
     { "name": "catalog_joint_carries_strain", "max_ticks": 100 },
     { "name": "wandering_trader_catalog_seeds", "max_ticks": 100 },
     { "name": "creative_tabs_split", "max_ticks": 100 },
-    { "name": "station_visual_state", "max_ticks": 100 }
+    { "name": "station_visual_state", "max_ticks": 100 },
+    { "name": "joint_filter_recipe", "max_ticks": 100 },
+    { "name": "smoke_filtered_joint", "max_ticks": 100 },
+    { "name": "sieve_grinder", "max_ticks": 100 },
+    { "name": "tray_rolls_joints", "max_ticks": 100 },
+    { "name": "jar_cures_flowers", "max_ticks": 100 },
+    { "name": "ashtray_collects_ash", "max_ticks": 100 },
+    { "name": "placeable_articles_drop_self", "max_ticks": 100 }
   ],
   "lang": {
     "en_us": {
@@ -204,7 +214,6 @@
       "tooltip.cultivo.potency.1": "Potency ★☆☆",
       "tooltip.cultivo.potency.2": "Potency ★★☆",
       "tooltip.cultivo.potency.3": "Potency ★★★",
-      "tooltip.cultivo.decorative": "Decorative item",
       "tooltip.cultivo.smoke.joint": "Hold right-click to smoke · needs a lighter",
       "tooltip.cultivo.smoke.device": "Hold right-click to smoke · needs a lighter and dried flower or hash (off hand first)",
       "tooltip.cultivo.lighter": "Needed to smoke · loses 1 durability per use",
@@ -217,7 +226,16 @@
       "tooltip.cultivo.station.sieving": "Sifts dried flowers into fictional resin",
       "tooltip.cultivo.station.pressing": "Presses 2 resin into 1 hash",
       "tooltip.cultivo.station.usage": "Right-click with an ingredient to insert; empty hand collects (output first)",
-      "tooltip.cultivo.rolling_paper": "Roll with a dried flower to make a joint"
+      "tooltip.cultivo.rolling_paper": "Roll with a dried flower to make a joint · 3 papers on a rolling tray roll 3 joints",
+      "tooltip.cultivo.filter_tip": "Add to a joint: lasts longer, less nausea",
+      "tooltip.cultivo.filtered": "Filtered",
+      "tooltip.cultivo.grinder": "Right-click a Bench Sieve to install: +1 resin per cycle · sneak with empty hands to remove",
+      "tooltip.cultivo.rolling_tray": "Place it and right-click with 2 identical dried flowers: 3 rolling papers become 3 joints",
+      "tooltip.cultivo.jar": "Stores one stack · cures dried flowers: +1 quality, once",
+      "tooltip.cultivo.cured": "Cured",
+      "tooltip.cultivo.ashtray": "Catches ash when someone smokes nearby · when full, an empty hand takes bone meal",
+      "message.cultivo.tray_need_flowers": "You need 2 identical dried flowers in hand",
+      "message.cultivo.tray_need_papers": "You need 3 rolling papers"
     },
     "pt_br": {
       "itemGroup.cultivo": "Cultivo",
@@ -240,7 +258,6 @@
       "tooltip.cultivo.potency.1": "Potência ★☆☆",
       "tooltip.cultivo.potency.2": "Potência ★★☆",
       "tooltip.cultivo.potency.3": "Potência ★★★",
-      "tooltip.cultivo.decorative": "Item decorativo",
       "tooltip.cultivo.smoke.joint": "Segure o botão direito para fumar · precisa de isqueiro",
       "tooltip.cultivo.smoke.device": "Segure o botão direito para fumar · precisa de isqueiro e flor seca ou haxixe (mão secundária primeiro)",
       "tooltip.cultivo.lighter": "Necessário para fumar · perde 1 de durabilidade por uso",
@@ -253,7 +270,16 @@
       "tooltip.cultivo.station.sieving": "Peneira flores secas em resina fictícia",
       "tooltip.cultivo.station.pressing": "Prensa 2 resinas em 1 haxixe",
       "tooltip.cultivo.station.usage": "Clique direito com ingrediente para inserir; mão vazia retira (saída primeiro)",
-      "tooltip.cultivo.rolling_paper": "Enrole com flor seca para fazer um baseado"
+      "tooltip.cultivo.rolling_paper": "Enrole com flor seca para fazer um baseado · 3 folhas na bandeja enrolam 3 baseados",
+      "tooltip.cultivo.filter_tip": "Junte a um baseado: dura mais e dá menos náusea",
+      "tooltip.cultivo.filtered": "Com piteira",
+      "tooltip.cultivo.grinder": "Instale na Peneira de Bancada com clique direito: +1 resina por ciclo · agache com as mãos vazias para tirar",
+      "tooltip.cultivo.rolling_tray": "Coloque e clique direito com 2 flores secas iguais: 3 folhas de seda viram 3 baseados",
+      "tooltip.cultivo.jar": "Guarda uma pilha · cura flores secas: +1 de qualidade, uma vez só",
+      "tooltip.cultivo.cured": "Cura concluída",
+      "tooltip.cultivo.ashtray": "Junta a cinza de quem fuma por perto · cheio, a mão vazia tira farinha de osso",
+      "message.cultivo.tray_need_flowers": "Você precisa de 2 flores secas iguais na mão",
+      "message.cultivo.tray_need_papers": "Você precisa de 3 folhas de seda"
     }
   }
 }

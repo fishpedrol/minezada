@@ -10,12 +10,19 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 
 /**
- * Resina e haxixe (e as flores, via {@link FlowerItem}): mostram a variedade gravada em cultivo:strain, se houver, e
- * o componente cultivo:quality no tooltip.
+ * Resina e haxixe (e as flores, via {@link FlowerItem}): mostram a variedade gravada em cultivo:strain, se houver, o
+ * componente cultivo:quality e, se a pilha passou pela cura no pote, a marca cultivo:cured no tooltip.
  */
 public class QualityItem extends Item {
     public QualityItem(Properties properties) {
         super(properties);
+    }
+
+    /** Linha "Cura concluída" para pilhas com cultivo:cured (flor seca curada ou o baseado feito dela). */
+    public static void appendCured(ItemStack stack, Consumer<Component> tooltip) {
+        if (stack.has(ModComponents.CURED.get())) {
+            tooltip.accept(Component.translatable("tooltip.cultivo.cured").withStyle(ChatFormatting.GOLD));
+        }
     }
 
     public static ChatFormatting color(int quality) {
@@ -42,5 +49,6 @@ public class QualityItem extends Item {
             tooltip.accept(Component.translatable("tooltip.cultivo.quality",
                 Component.translatable("tooltip.cultivo.quality." + quality)).withStyle(color(quality)));
         }
+        appendCured(stack, tooltip);
     }
 }

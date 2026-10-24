@@ -179,7 +179,8 @@ public class ProcessingStationBlockEntity extends BlockEntity {
 
     /**
      * Resultado que o ciclo atual produziria, com a qualidade da entrada copiada. Na peneira e na prensa a
-     * variedade também passa adiante (cultivo:strain), para a resina e o haxixe lembrarem de qual flor vieram.
+     * variedade também passa adiante (cultivo:strain), para a resina e o haxixe lembrarem de qual flor vieram. A
+     * peneira com dichavador (blockstate grinder=true) rende +1 resina.
      */
     ItemStack resultFor(ProcessingRecipe recipe, ItemStack input) {
         ItemStack result = recipe.assemble(new SingleRecipeInput(input));
@@ -196,7 +197,8 @@ public class ProcessingStationBlockEntity extends BlockEntity {
                 result.set(ModComponents.STRAIN.get(), strain);
             }
         }
-        result.setCount(ProcessingRules.outputCount(kind(), result.getCount(), quality));
+        result.setCount(ProcessingRules.outputCount(kind(), result.getCount(), quality,
+            SieveBlock.hasGrinder(getBlockState())));
         return result;
     }
 

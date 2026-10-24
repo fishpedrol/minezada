@@ -44,6 +44,8 @@ class AssetCompletenessTest {
     /** Aparelhos de fumo e isqueiro: ícone plano no inventário e modelo 3D na mão. */
     private static final List<String> HAND_MODEL_ITEMS = List.of("bong", "hookah", "pipe", "chillum", "joint", "lighter");
     private static final List<String> FLAT_CONTEXTS = List.of("gui", "ground", "fixed", "on_shelf");
+    /** Rotação y do modelo por facing (frente do modelo para o norte, como a fornalha vanilla). */
+    private static final Map<String, Integer> FACING_Y = Map.of("north", 0, "east", 90, "south", 180, "west", 270);
 
     // ------------------------------------------------------------------ blockstates e modelos
 
@@ -76,56 +78,138 @@ class AssetCompletenessTest {
     @Test
     void stationBlockstatesRotateTheBaseForEachFacing() {
         // Convenção vanilla (fornalha): frente do modelo para o norte; leste y=90, sul y=180, oeste y=270
-        Map<String, Integer> expectedY = Map.of("north", 0, "east", 90, "south", 180, "west", 270);
         for (String station : ContentIds.STATIONS) {
             JsonArray multipart = Resources.json(Resources.assets("blockstates/" + station + ".json")).getAsJsonArray("multipart");
-            for (String facing : ContentIds.STATION_STATE_PROPERTIES.get("facing")) {
-                for (String contents : ContentIds.STATION_STATE_PROPERTIES.get("contents")) {
-                    Map<String, String> state = Map.of("facing", facing, "contents", contents);
-                    int bases = 0;
-                    for (JsonElement part : multipart) {
-                        JsonObject p = part.getAsJsonObject();
-                        if (!matches(p.getAsJsonObject("when"), state)) {
-                            continue;
-                        }
-                        JsonObject apply = p.getAsJsonObject("apply");
-                        int y = apply.has("y") ? apply.get("y").getAsInt() : 0;
-                        assertEquals(expectedY.get(facing), y, station + " " + state + " " + apply);
-                        if (apply.get("model").getAsString().equals("cultivo:block/" + station)) {
-                            bases++;
-                        }
+            // Todos os estados do bloco (na peneira também grinder=true|false): toda parte que aparece gira com a base
+            for (Map<String, String> state : allStates(ContentIds.stateProperties(station))) {
+                int bases = 0;
+                for (JsonElement part : multipart) {
+                    JsonObject p = part.getAsJsonObject();
+                    if (!matches(p.getAsJsonObject("when"), state)) {
+                        continue;
                     }
-                    assertEquals(1, bases, station + " " + state + ": a base aparece uma vez");
+                    JsonObject apply = p.getAsJsonObject("apply");
+                    int y = apply.has("y") ? apply.get("y").getAsInt() : 0;
+                    assertEquals(FACING_Y.get(state.get("facing")), y, station + " " + state + " " + apply);
+                    if (apply.get("model").getAsString().equals("cultivo:block/" + station)) {
+                        bases++;
+                    }
                 }
+                assertEquals(1, bases, station + " " + state + ": a base aparece uma vez");
             }
         }
     }
 
+    /**
+     * Todo "when" dos blockstates multipart (estações, pote e cinzeiro) usa só propriedades e valores que o bloco tem
+     * (ContentIds.stateProperties, espelho dos blocos Java).
+     */
     @Test
     void multipartConditionsUseExistingProperties() {
-        for (String station : ContentIds.STATIONS) {
-            JsonArray multipart = Resources.json(Resources.assets("blockstates/" + station + ".json")).getAsJsonArray("multipart");
+        List<String> multipartBlocks = new ArrayList<>(ContentIds.STATIONS);
+        multipartBlocks.addAll(List.of(ContentIds.JAR, ContentIds.ASHTRAY));
+        for (String block : multipartBlocks) {
+            Map<String, List<String>> properties = ContentIds.stateProperties(block);
+            assertFalse(properties.isEmpty(), block + " sem propriedades no espelho");
+            JsonArray multipart = Resources.json(Resources.assets("blockstates/" + block + ".json")).getAsJsonArray("multipart");
             Set<String> seenContents = new HashSet<>();
             for (JsonElement part : multipart) {
                 JsonObject when = part.getAsJsonObject().getAsJsonObject("when");
-                assertTrue(when != null, station + ": parte sem when");
+                if (when == null) {
+                    // Só a base dos artigos sem facing aparece sempre
+                    assertFalse(ContentIds.STATIONS.contains(block), block + ": parte de estação sem when");
+                    continue;
+                }
                 for (Map.Entry<String, JsonElement> term : when.entrySet()) {
-                    List<String> allowed = ContentIds.STATION_STATE_PROPERTIES.get(term.getKey());
-                    assertTrue(allowed != null, station + ": propriedade inexistente " + term.getKey());
+                    List<String> allowed = properties.get(term.getKey());
+                    assertTrue(allowed != null, block + ": propriedade inexistente " + term.getKey());
                     for (String value : term.getValue().getAsString().split("\\|")) {
                         String plain = value.startsWith("!") ? value.substring(1) : value;
-                        assertTrue(allowed.contains(plain), station + ": " + term.getKey() + "=" + plain);
+                        assertTrue(allowed.contains(plain), block + ": " + term.getKey() + "=" + plain);
                         if (term.getKey().equals("contents")) {
                             seenContents.add(plain);
                         }
                     }
                 }
             }
-            // Toda estação tem parte para trabalhando e para pronta (vazia é a base sozinha, exceto na prensa)
-            assertTrue(seenContents.containsAll(List.of("working", "done")), station + " " + seenContents);
+            if (ContentIds.STATIONS.contains(block)) {
+                // Toda estação tem parte para trabalhando e para pronta (vazia é a base sozinha, exceto na prensa)
+                assertTrue(seenContents.containsAll(List.of("working", "done")), block + " " + seenContents);
+            }
         }
         assertEquals(Set.of("north", "south", "west", "east"), Set.copyOf(ContentIds.STATION_STATE_PROPERTIES.get("facing")));
         assertEquals(List.of("empty", "working", "done"), ContentIds.STATION_STATE_PROPERTIES.get("contents"));
+        assertEquals(List.of("true", "false"), ContentIds.stateProperties("sieve").get("grinder"));
+        assertFalse(ContentIds.stateProperties("drying_rack").containsKey("grinder"), "só a peneira tem dichavador");
+        assertEquals(List.of("0", "1", "2", "3", "4"), ContentIds.stateProperties("ashtray").get("ash"));
+        assertEquals(List.of("true", "false"), ContentIds.stateProperties("jar").get("filled"));
+        assertEquals(Set.of("facing"), ContentIds.stateProperties("rolling_tray").keySet());
+    }
+
+    /** O dichavador aparece na peneira só com grinder=true, uma vez, em todos os facings e conteúdos. */
+    @Test
+    void sieveShowsTheGrinderOnlyWhenInstalled() {
+        JsonArray multipart = Resources.json(Resources.assets("blockstates/sieve.json")).getAsJsonArray("multipart");
+        for (Map<String, String> state : allStates(ContentIds.stateProperties("sieve"))) {
+            long grinders = appliedModels(multipart, state).stream().filter(m -> m.equals("cultivo:block/sieve_grinder")).count();
+            assertEquals(state.get("grinder").equals("true") ? 1 : 0, grinders, state.toString());
+        }
+        JsonObject grinder = Resources.json(Resources.assets("models/block/sieve_grinder.json"));
+        JsonArray from = grinder.getAsJsonArray("elements").get(0).getAsJsonObject().getAsJsonArray("from");
+        assertEquals(13.0F, from.get(1).getAsFloat(), "o dichavador fica em cima da moldura (y=13)");
+    }
+
+    /** A bandeja é uma base só, girada por variante de facing (sem multipart). */
+    @Test
+    void rollingTrayVariantsRotateForEachFacing() {
+        JsonObject variants = Resources.json(Resources.assets("blockstates/rolling_tray.json")).getAsJsonObject("variants");
+        assertEquals(Set.of("facing=north", "facing=east", "facing=south", "facing=west"), variants.keySet());
+        for (String facing : ContentIds.stateProperties("rolling_tray").get("facing")) {
+            JsonObject v = variants.getAsJsonObject("facing=" + facing);
+            assertEquals("cultivo:block/rolling_tray", v.get("model").getAsString());
+            assertEquals(FACING_Y.get(facing), v.has("y") ? v.get("y").getAsInt() : 0, facing);
+        }
+    }
+
+    /** Pote: o conteúdo atrás do vidro só com filled=true. Cinzeiro: uma camada de cinza por nível, nada no 0. */
+    @Test
+    void jarAndAshtrayPartsFollowTheirState() {
+        JsonArray jar = Resources.json(Resources.assets("blockstates/jar.json")).getAsJsonArray("multipart");
+        assertEquals(List.of("cultivo:block/jar"), appliedModels(jar, Map.of("filled", "false")));
+        assertEquals(List.of("cultivo:block/jar", "cultivo:block/jar_filled"), appliedModels(jar, Map.of("filled", "true")));
+        JsonArray ashtray = Resources.json(Resources.assets("blockstates/ashtray.json")).getAsJsonArray("multipart");
+        assertEquals(List.of("cultivo:block/ashtray"), appliedModels(ashtray, Map.of("ash", "0")));
+        for (int ash = 1; ash <= 4; ash++) {
+            assertEquals(List.of("cultivo:block/ashtray", "cultivo:block/ashtray_ash" + ash),
+                appliedModels(ashtray, Map.of("ash", String.valueOf(ash))), "ash=" + ash);
+        }
+        // A cinza sobe 0,25 por nível a partir do fundo (0,5)
+        for (int ash = 1; ash <= 4; ash++) {
+            JsonObject layer = Resources.json(Resources.assets("models/block/ashtray_ash" + ash + ".json"))
+                .getAsJsonArray("elements").get(0).getAsJsonObject();
+            assertEquals(0.5F + 0.25F * ash, layer.getAsJsonArray("to").get(1).getAsFloat(), "ash=" + ash);
+        }
+    }
+
+    /**
+     * Bandeja, pote e cinzeiro: o item continua com o ícone plano (item/generated com a própria textura, como o vaso
+     * de flor), e o bloco tem modelo 3D próprio com textura de bloco.
+     */
+    @Test
+    void placeableArticlesKeepFlatIconsAndHaveBlockModels() {
+        for (String article : ContentIds.PLACEABLE_ARTICLES) {
+            JsonObject def = Resources.json(Resources.assets("items/" + article + ".json")).getAsJsonObject("model");
+            assertEquals("cultivo:item/" + article, def.get("model").getAsString(), article);
+            JsonObject item = Resources.json(Resources.assets("models/item/" + article + ".json"));
+            assertEquals("minecraft:item/generated", item.get("parent").getAsString(), article);
+            assertEquals("cultivo:item/" + article, item.getAsJsonObject("textures").get("layer0").getAsString(), article);
+            JsonObject block = Resources.json(Resources.assets("models/block/" + article + ".json"));
+            assertEquals("minecraft:block/block", block.get("parent").getAsString(), article);
+            assertFalse(block.getAsJsonArray("elements").isEmpty(), article);
+            for (Map.Entry<String, JsonElement> t : block.getAsJsonObject("textures").entrySet()) {
+                assertTrue(t.getValue().getAsString().startsWith("cultivo:block/"), article + " usa textura de item no bloco");
+            }
+        }
     }
 
     @Test
@@ -218,16 +302,40 @@ class AssetCompletenessTest {
         assertEquals("cultivo:item/hash_dourado", modelByStrain.get("manga_gelada"));
     }
 
-    /** Baseado aceso enquanto o jogador fuma (minecraft:using_item), no ícone e na mão. */
+    /**
+     * Baseado: primeiro a piteira (minecraft:has_component cultivo:filtered), depois aceso enquanto o jogador fuma
+     * (minecraft:using_item), no ícone e na mão, como as condições aninhadas do items/bow.json vanilla.
+     */
     @Test
-    void jointLightsUpWhileUsed() {
+    void jointShowsTheFilterAndLightsUpWhileUsed() {
         JsonObject def = Resources.json(Resources.assets("items/joint.json")).getAsJsonObject("model");
         assertEquals("minecraft:condition", def.get("type").getAsString());
-        assertEquals("minecraft:using_item", def.get("property").getAsString());
-        assertEquals(List.of("cultivo:item/joint_lit", "cultivo:item/joint_in_hand_lit"), itemModels(def.getAsJsonObject("on_true")));
-        assertEquals(List.of("cultivo:item/joint", "cultivo:item/joint_in_hand"), itemModels(def.getAsJsonObject("on_false")));
+        assertEquals("minecraft:has_component", def.get("property").getAsString());
+        assertEquals("cultivo:filtered", def.get("component").getAsString());
+        JsonObject filtered = def.getAsJsonObject("on_true");
+        JsonObject plain = def.getAsJsonObject("on_false");
+        for (JsonObject branch : List.of(filtered, plain)) {
+            assertEquals("minecraft:condition", branch.get("type").getAsString());
+            assertEquals("minecraft:using_item", branch.get("property").getAsString());
+        }
+        assertEquals(List.of("cultivo:item/joint_filtered_lit", "cultivo:item/joint_filtered_in_hand_lit"),
+            itemModels(filtered.getAsJsonObject("on_true")));
+        assertEquals(List.of("cultivo:item/joint_filtered", "cultivo:item/joint_filtered_in_hand"),
+            itemModels(filtered.getAsJsonObject("on_false")));
+        assertEquals(List.of("cultivo:item/joint_lit", "cultivo:item/joint_in_hand_lit"), itemModels(plain.getAsJsonObject("on_true")));
+        assertEquals(List.of("cultivo:item/joint", "cultivo:item/joint_in_hand"), itemModels(plain.getAsJsonObject("on_false")));
+
         JsonObject lit = Resources.json(Resources.assets("models/item/joint_in_hand_lit.json"));
         assertEquals("cultivo:item/smoke_ember", lit.getAsJsonObject("textures").get("tip").getAsString());
+        // Na mão a boca é papel; com piteira, papelão (o resto da geometria e da exibição é herdado)
+        assertEquals("cultivo:item/model_paper",
+            Resources.json(Resources.assets("models/item/joint_in_hand.json")).getAsJsonObject("textures").get("crutch").getAsString());
+        JsonObject filteredHand = Resources.json(Resources.assets("models/item/joint_filtered_in_hand.json"));
+        assertEquals("cultivo:item/joint_in_hand", filteredHand.get("parent").getAsString());
+        assertEquals("cultivo:item/model_cardboard", filteredHand.getAsJsonObject("textures").get("crutch").getAsString());
+        JsonObject filteredLit = Resources.json(Resources.assets("models/item/joint_filtered_in_hand_lit.json"));
+        assertEquals("cultivo:item/joint_in_hand_lit", filteredLit.get("parent").getAsString());
+        assertEquals("cultivo:item/model_cardboard", filteredLit.getAsJsonObject("textures").get("crutch").getAsString());
     }
 
     /**
@@ -251,7 +359,8 @@ class AssetCompletenessTest {
                         .get("parent").getAsString(), item + " " + flat);
                 }
                 for (String hand : itemModels(select.getAsJsonObject("fallback"))) {
-                    assertTrue(hand.startsWith("cultivo:item/" + item + "_in_hand"), item + " " + hand);
+                    // joint_in_hand, joint_in_hand_lit, joint_filtered_in_hand, joint_filtered_in_hand_lit...
+                    assertTrue(hand.startsWith("cultivo:item/" + item + "_") && hand.contains("_in_hand"), item + " " + hand);
                     JsonObject display = resolvedDisplay(hand);
                     for (String context : List.of("thirdperson_righthand", "thirdperson_lefthand",
                         "firstperson_righthand", "firstperson_lefthand")) {
@@ -416,8 +525,14 @@ class AssetCompletenessTest {
             }
             for (String key : List.of("message.cultivo.lighter_broke",
                 "tooltip.cultivo.smoke.joint", "tooltip.cultivo.smoke.device", "tooltip.cultivo.lighter",
-                "tooltip.cultivo.strain")) {
+                "tooltip.cultivo.strain", "tooltip.cultivo.filtered", "tooltip.cultivo.cured")) {
                 assertTranslated(t, key, lang);
+            }
+            for (io.github.peixeangola.cultivo.core.RollingRules.Refusal refusal
+                : io.github.peixeangola.cultivo.core.RollingRules.Refusal.values()) {
+                if (refusal.messageKey() != null) {
+                    assertTranslated(t, refusal.messageKey(), lang);
+                }
             }
             for (Variety v : Variety.values()) {
                 assertTranslated(t, "tooltip.cultivo.variety." + v.id(), lang);
@@ -434,6 +549,36 @@ class AssetCompletenessTest {
             families.add(v.artFamily());
         }
         return List.copyOf(families);
+    }
+
+    /** Todos os estados (combinações de valores) de um mapa de propriedades. */
+    static List<Map<String, String>> allStates(Map<String, List<String>> properties) {
+        List<Map<String, String>> states = new ArrayList<>();
+        states.add(Map.of());
+        for (Map.Entry<String, List<String>> property : properties.entrySet()) {
+            List<Map<String, String>> next = new ArrayList<>();
+            for (Map<String, String> partial : states) {
+                for (String value : property.getValue()) {
+                    Map<String, String> state = new HashMap<>(partial);
+                    state.put(property.getKey(), value);
+                    next.add(state);
+                }
+            }
+            states = next;
+        }
+        return states;
+    }
+
+    /** Modelos aplicados por um multipart num estado, na ordem do JSON. */
+    private static List<String> appliedModels(JsonArray multipart, Map<String, String> state) {
+        List<String> models = new ArrayList<>();
+        for (JsonElement part : multipart) {
+            JsonObject p = part.getAsJsonObject();
+            if (matches(p.getAsJsonObject("when"), state)) {
+                models.add(p.getAsJsonObject("apply").get("model").getAsString());
+            }
+        }
+        return models;
     }
 
     private static boolean matches(JsonObject when, Map<String, String> state) {
