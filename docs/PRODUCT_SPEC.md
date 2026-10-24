@@ -31,7 +31,11 @@ O jogador obtém sementes em fontes de mundo, escolhe uma variedade e pode culti
 
 ## Fora do MVP
 
-Bedrock e outros loaders; efeitos de consumo/intoxicação/dependência; crime/comércio; simulação de técnicas ou parâmetros reais; integração obrigatória com outros mods. Os artigos de fumo são itens de gameplay; efeitos de consumo ficam fora do MVP.
+Bedrock e outros loaders; dependência/vício; crime/comércio; simulação de técnicas ou parâmetros reais; integração obrigatória com outros mods.
+
+## Extensão pós-MVP (pedida pelo usuário em 21/10/2026)
+
+Mecânica fictícia de fumar: baseado, cachimbo, chillum, bong e narguilé podem ser usados (segurar o botão direito) com um isqueiro no inventário; os artigos queimam flor seca ou haxixe. O servidor aplica efeitos de jogo temporários: o indicador "Chapado" (`cultivo:high`) mais efeitos vanilla (fome, náusea curta e um perfil por variedade). A duração depende do artigo, da qualidade e do material, soma ao fumar de novo e tem limite. São só mecânicas de Minecraft, sem informação do mundo real. Regras e números em DECISIONS.md.
 
 ## Critérios de aceite
 
