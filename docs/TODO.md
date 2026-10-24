@@ -27,6 +27,10 @@ Estado em 24/10/2026: **MVP + mecânica de fumar compilados, testados e rodando 
 | 24/10/2026 | `./gradlew runServer` | **`Done (0.669s)!`**, nenhum WARN/ERROR ligado ao Cultivo |
 | 24/10/2026 | inspeção do jar | 305 entradas, 43 PNGs (inclui `textures/mob_effect/high.png`), 0 arquivos do Minecraft |
 | 24/10/2026 | `sh tools/test-offline.sh` / `node tools/gen/generate.mjs` | 88 de 88 / 43 texturas e 149 JSONs |
+| 24/10/2026 | PC local (Windows 11, Temurin 25.0.4.1+1, `main` em `5bded22`): `.\gradlew.bat build` / `.\gradlew.bat runGameTestServer` | **`BUILD SUCCESSFUL in 29s`**, 88 testes, 0 falhas / **`All 30 required tests passed :)`** (`30 GAME TESTS COMPLETE IN 929.7 ms`) |
+| 24/10/2026 | PC local: `node tools/gen/generate.mjs` (Node 24.19) | 43 texturas e 151 JSONs; `git status` sem diferença (o gerador reproduz os arquivos versionados) |
+| 24/10/2026 | PC local: `.\gradlew.bat runServer` | **`Done (2.277s)!`**; erros só do ambiente (`server.properties` na 1ª execução, netty kqueue/epoll) |
+| 24/10/2026 | PC local: `.\gradlew.bat runClient` | Janela abre; `Reloading ResourceManager: vanilla, vanilla, mod:cultivo, mod:forge`, `Sound engine started`; nenhum modelo/textura faltando nem WARN/ERROR do Cultivo (só Realms sem conta e config do Forge na 1ª execução). Checagem visual (seção 6 do guia) ainda não feita. |
 
 Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: `loot_table/blocks/wheat.json`, `chests/village/village_plains_house.json`, `processor_list/farm_plains.json` (as regras vanilla do mod são idênticas às do jar), `feature/melon.json`, `placed_feature/patch_melon.json`, `recipe/bowl.json`/`book.json` e `test_instance/always_pass.json`.
 
@@ -38,8 +42,9 @@ Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: 
 - [x] JUnit 5 no build.gradle (`testImplementation` + `useJUnitPlatform()`).
 - [x] `./gradlew build` do mod renomeado: `BUILD SUCCESSFUL`.
 - [x] Servidor dedicado (`runServer`): `Done (6.116s)!`.
-- [ ] Cliente de desenvolvimento (`runClient`): não testado, porque o container não tem display.
-**Gate:** servidor OK; cliente pendente.
+- [x] Cliente de desenvolvimento (`runClient`) inicia no Windows com o mod carregado e sem erros de recurso (24/10/2026).
+- [ ] Checagem visual no cliente (seção 6 do guia).
+**Gate:** servidor OK; cliente inicia; checagem visual pendente.
 
 ## 2. Conteúdo e cultivo
 - [x] Regras puras com testes passando: qualidade (outdoor 2–3, estufa 4–5; bônus 0,20/0,35/0,50), crescimento (fórmula do trigo × variedade × 1,25 na estufa, luz ≥ 9, estágios 0–1/2–3/4–5/6–7), estufa (teto + 4 paredes de vidro até 6 blocos), fontes de sementes (4/5 aldeias, pesos 50/30/14/6, lavoura 0,05/0,025/0,01, silvestre 60/30/10).
