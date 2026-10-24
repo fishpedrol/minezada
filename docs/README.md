@@ -1,6 +1,6 @@
 # Documentação
 
-Projeto: mod de cultivo e crafting para Minecraft Java. Estado atual: especificação atualizada; implementação ainda por iniciar. Projeto privado para jogar com amigos.
+Projeto: mod de cultivo e crafting para Minecraft Java (Forge 26.3). Estado atual: MVP compilado; `build`, GameTests e servidor dedicado passando (veja [TODO.md](TODO.md)). Falta testar no cliente gráfico. Projeto privado para jogar com amigos.
 
 - [Especificação do produto](PRODUCT_SPEC.md) — fonte de verdade para escopo e comportamento.
 - [Decisões](DECISIONS.md) — pedidos explícitos, escolhas provisórias e questões em aberto.

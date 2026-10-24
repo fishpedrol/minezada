@@ -2,6 +2,31 @@
 
 **Pesquisa técnica revisada em 21/10/2026.** Este documento registra fatos encontrados em fontes oficiais e recomendações técnicas para iniciar o projeto. Versões de Minecraft e Forge mudam; confira as páginas oficiais antes de atualizar ou publicar uma build.
 
+## Matriz exata do projeto (fixada pelo MDK baixado em 21/10/2026)
+
+| Item | Valor | Onde está |
+|---|---|---|
+| Minecraft | 26.3 (mappings `26.3-20260918.230105`) | `mods.toml` (`[26.3,26.4)`) |
+| Loader | Forge `26.3-66.0.13` | `build.gradle` (`net.minecraftforge:forge:26.3-66.0.13`), `mods.toml` (`[66,)`) |
+| Plugin | `net.minecraftforge.gradle` `[7.0.17,8)` (ForgeGradle 7) | `build.gradle` |
+| Gradle | wrapper 9.7.1 | `gradle/wrapper/gradle-wrapper.properties` |
+| Java | toolchain 25. Testado na nuvem com Temurin 25.0.1+8 | `build.gradle` |
+| Pack format | `min_format`/`max_format` 121 (do MDK) | `pack.mcmeta` |
+| Testes | JUnit 5.12.2 (BOM) + Gson 2.13.1 | `build.gradle`, `tools/test-offline.sh` |
+
+Essa matriz substitui a divergência entre 66.0.6 e 66.0.10 descrita abaixo, porque o MDK efetivamente baixado traz a 66.0.13.
+
+### Rede necessária para o build
+O ForgeGradle 7 baixa ferramentas e dependências de `maven.minecraftforge.net` (por exemplo `minecraft-mavenizer-0.5.21.jar`) e o jogo dos servidores da Mojang (`piston-meta.mojang.com`, `libraries.minecraft.net`). Na sessão na nuvem de 21/10/2026, esses hosts foram negados pela política de rede (403 no CONNECT), e `./gradlew build` falhou na configuração. Depois de liberar os domínios nas configurações de rede do ambiente, o build completou (`BUILD SUCCESSFUL`). O plugin em si vem do Gradle Plugin Portal, que estava acessível. Para builds na nuvem, libere esses domínios nas configurações de rede do ambiente.
+
+Hosts que estavam acessíveis: `services.gradle.org`, `plugins.gradle.org`, `repo1.maven.org` e downloads de releases do GitHub (por onde veio o JDK Temurin). Enquanto o build completo não roda, `tools/test-offline.sh` executa os testes JUnit que não dependem do Minecraft.
+
+### Formatos de dados 26.3 usados (conferidos contra o `client-extra-26.3` jar em 21/10/2026)
+A pesquisa inicial veio das notas oficiais dos snapshots; os formatos finais foram copiados dos JSONs vanilla (detalhes em NEXT_SESSION.md, seção 6). Fontes ([26.3 Snapshot 4](https://www.minecraft.net/en-us/article/minecraft-26-3-snapshot-4), [notas do 26.1 Pre-Release 1](https://www.minecraft.net/en-us/article/minecraft-26-1-pre-release-1)):
+- **Loot (26.3 Snapshot 4):** nas entradas, `conditions` virou `condition` e `functions` virou `modifier`, com valor único ou lista (lista = `minecraft:sequence`). Nos predicados e funções, o campo de tipo agora se chama `type` (antes `condition`/`function`). Uma lista de condições não equivale mais a `all_of` implícito.
+- **Worldgen (26.1):** o tipo `random_patch` foi removido. Patches agora são `count` + `random_offset` + `block_predicate_filter` no placed feature, e as features configuradas ficam em `worldgen/feature/`.
+- **Receitas:** `crafting_shaped`/`crafting_shapeless` com ingrediente em string (`"ns:item"` ou `"#ns:tag"`) e `result: {id, count}`.
+
 ## Alvo confirmado
 
 - A versão estável atual do Minecraft Java indicada para esta pesquisa é **26.3**. A Mojang publicou o lançamento em 15/09/2026. [Notas oficiais do Minecraft Java 26.3](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-3)

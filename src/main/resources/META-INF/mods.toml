@@ -1,37 +1,26 @@
-# See https://docs.minecraftforge.net/en/1.21.x/gettingstarted/modfiles/#modstoml
-# There are lots of things you can do with the mods.toml, and not all fields are included with this MDK
-# References: https://github.com/MinecraftForge/MDKExamples
-
+# Metadados do mod Cultivo para Forge 26.3.
 modLoader="javafml"
 loaderVersion="[66,)"
-license="All Rights Reserved"
-#issueTrackerURL="https://github.com/MyOrganization/MyMod/" #optional
-#clientSideOnly=true #optional, default=false
+license="MIT"
 
 [[mods]]
-modId="examplemod"
-version="1.0.0"
-displayName="Example Mod"
-#updateJSONURL="https://example.com/updates.json" #optional
-#displayURL="https://example.com/" #optional
-#logoFile="examplemod.png" #optional
-#credits="" #optional
-authors="YourNameHere, OtherNameHere" #optional
-#displayTest="MATCH_VERSION" #optional, default=MATCH_VERSION when not clientSideOnly, else IGNORE_ALL_VERSION
+modId="cultivo"
+version="0.1.0"
+displayName="Cultivo"
+authors="Cultivo contributors"
+description='''Cultivo ficcional de variedades de planta com estufa, secagem, peneira, prensa e artigos craftáveis.
+Mod privado; tudo é abstração de gameplay.'''
 
-description='''Example mod description.
-Newline characters can be used like this, and rendered on the mods screen properly.'''
-
-[[dependencies.examplemod]] #recommended
+[[dependencies.cultivo]]
     modId="forge"
     mandatory=true
     versionRange="[66,)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.examplemod]] #recommended
+[[dependencies.cultivo]]
     modId="minecraft"
     mandatory=true
-    versionRange="[26.3,26.4,)"
+    versionRange="[26.3,26.4)"
     ordering="NONE"
     side="BOTH"

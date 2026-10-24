@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PTP",
+    "P P"
+  ],
+  "key": {
+    "P": "#minecraft:planks",
+    "T": "minecraft:string"
+  },
+  "result": {
+    "id": "cultivo:sieve",
+    "count": 1
+  }
+}

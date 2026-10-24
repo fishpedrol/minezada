@@ -1,6 +1,6 @@
 # Orientação para a próxima sessão
 
-Escrito em 21/10/2026, ao fim de uma sessão de investigação. **Nenhum código do mod foi escrito ainda.** O repositório contém só o MDK oficial do Forge (ainda com `examplemod`), os docs e `tools/art/png.mjs` (encoder PNG sem dependências, ainda não commitado). Leia CLAUDE.md e docs/ antes; este arquivo resume o que já foi verificado para não repetir a pesquisa.
+**Atualizado em 21/10/2026.** O MVP compila e passa em `./gradlew build` (62 testes JUnit), `./gradlew runGameTestServer` (11 de 11) e `./gradlew runServer` (sobe sem erro do mod). As evidências estão em docs/TODO.md. Falta testar com o cliente gráfico/multiplayer e balancear. A seção 6 agora registra as diferenças de API do 26.3 encontradas no build real.
 
 ## 1. Ambiente e versões (verificadas no MDK baixado)
 
@@ -111,7 +111,42 @@ Depois do primeiro build, o ForgeGradle deixa estes arquivos no projeto:
   - JUnit (adicionar `testImplementation` do JUnit 5 + `useJUnitPlatform()`) para as regras puras (qualidade, estufa, pesos de fonte, rendimento de processamento) e para a completude dos assets e receitas (parse dos JSON);
   - GameTests para crescimento, colheita, estufa, estações (incluindo persistência via save/load da BE), injeção de loot e receitas.
 
-## 5. Próximos passos, em ordem
+## 5. O que existe agora (mapa do código)
+- `src/main/java/io/github/peixeangola/cultivo/`:
+  - `Cultivo` (@Mod): registra todos os DeferredRegister e o listener de `LootTableLoadEvent`;
+  - `core/`: regras **puras**, sem Minecraft: `Variety`, `QualityRules`, `GrowthRules`, `GreenhouseRules`, `ProcessingRules`, `StationKind`, `SeedSources`, `ArticleRecipes`, `ContentIds`;
+  - `registry/`: `ModBlocks`, `ModItems`, `ModComponents` (`cultivo:quality`), `ModBlockEntities` (`processing_station`), `ModRecipes` (tipos e serializers drying/sieving/pressing), `ModLootFunctions` (`set_harvest_quality`), `ModCreativeTabs`, `ModTags`;
+  - `block/`: `CannabisCropBlock`, `WildPlantBlock`, `ProcessingStationBlock` e `ProcessingStationBlockEntity`, `GreenhouseDetector`;
+  - `item/`: `QualityItem`, `SeedItem`, `DecorativeItem` e `StationBlockItem` (tooltips);
+  - `recipe/ProcessingRecipe`, `loot/SetHarvestQualityFunction`, `loot/SeedLootInjector`;
+  - `gametest/CultivoGameTests`: 10 GameTests registrados em `Registries.TEST_FUNCTION`.
+- `src/generated/resources/`: **gerado** por `node tools/gen/generate.mjs`, que também chama `tools/art/textures.mjs`. Não editar à mão. Para mudar algo, edite `tools/gen/manifest.json` e os scripts e rode o gerador de novo.
+- `src/test/java/`: testes das regras puras (`core/`) e da completude e consistência dos dados (`data/`). Os testes leem os arquivos a partir da raiz do projeto.
+- `tools/test-offline.sh`: roda o JUnit sem Gradle nem Minecraft. Útil quando o maven do Forge não está acessível.
+
+## 6. Diferenças do 26.3 descobertas no build real (corrigidas)
+- **Funções de loot:** o registro `Registries.LOOT_FUNCTION_TYPE` é de `MapCodec<? extends LootItemFunction>`. `LootItemFunctionType` não existe mais. A função implementa `codec()`, e o construtor de `LootItemConditionalFunction` recebe `Optional<Holder<LootItemCondition>>`. Os parâmetros saem de `LootContext#getOptional(...)`.
+- **Providers numéricos:** são holders de registro: `ContextIntProviders.exactly(n)`/`between(a, b)` (`providers.number.ints`). `LootPool.Builder#setRolls` recebe `Holder<ContextIntProvider>`.
+- **`NestedLootTable.lootTableReference`:** recebe `Holder<LootTable>`, e o `LootTableLoadEvent` não dá acesso ao registro. Por isso, `SeedLootInjector` monta o pool em Java a partir de `SeedSources`; `loot_table/inject/village_seeds.json` fica como espelho, conferido por teste.
+- **Blocos e jogador:** `FarmBlock` virou `FarmlandBlock`. Os vidros tingidos estão em `Blocks.STAINED_GLASS.<cor>()` (`ColorCollection`). `Player#drop` recebe um `Prediction` (use `SERVER_ONLY`, como o `ChiseledBookShelfBlock`).
+- **Receitas próprias:** com `PlacementInfo.NOT_PLACEABLE`, o `RecipeManager` avisa e descarta a receita dos índices. Use `PlacementInfo.create(ingredient)`.
+- **Formatos JSON (do `client-extra`):**
+  - condições de bloco são `minecraft:match_block` (`blocks`, `state`);
+  - `condition`, `modifier` e `rolls` existem em pool e entrada, e `modifier` também no nível da tabela;
+  - `condition` pode ser um ID string;
+  - `output_state` de processor e `state` de `would_survive` são strings de block state;
+  - a feature é `{"type":"minecraft:simple_block","to_place":{"id":...}}`;
+  - o offset de patch é `minecraft:offset` com `x`/`y`/`z` trapezoid;
+  - receitas sem `category` obrigatório.
+- Todas as outras suposições da lista anterior (componentes, BlockEntity com ValueInput/ValueOutput, `useItemOn`/`useWithoutItem`, `Recipe#assemble(input)`, `RecipeSerializer` record, GameTest `helper.fail(Component)`, `saveWithFullMetadata`/`loadStatic`, `appendHoverText`, `ForgeHooks.onCropsGrowPre/Post`) compilaram como escritas.
+
+## 7. Próximos passos, em ordem
+1. `runClient` numa máquina com display: texturas, tooltips, estufa.
+2. `runServer` + cliente conectado: ciclo completo em multiplayer.
+3. Mundo novo: planta silvestre na selva/planície e crops nas lavouras de aldeia.
+4. Balanceamento; atualizar TODO.md **somente com evidências**.
+
+## Histórico: plano da sessão de investigação (passos 1–5 e 7 feitos na nuvem; o 6 foi bloqueado pela rede)
 1. Commitar `tools/art/png.mjs` e este arquivo.
 2. Renomear o MDK para `cultivo`, criar o esqueleto de registros e rodar `gradlew build`.
 3. Implementar as regras puras com JUnit (TDD).

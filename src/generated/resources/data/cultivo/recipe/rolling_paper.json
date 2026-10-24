@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:paper",
+    "minecraft:sugar_cane"
+  ],
+  "result": {
+    "id": "cultivo:rolling_paper",
+    "count": 4
+  }
+}

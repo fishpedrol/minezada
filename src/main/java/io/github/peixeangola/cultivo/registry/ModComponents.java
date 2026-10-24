@@ -1,0 +1,40 @@
+package io.github.peixeangola.cultivo.registry;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import io.github.peixeangola.cultivo.Cultivo;
+import io.github.peixeangola.cultivo.core.QualityRules;
+import io.github.peixeangola.cultivo.core.Variety;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.RegistryObject;
+
+public final class ModComponents {
+    public static final DeferredRegister<DataComponentType<?>> COMPONENTS =
+        DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, Cultivo.MOD_ID);
+
+    /** cultivo:quality — inteiro de 1 a 5, persistente e sincronizado (tooltip no cliente). */
+    public static final RegistryObject<DataComponentType<Integer>> QUALITY = COMPONENTS.register("quality",
+        () -> DataComponentType.<Integer>builder()
+            .persistent(Codec.intRange(QualityRules.MIN, QualityRules.MAX))
+            .networkSynchronized(ByteBufCodecs.VAR_INT)
+            .build());
+
+    /**
+     * cultivo:strain — variedade de um item que não é específico de variedade (o baseado). Gravado pela receita
+     * transmute do baseado; no JSON é o ID ("brisa", "aurora", "eclipse").
+     */
+    public static final RegistryObject<DataComponentType<Variety>> STRAIN = COMPONENTS.register("strain",
+        () -> DataComponentType.<Variety>builder()
+            .persistent(Codec.STRING.comapFlatMap(
+                id -> Variety.byId(id).map(DataResult::success)
+                    .orElseGet(() -> DataResult.error(() -> "variedade desconhecida: " + id)),
+                Variety::id))
+            .networkSynchronized(ByteBufCodecs.STRING_UTF8.map(
+                id -> Variety.byId(id).orElseThrow(), Variety::id))
+            .build());
+
+    private ModComponents() {}
+}

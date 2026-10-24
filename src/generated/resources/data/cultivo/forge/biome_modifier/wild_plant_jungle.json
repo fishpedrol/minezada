@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#minecraft:is_jungle",
+  "features": "cultivo:wild_plant_jungle",
+  "step": "vegetal_decoration"
+}

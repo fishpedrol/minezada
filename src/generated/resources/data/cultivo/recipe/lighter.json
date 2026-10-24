@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "F",
+    "N",
+    "N"
+  ],
+  "key": {
+    "F": "minecraft:flint",
+    "N": "minecraft:iron_nugget"
+  },
+  "result": {
+    "id": "cultivo:lighter",
+    "count": 1
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "type": "cultivo:pressing",
+  "ingredient": "cultivo:resin",
+  "input_count": 2,
+  "result": {
+    "id": "cultivo:hash",
+    "count": 1
+  },
+  "processing_time": 300
+}

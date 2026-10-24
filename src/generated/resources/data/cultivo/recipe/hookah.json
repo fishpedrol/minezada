@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " I ",
+    "SGS",
+    "IGI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "S": "minecraft:string",
+    "G": "minecraft:glass"
+  },
+  "result": {
+    "id": "cultivo:hookah",
+    "count": 1
+  }
+}

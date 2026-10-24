@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "cultivo:brisa_seeds",
+          "weight": 60,
+          "modifier": {
+            "type": "minecraft:explosion_decay"
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "cultivo:aurora_seeds",
+          "weight": 30,
+          "modifier": {
+            "type": "minecraft:explosion_decay"
+          }
+        },
+        {
+          "type": "minecraft:item",
+          "name": "cultivo:eclipse_seeds",
+          "weight": 10,
+          "modifier": {
+            "type": "minecraft:explosion_decay"
+          }
+        }
+      ]
+    }
+  ],
+  "random_sequence": "cultivo:blocks/wild_plant"
+}

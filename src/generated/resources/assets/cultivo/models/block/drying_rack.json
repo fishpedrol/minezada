@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "cultivo:block/drying_rack_top",
+    "bottom": "cultivo:block/drying_rack_top",
+    "side": "cultivo:block/drying_rack_side"
+  }
+}

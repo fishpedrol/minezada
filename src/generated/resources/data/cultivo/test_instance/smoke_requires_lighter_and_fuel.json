@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "cultivo:smoke_requires_lighter_and_fuel",
+  "environment": "minecraft:default",
+  "structure": "forge:empty9x9x9",
+  "max_ticks": 100
+}

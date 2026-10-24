@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "T",
+    "T"
+  ],
+  "key": {
+    "T": "minecraft:terracotta"
+  },
+  "result": {
+    "id": "cultivo:chillum",
+    "count": 1
+  }
+}
