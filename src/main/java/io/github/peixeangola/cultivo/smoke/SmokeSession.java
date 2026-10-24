@@ -96,6 +96,18 @@ public final class SmokeSession {
         return SmokeRules.check(device, !findLighter(player).isEmpty(), !findFuel(player).isEmpty(), remainingHigh(player));
     }
 
+    /**
+     * Avisa na barra de ação por que fumar foi recusado agora. Usado quando a animação termina e o servidor recusa
+     * na revalidação, para nunca falhar em silêncio. Retorna a recusa (NONE se nada impede).
+     */
+    public static Refusal explainRefusal(Player player, SmokeDevice device) {
+        Refusal refusal = check(player, device);
+        if (refusal != Refusal.NONE && refusal.messageKey() != null) {
+            player.sendOverlayMessage(Component.translatable(refusal.messageKey()));
+        }
+        return refusal;
+    }
+
     /** O que está sendo fumado: o próprio baseado ou o material do inventário. */
     public static Material materialOf(ItemStack smoked) {
         Integer quality = smoked.get(ModComponents.QUALITY.get());

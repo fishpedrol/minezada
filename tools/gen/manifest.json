@@ -133,7 +133,12 @@
     { "name": "hash_keeps_strain", "max_ticks": 100 },
     { "name": "smoke_devices_registered", "max_ticks": 100 },
     { "name": "smoke_keeps_potion_effects", "max_ticks": 100 },
-    { "name": "smoke_infinite_high_refused", "max_ticks": 100 }
+    { "name": "smoke_infinite_high_refused", "max_ticks": 100 },
+    { "name": "station_block_interaction", "max_ticks": 100 },
+    { "name": "station_real_ticker", "max_ticks": 800 },
+    { "name": "station_reload_resumes", "max_ticks": 300 },
+    { "name": "smoke_refused_at_finish_explains", "max_ticks": 100 },
+    { "name": "villager_replants_mod_crop", "max_ticks": 100 }
   ],
   "lang": {
     "en_us": {
@@ -168,7 +173,8 @@
       "tooltip.cultivo.station.drying": "Dries fresh flowers over time",
       "tooltip.cultivo.station.sieving": "Sifts dried flowers into fictional resin",
       "tooltip.cultivo.station.pressing": "Presses 2 resin into 1 hash",
-      "tooltip.cultivo.station.usage": "Right-click to insert; empty hand to collect"
+      "tooltip.cultivo.station.usage": "Right-click with an ingredient to insert; empty hand collects (output first)",
+      "tooltip.cultivo.rolling_paper": "Roll with a dried flower to make a joint"
     },
     "pt_br": {
       "itemGroup.cultivo": "Cultivo",
@@ -202,7 +208,8 @@
       "tooltip.cultivo.station.drying": "Seca flores frescas com o tempo",
       "tooltip.cultivo.station.sieving": "Peneira flores secas em resina fictícia",
       "tooltip.cultivo.station.pressing": "Prensa 2 resinas em 1 haxixe",
-      "tooltip.cultivo.station.usage": "Clique direito para inserir; mão vazia para retirar"
+      "tooltip.cultivo.station.usage": "Clique direito com ingrediente para inserir; mão vazia retira (saída primeiro)",
+      "tooltip.cultivo.rolling_paper": "Enrole com flor seca para fazer um baseado"
     }
   }
 }

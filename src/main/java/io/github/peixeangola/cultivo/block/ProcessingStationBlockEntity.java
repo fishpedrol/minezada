@@ -1,5 +1,6 @@
 package io.github.peixeangola.cultivo.block;
 
+import com.mojang.logging.LogUtils;
 import io.github.peixeangola.cultivo.core.ProcessingRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
@@ -8,28 +9,38 @@ import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import io.github.peixeangola.cultivo.registry.ModComponents;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModRecipes;
+import io.github.peixeangola.cultivo.registry.ModTags;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import org.slf4j.Logger;
 
 /**
  * Inventário comum às três estações: slot 0 entrada, slot 1 saída e progresso em ticks (salvo em NBT).
  * A lógica roda só no servidor. Com saída cheia ou de outra qualidade o progresso para, sem perda nem
- * duplicação; ao quebrar o bloco, os itens caem no chão.
+ * duplicação; ao quebrar o bloco, os itens caem no chão. Os dois slots (sem o progresso) são sincronizados com o
+ * cliente a cada mudança de conteúdo, para o bloco prever o clique sem esperar o servidor.
  */
 public class ProcessingStationBlockEntity extends BlockEntity {
     public static final int INPUT = 0;
     public static final int OUTPUT = 1;
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private final NonNullList<ItemStack> items = NonNullList.withSize(2, ItemStack.EMPTY);
     private int progress;
@@ -49,7 +60,39 @@ public class ProcessingStationBlockEntity extends BlockEntity {
     /** Substitui um slot diretamente (usado pelos GameTests). */
     public void setItem(int slot, ItemStack stack) {
         items.set(slot, stack);
+        contentsChanged();
+    }
+
+    /** Ajusta o progresso em ticks (usado pelos GameTests para não esperar o ciclo inteiro). */
+    public void setProgress(int progress) {
+        this.progress = progress;
         setChanged();
+    }
+
+    /** Marca para salvar e manda os slots ao cliente (o progresso não vai, para não gerar um pacote por tick). */
+    private void contentsChanged() {
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /** Há algo para retirar com a mão vazia (saída ou entrada). Vale no cliente, com os slots sincronizados. */
+    public boolean hasContents() {
+        return !items.get(OUTPUT).isEmpty() || !items.get(INPUT).isEmpty();
+    }
+
+    /**
+     * Previsão do cliente para inserir: a pilha está na tag de entradas da estação e cabe na entrada (vazia, ou
+     * mesmo item e componentes com espaço). O servidor decide de verdade pelas receitas em {@link #insert}.
+     */
+    public boolean couldInsert(ItemStack stack) {
+        if (stack.isEmpty() || !stack.is(ModTags.STATION_INPUTS.get(kind()))) {
+            return false;
+        }
+        ItemStack input = items.get(INPUT);
+        return input.isEmpty()
+            || (ItemStack.isSameItemSameComponents(input, stack) && input.getCount() < input.getMaxStackSize());
     }
 
     public int progress() {
@@ -88,24 +131,27 @@ public class ProcessingStationBlockEntity extends BlockEntity {
             return 0;
         }
         if (moved > 0) {
-            setChanged();
+            contentsChanged();
         }
         return moved;
     }
 
-    /** Retira a saída inteira; se não houver, retira a entrada e zera o progresso. */
+    /**
+     * Retira a saída inteira; se não houver, retira a entrada e zera o progresso. O bloco só chama isto com a mão
+     * principal vazia: segurar qualquer item nunca retira nada.
+     */
     public ItemStack extract() {
         ItemStack output = items.get(OUTPUT);
         if (!output.isEmpty()) {
             items.set(OUTPUT, ItemStack.EMPTY);
-            setChanged();
+            contentsChanged();
             return output;
         }
         ItemStack input = items.get(INPUT);
         if (!input.isEmpty()) {
             items.set(INPUT, ItemStack.EMPTY);
             progress = 0;
-            setChanged();
+            contentsChanged();
         }
         return input;
     }
@@ -155,7 +201,7 @@ public class ProcessingStationBlockEntity extends BlockEntity {
                 } else {
                     output.grow(result.getCount());
                 }
-                setChanged();
+                contentsChanged();
                 return;
             }
         }
@@ -179,6 +225,21 @@ public class ProcessingStationBlockEntity extends BlockEntity {
         }
         ContainerHelper.loadAllItems(input, items);
         progress = input.getIntOr("progress", 0);
+    }
+
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    /** Só os slots vão ao cliente, como na fogueira vanilla. */
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(problemPath(), LOGGER)) {
+            TagValueOutput output = TagValueOutput.createWithContext(reporter, registries);
+            ContainerHelper.saveAllItems(output, items, true);
+            return output.buildResult();
+        }
     }
 
     @Override

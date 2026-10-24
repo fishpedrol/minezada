@@ -25,6 +25,14 @@ public enum StationKind {
         return recipeTypeId;
     }
 
+    /**
+     * Tag de item (namespace cultivo) com tudo que a estação aceita na entrada. Espelha os ingredientes das
+     * receitas desta estação; o cliente usa a tag para prever o clique, já que as receitas não chegam a ele.
+     */
+    public String inputTagId() {
+        return blockId + "_inputs";
+    }
+
     /** Duração documentada da receita padrão desta estação. */
     public int defaultTicks() {
         return defaultTicks;

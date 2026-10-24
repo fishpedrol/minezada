@@ -62,8 +62,10 @@ public class SmokingItem extends Item {
 
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
-        if (level instanceof ServerLevel serverLevel && entity instanceof Player player) {
-            SmokeSession.smoke(serverLevel, player, stack, device);
+        if (level instanceof ServerLevel serverLevel && entity instanceof Player player
+            && SmokeSession.smoke(serverLevel, player, stack, device).isEmpty()) {
+            // A animação terminou mas o servidor recusou (isqueiro ou material saiu do inventário no meio do uso)
+            SmokeSession.explainRefusal(player, device);
         }
         return stack;
     }

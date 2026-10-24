@@ -19,11 +19,23 @@ public final class ContentIds {
 
     /**
      * Artigos de fumo do MVP. Cachimbo, chillum, bong e narguilé fumam ({@link SmokeDevice}); o isqueiro tem
-     * durabilidade; os demais são decorativos.
+     * durabilidade; os ingredientes têm dica própria; os demais são decorativos.
      */
     public static final List<String> ARTICLES = List.of(
         "bong", "pipe", "hookah", "chillum", "rolling_paper", "filter_tip",
         "grinder", "lighter", "rolling_tray", "jar", "ashtray");
+
+    public static final String LIGHTER = "lighter";
+
+    /**
+     * Artigos que são ingrediente de receita (a folha de seda entra no baseado). Mostram a dica
+     * tooltip.cultivo.&lt;id&gt; em vez de "Item decorativo".
+     */
+    public static final List<String> INGREDIENT_ARTICLES = List.of("rolling_paper");
+
+    /** Artigos sem uso próprio, só decoração/coleção (dica "Item decorativo"). */
+    public static final List<String> DECORATIVE_ARTICLES = List.of(
+        "filter_tip", "grinder", "rolling_tray", "jar", "ashtray");
 
     /** Efeitos próprios (textura em textures/mob_effect/&lt;id&gt;.png, 18×18). */
     public static final List<String> EFFECTS = List.of("high");
@@ -61,7 +73,12 @@ public final class ContentIds {
         "hash_keeps_strain",
         "smoke_devices_registered",
         "smoke_keeps_potion_effects",
-        "smoke_infinite_high_refused");
+        "smoke_infinite_high_refused",
+        "station_block_interaction",
+        "station_real_ticker",
+        "station_reload_resumes",
+        "smoke_refused_at_finish_explains",
+        "villager_replants_mod_crop");
 
     private ContentIds() {}
 

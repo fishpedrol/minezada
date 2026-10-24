@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -29,11 +30,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.item.Item;
@@ -54,6 +58,7 @@ import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.DeferredRegister;
 
@@ -95,6 +100,11 @@ public final class CultivoGameTests {
         TESTS.register("smoke_devices_registered", () -> CultivoGameTests::smokeDevicesRegistered);
         TESTS.register("smoke_keeps_potion_effects", () -> CultivoGameTests::smokeKeepsPotionEffects);
         TESTS.register("smoke_infinite_high_refused", () -> CultivoGameTests::smokeInfiniteHighRefused);
+        TESTS.register("station_block_interaction", () -> CultivoGameTests::stationBlockInteraction);
+        TESTS.register("station_real_ticker", () -> CultivoGameTests::stationRealTicker);
+        TESTS.register("station_reload_resumes", () -> CultivoGameTests::stationReloadResumes);
+        TESTS.register("smoke_refused_at_finish_explains", () -> CultivoGameTests::smokeRefusedAtFinishExplains);
+        TESTS.register("villager_replants_mod_crop", () -> CultivoGameTests::villagerReplantsModCrop);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -896,10 +906,15 @@ public final class CultivoGameTests {
                 check(highTicks(player) == expected, device + ": " + highTicks(player) + " esperado " + expected);
             }
             check(ModItems.LIGHTER.get() instanceof io.github.peixeangola.cultivo.item.LighterItem, "isqueiro");
-            for (String article : List.of("rolling_paper", "filter_tip", "grinder", "rolling_tray", "jar", "ashtray")) {
+            for (String article : List.of("filter_tip", "grinder", "rolling_tray", "jar", "ashtray")) {
                 check(ModItems.ARTICLES.get(article).get() instanceof io.github.peixeangola.cultivo.item.DecorativeItem,
                     article + " deveria ser decorativo");
             }
+            // A folha de seda é ingrediente do baseado: dica própria, nunca "Item decorativo"
+            Item paper = ModItems.ARTICLES.get("rolling_paper").get();
+            check(!(paper instanceof io.github.peixeangola.cultivo.item.DecorativeItem), "folha de seda marcada como decorativa");
+            check(paper instanceof io.github.peixeangola.cultivo.item.TooltipItem tip
+                && tip.tooltipKey().equals("tooltip.cultivo.rolling_paper"), "folha de seda sem a dica de ingrediente");
         });
     }
 
@@ -933,6 +948,245 @@ public final class CultivoGameTests {
                 "o servidor aceitou fumar");
             check(player.getEffect(ModEffects.high()).isInfiniteDuration(), "o efeito infinito foi encurtado");
             check(held.getCount() == 1 && lighterDamage(player) == 0, "gastou itens");
+        });
+    }
+
+    // ------------------------------------------------------------------ estações pelo caminho real do jogo
+
+    private static ProcessingStationBlockEntity placeStationAt(GameTestHelper helper, StationKind kind, BlockPos rel) {
+        helper.setBlock(rel, ModBlocks.STATIONS.get(kind).get().defaultBlockState());
+        BlockEntity be = helper.getLevel().getBlockEntity(helper.absolutePos(rel));
+        check(be instanceof ProcessingStationBlockEntity, "estação sem BlockEntity: " + kind);
+        return (ProcessingStationBlockEntity) be;
+    }
+
+    /**
+     * Clique direito como o cliente faz: tenta a mão principal e depois a secundária, cada uma pelo
+     * ServerPlayerGameMode#useItemOn do vanilla (useItemOn do bloco → mão vazia → uso do item/colocar bloco).
+     * Para no primeiro resultado que consome a ação. Mira a face norte do bloco.
+     */
+    private static InteractionResult rightClick(GameTestHelper helper, ServerPlayer player, BlockPos rel) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pos = helper.absolutePos(rel);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.NORTH, pos, false);
+        InteractionResult last = InteractionResult.PASS;
+        for (InteractionHand hand : InteractionHand.values()) {
+            last = player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, hit);
+            if (last.consumesAction()) {
+                return last;
+            }
+        }
+        return last;
+    }
+
+    /**
+     * Regressões do clique: item que não entra (terra, cachimbo, flor de outra qualidade) nunca retira nem zera o
+     * progresso, e a terra é colocada ao lado como no vanilla; só a mão principal vazia retira (saída primeiro);
+     * com a estação vazia a mão secundária insere.
+     */
+    public static void stationBlockInteraction(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            // O que sai da estação vai para o primeiro slot livre (0); a mão principal fica no 8 para continuar vazia
+            player.getInventory().setSelectedSlot(8);
+            ProcessingStationBlockEntity station = placeStation(helper, StationKind.DRYING);
+            Item fresh = ModItems.FRESH_FLOWERS.get(Variety.BRISA).get();
+            Item dried = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(fresh, 16, 2));
+            check(rightClick(helper, player, SOIL).consumesAction(), "não inseriu pelo clique");
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 16, "entrada após inserir");
+            check(player.getMainHandItem().isEmpty(), "a mão deveria esvaziar");
+            station.setProgress(590);
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(fresh, 4, 3));
+            rightClick(helper, player, SOIL);
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 16
+                && Integer.valueOf(2).equals(quality(station.getItem(ProcessingStationBlockEntity.INPUT))),
+                "flor de outra qualidade mexeu na entrada");
+            check(station.progress() == 590, "flor de outra qualidade zerou o progresso: " + station.progress());
+            check(player.getMainHandItem().getCount() == 4 && countInInventory(player, fresh) == 4,
+                "flor de outra qualidade: a mão ou o inventário mudou");
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIRT, 3));
+            rightClick(helper, player, SOIL);
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 16 && station.progress() == 590,
+                "segurar terra retirou a entrada ou zerou o progresso");
+            check(level.getBlockState(helper.absolutePos(SOIL).north()).is(Blocks.DIRT),
+                "PASS deveria deixar o vanilla colocar a terra ao lado");
+            check(player.getMainHandItem().getCount() == 2, "a terra colocada não saiu da mão");
+
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ARTICLES.get("pipe").get()));
+            rightClick(helper, player, SOIL);
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 16 && station.progress() == 590,
+                "segurar um cachimbo retirou a entrada");
+            check(countInInventory(player, fresh) == 0, "segurar um item devolveu flores ao inventário");
+
+            // Mão vazia: primeiro a saída, sem tocar na entrada em andamento
+            station.setItem(ProcessingStationBlockEntity.OUTPUT, withQuality(dried, 1, 2));
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            check(rightClick(helper, player, SOIL).consumesAction(), "mão vazia não retirou");
+            check(countInInventory(player, dried) == 1, "a saída não veio para o inventário");
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 16 && station.progress() == 590,
+                "retirar a saída mexeu na entrada");
+            // Sem saída, a mão vazia devolve a entrada em andamento (comportamento documentado) e zera o progresso
+            check(rightClick(helper, player, SOIL).consumesAction(), "mão vazia não devolveu a entrada");
+            check(countInInventory(player, fresh) == 16, "entrada não voltou: " + countInInventory(player, fresh));
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).isEmpty() && station.progress() == 0,
+                "a estação deveria ficar vazia");
+
+            // Estação vazia + mão principal vazia: a mão secundária insere
+            player.setItemInHand(InteractionHand.OFF_HAND, withQuality(fresh, 5, 3));
+            check(rightClick(helper, player, SOIL).consumesAction(), "mão secundária não inseriu");
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 5, "entrada pela mão secundária");
+            check(player.getOffhandItem().isEmpty(), "a mão secundária deveria esvaziar");
+        });
+    }
+
+    /**
+     * As três estações processam só com os ticks do mundo (o ticker real da BlockEntity), sem chamar serverTick:
+     * secagem 600, peneira 200 e prensa 300 ticks. Nada sai antes da hora.
+     */
+    public static void stationRealTicker(GameTestHelper helper) {
+        ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        BlockPos dryingPos = SOIL;
+        BlockPos sievePos = SOIL.east(2);
+        BlockPos pressPos = SOIL.west(2);
+        ProcessingStationBlockEntity drying = placeStationAt(helper, StationKind.DRYING, dryingPos);
+        ProcessingStationBlockEntity sieve = placeStationAt(helper, StationKind.SIEVING, sievePos);
+        ProcessingStationBlockEntity press = placeStationAt(helper, StationKind.PRESSING, pressPos);
+        player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(ModItems.FRESH_FLOWERS.get(Variety.AURORA).get(), 1, 3));
+        rightClick(helper, player, dryingPos);
+        player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 3));
+        rightClick(helper, player, sievePos);
+        player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(ModItems.RESIN.get(), 2, 3));
+        rightClick(helper, player, pressPos);
+        helper.assertTrue(!drying.getItem(ProcessingStationBlockEntity.INPUT).isEmpty()
+            && !sieve.getItem(ProcessingStationBlockEntity.INPUT).isEmpty()
+            && press.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 2, "inserção pelo clique falhou");
+
+        helper.runAfterDelay(150, () -> helper.assertTrue(sieve.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
+            "peneira terminou antes de 200 ticks"));
+        helper.runAfterDelay(250, () -> helper.assertTrue(press.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
+            "prensa terminou antes de 300 ticks"));
+        helper.runAfterDelay(550, () -> helper.assertTrue(drying.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
+            "secagem terminou antes de 600 ticks"));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(drying.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.DRIED_FLOWERS.get(Variety.AURORA).get()),
+                "ainda secando");
+            helper.assertTrue(sieve.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.RESIN.get()), "ainda peneirando");
+            helper.assertTrue(press.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.HASH.get()), "ainda prensando");
+        });
+    }
+
+    /**
+     * Progresso sobrevive a recarregar a BlockEntity no mundo (o mesmo caminho do carregamento de chunk:
+     * BlockEntity.loadStatic + Level#setBlockEntity, que registra o ticker de novo) e continua de onde parou.
+     * A peneira leva 200 ticks: recarregada aos 120, termina por volta dos 200; se recomeçasse do zero, só
+     * terminaria depois dos 320 e passaria do max_ticks de 300.
+     */
+    public static void stationReloadResumes(GameTestHelper helper) {
+        ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+        placeStationAt(helper, StationKind.SIEVING, SOIL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(ModItems.DRIED_FLOWERS.get(Variety.ECLIPSE).get(), 1, 3));
+        rightClick(helper, player, SOIL);
+        BlockPos pos = helper.absolutePos(SOIL);
+        helper.runAfterDelay(120, () -> {
+            ServerLevel level = helper.getLevel();
+            ProcessingStationBlockEntity before = (ProcessingStationBlockEntity) level.getBlockEntity(pos);
+            int progress = before.progress();
+            helper.assertTrue(progress >= 100 && progress < 200, "progresso antes de recarregar: " + progress);
+            CompoundTag saved = before.saveWithFullMetadata(level.registryAccess());
+            level.removeBlockEntity(pos);
+            BlockEntity loaded = BlockEntity.loadStatic(pos, level.getBlockState(pos), saved, level.registryAccess());
+            helper.assertTrue(loaded instanceof ProcessingStationBlockEntity, "BE não recarregou");
+            level.setBlockEntity(loaded);
+            helper.assertTrue(level.getBlockEntity(pos) == loaded && loaded != before, "BE recarregada não está no mundo");
+            ProcessingStationBlockEntity after = (ProcessingStationBlockEntity) loaded;
+            helper.assertTrue(after.progress() == progress, "progresso " + progress + " → " + after.progress());
+            helper.assertTrue(after.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 1, "entrada perdida na recarga");
+        });
+        helper.succeedWhen(() -> {
+            BlockEntity be = helper.getLevel().getBlockEntity(pos);
+            helper.assertTrue(be instanceof ProcessingStationBlockEntity station
+                && station.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.RESIN.get())
+                && Integer.valueOf(3).equals(quality(station.getItem(ProcessingStationBlockEntity.OUTPUT))), "ainda peneirando");
+        });
+    }
+
+    // ------------------------------------------------------------------ fumar: recusa no fim do uso
+
+    private static void removeAll(Player player, Item item) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (player.getInventory().getItem(slot).is(item)) {
+                player.getInventory().setItem(slot, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    /** Se o material ou o isqueiro some durante a animação, o servidor recusa no fim e diz por quê. */
+    public static void smokeRefusedAtFinishExplains(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            List<String> keys = new ArrayList<>();
+            Player player = capturingPlayer(helper, keys);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ARTICLES.get("pipe").get()));
+            player.getInventory().add(lighter());
+            player.getInventory().add(withQuality(ModItems.HASH.get(), 1, 3));
+            ItemStack pipe = player.getMainHandItem();
+            check(pipe.getItem().use(level, player, InteractionHand.MAIN_HAND) == InteractionResult.CONSUME, "início recusado");
+            check(keys.isEmpty(), "mensagem no início: " + keys);
+            removeAll(player, ModItems.HASH.get());
+            pipe.getItem().finishUsingItem(pipe, level, player);
+            player.stopUsingItem();
+            check(keys.equals(List.of("message.cultivo.need_fuel")), "sem material no fim: " + keys);
+            check(highTicks(player) == 0 && lighterDamage(player) == 0, "fumou ou gastou o isqueiro sem material");
+
+            keys.clear();
+            player.setItemInHand(InteractionHand.MAIN_HAND, joint(Variety.BRISA, 3));
+            ItemStack joint = player.getMainHandItem();
+            check(joint.getItem().use(level, player, InteractionHand.MAIN_HAND) == InteractionResult.CONSUME, "baseado recusado");
+            removeAll(player, ModItems.LIGHTER.get());
+            joint.getItem().finishUsingItem(joint, level, player);
+            player.stopUsingItem();
+            check(keys.equals(List.of("message.cultivo.need_lighter")), "sem isqueiro no fim: " + keys);
+            check(joint.getCount() == 1 && highTicks(player) == 0, "consumiu o baseado sem fumar");
+        });
+    }
+
+    // ------------------------------------------------------------------ aldeias
+
+    /**
+     * O fazendeiro vanilla (HarvestFarmland) colhe com {@code level.destroyBlock(pos, true, aldeão)}. Aqui o teste
+     * faz a mesma chamada: a lavoura madura do mod volta na idade 0 da mesma variedade (não vira trigo) e a colheita
+     * cai no chão. Sem aldeão, ou com a planta imatura, nada é replantado.
+     */
+    public static void villagerReplantsModCrop(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockPos pos = helper.absolutePos(PLANT);
+            Villager villager = helper.spawn(EntityTypes.VILLAGER, PLANT.north());
+
+            plantOnFarmland(helper, Variety.AURORA, 7);
+            check(level.destroyBlock(pos, true, villager), "o aldeão não quebrou a lavoura");
+            BlockState after = level.getBlockState(pos);
+            check(after.is(ModBlocks.CROPS.get(Variety.AURORA).get()) && after.getValue(CropBlock.AGE) == 0,
+                "não replantou aurora na idade 0: " + after);
+            List<ItemEntity> drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D));
+            check(drops.stream().anyMatch(e -> e.getItem().is(ModItems.FRESH_FLOWERS.get(Variety.AURORA).get())),
+                "a colheita do aldeão deveria derrubar a flor");
+            drops.forEach(ItemEntity::discard);
+
+            plantOnFarmland(helper, Variety.ECLIPSE, 3);
+            level.destroyBlock(pos, true, villager);
+            check(level.getBlockState(pos).isAir(), "replantou uma planta imatura");
+
+            plantOnFarmland(helper, Variety.BRISA, 7);
+            level.destroyBlock(pos, true, null);
+            check(level.getBlockState(pos).isAir(), "replantou sem aldeão");
+            level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D)).forEach(ItemEntity::discard);
+            villager.discard();
         });
     }
 }

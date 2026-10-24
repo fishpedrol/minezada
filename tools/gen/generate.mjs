@@ -203,6 +203,31 @@ for (const r of M.crafting) {
     });
   }
 }
+// Desbloqueio no livro de receitas (formato de data/minecraft/advancement/recipes/... do 26.3): a receita aparece
+// quando o jogador pega qualquer ingrediente dela. Um critério has_<ingrediente> por ingrediente distinto.
+const recipeIngredients = (r) => {
+  if (r.pattern) return Object.values(r.key);
+  if (r.transmute) return [r.transmute.input, r.transmute.material];
+  return r.ingredients;
+};
+const criterionName = (ingredientId) => `has_${ingredientId.replace(/^#/, '').split(':').pop().replace(/\//g, '_')}`;
+for (const r of M.crafting) {
+  const recipeId = id(r.id ?? r.result);
+  const criteria = {};
+  for (const ing of [...new Set(recipeIngredients(r))]) {
+    criteria[criterionName(ing)] = {
+      conditions: { items: [{ items: ing }] },
+      trigger: 'minecraft:inventory_changed',
+    };
+  }
+  criteria.has_the_recipe = { conditions: { recipes: recipeId }, trigger: 'minecraft:recipe_unlocked' };
+  write(`data/${NS}/advancement/recipes/misc/${r.id ?? r.result}.json`, {
+    parent: 'minecraft:recipes/root',
+    criteria,
+    requirements: [['has_the_recipe', ...Object.keys(criteria).filter((k) => k !== 'has_the_recipe')]],
+    rewards: { recipes: [recipeId] },
+  });
+}
 const proc = M.processing;
 for (const v of varieties) {
   write(`data/${NS}/recipe/drying/${v.id}_dried_flower.json`, {
@@ -234,6 +259,16 @@ write(`data/${NS}/tags/block/greenhouse_glass.json`, { replace: false, values: M
 write(`data/${NS}/tags/item/dried_flowers.json`, { replace: false, values: varieties.map((v) => id(`${v.id}_dried_flower`)) });
 write(`data/${NS}/tags/item/fresh_flowers.json`, { replace: false, values: varieties.map((v) => id(`${v.id}_fresh_flower`)) });
 write(`data/${NS}/tags/item/seeds.json`, { replace: false, values: varieties.map((v) => id(`${v.id}_seeds`)) });
+// Entradas de cada estação (cultivo:<estação>_inputs), espelhando os ingredientes das receitas acima. O cliente
+// não recebe as receitas, mas recebe as tags: o bloco usa esta tag para prever o clique.
+const stationInputs = {
+  drying: ['#cultivo:fresh_flowers'],
+  sieving: [proc.sieving.ingredient],
+  pressing: [proc.pressing.ingredient],
+};
+for (const s of stations) {
+  write(`data/${NS}/tags/item/${s.id}_inputs.json`, { replace: false, values: stationInputs[s.type] });
+}
 for (const tag of ['crops', 'maintains_farmland', 'bee_growables']) {
   write(`data/minecraft/tags/block/${tag}.json`, { replace: false, values: crops });
 }

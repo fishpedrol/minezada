@@ -11,8 +11,10 @@ import io.github.peixeangola.cultivo.registry.ModEffects;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModLootFunctions;
 import io.github.peixeangola.cultivo.registry.ModRecipes;
+import io.github.peixeangola.cultivo.village.FarmerReplant;
 import net.minecraft.resources.Identifier;
 import net.minecraftforge.event.LootTableLoadEvent;
+import net.minecraftforge.event.VanillaGameEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -37,6 +39,8 @@ public final class Cultivo {
 
         // Injeção de sementes nos baús de aldeia (só roda no servidor)
         LootTableLoadEvent.BUS.addListener(SeedLootInjector::onLootTableLoad);
+        // Fazendeiros replantam a lavoura do mod que colhem, em vez de trocá-la por trigo
+        VanillaGameEvent.BUS.addListener(FarmerReplant::onGameEvent);
     }
 
     public static Identifier id(String path) {

@@ -12,6 +12,7 @@ import io.github.peixeangola.cultivo.item.QualityItem;
 import io.github.peixeangola.cultivo.item.SeedItem;
 import io.github.peixeangola.cultivo.item.SmokingItem;
 import io.github.peixeangola.cultivo.item.StationBlockItem;
+import io.github.peixeangola.cultivo.item.TooltipItem;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,13 +72,19 @@ public final class ModItems {
     /** Isqueiro: durabilidade própria (e por isso empilha 1). */
     public static final RegistryObject<Item> LIGHTER = ARTICLES.get("lighter");
 
-    /** Cachimbo, chillum, bong e narguilé fumam; o isqueiro tem durabilidade; o resto é decorativo. */
+    /**
+     * Cachimbo, chillum, bong e narguilé fumam; o isqueiro tem durabilidade; a folha de seda é ingrediente do
+     * baseado (dica própria); o resto é decorativo.
+     */
     private static Item article(String name) {
         Item.Properties properties = new Item.Properties().setId(ITEMS.key(name));
-        if (name.equals("lighter")) {
+        if (name.equals(ContentIds.LIGHTER)) {
             return new LighterItem(properties.durability(SmokeRules.LIGHTER_DURABILITY));
         }
         properties.stacksTo(STACKABLE_ARTICLES.contains(name) ? 64 : 1);
+        if (ContentIds.INGREDIENT_ARTICLES.contains(name)) {
+            return new TooltipItem(properties, "tooltip.cultivo." + name);
+        }
         return SmokeDevice.byItemId(name)
             .<Item>map(device -> new SmokingItem(device, properties))
             .orElseGet(() -> new DecorativeItem(properties));

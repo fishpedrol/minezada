@@ -20,8 +20,16 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Suporte de secagem, peneira de bancada ou prensa manual. Clique direito com item insere na entrada;
- * mão vazia retira primeiro a saída. Toda mudança de inventário acontece no servidor.
+ * Suporte de secagem, peneira de bancada ou prensa manual. Toda mudança de inventário acontece no servidor.
+ * <ul>
+ *   <li>Clique direito com um ingrediente insere na entrada.</li>
+ *   <li>Um item que não entra (outro item, outra qualidade, entrada cheia) devolve PASS: o vanilla segue para o uso
+ *       do item ou a colocação de bloco, e nada sai da estação.</li>
+ *   <li>Só a mão principal vazia retira: primeiro a saída; sem saída, devolve a entrada em andamento e zera o
+ *       progresso.</li>
+ * </ul>
+ * No cliente o resultado é previsto com o que ele sabe: a tag cultivo:&lt;estação&gt;_inputs e os slots
+ * sincronizados da BlockEntity. Assim a mão secundária e o uso do item não são engolidos por um SUCCESS falso.
  */
 public class ProcessingStationBlock extends Block implements EntityBlock {
     private final StationKind kind;
@@ -54,17 +62,19 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                           InteractionHand hand, BlockHitResult hit) {
         if (stack.isEmpty()) {
+            // Só a mão vazia de verdade chega a useWithoutItem (o vanilla faz isso apenas na mão principal)
             return InteractionResult.TRY_WITH_EMPTY_HAND;
-        }
-        if (!(level instanceof ServerLevel serverLevel)) {
-            return InteractionResult.SUCCESS;
         }
         if (!(level.getBlockEntity(pos) instanceof ProcessingStationBlockEntity station)) {
-            return InteractionResult.TRY_WITH_EMPTY_HAND;
+            return InteractionResult.PASS;
+        }
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return station.couldInsert(stack) ? InteractionResult.SUCCESS : InteractionResult.PASS;
         }
         int moved = station.insert(serverLevel, stack);
         if (moved <= 0) {
-            return InteractionResult.TRY_WITH_EMPTY_HAND;
+            // Nunca cai na retirada: segurar um item que não entra não mexe na estação
+            return InteractionResult.PASS;
         }
         if (!player.hasInfiniteMaterials()) {
             stack.shrink(moved);
@@ -75,11 +85,12 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (!(level instanceof ServerLevel)) {
-            return InteractionResult.SUCCESS;
-        }
         if (!(level.getBlockEntity(pos) instanceof ProcessingStationBlockEntity station)) {
             return InteractionResult.PASS;
+        }
+        if (!(level instanceof ServerLevel)) {
+            // Estação vazia: PASS deixa a mão secundária tentar inserir
+            return station.hasContents() ? InteractionResult.SUCCESS : InteractionResult.PASS;
         }
         ItemStack taken = station.extract();
         if (taken.isEmpty()) {

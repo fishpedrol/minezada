@@ -326,4 +326,149 @@ class DataConsistencyTest {
             assertEquals("forge:empty9x9x9", json.get("structure").getAsString());
         }
     }
+
+    // ------------------------------------------------------------- livro de receitas
+
+    /** Ingredientes distintos de uma receita de crafting, como aparecem no JSON ("ns:item" ou "#tag"). */
+    private static Set<String> ingredientsOf(ArticleRecipes.Recipe r) {
+        Set<String> out = new HashSet<>();
+        r.key().values().forEach(k -> out.add(k.ingredient()));
+        r.ingredients().forEach(k -> out.add(k.ingredient()));
+        return out;
+    }
+
+    @Test
+    void everyCraftingRecipeHasUnlockAdvancement() throws IOException {
+        Set<String> files = new HashSet<>();
+        try (Stream<Path> list = Files.list(Resources.data("cultivo", "advancement/recipes/misc"))) {
+            list.forEach(p -> files.add(p.getFileName().toString().replace(".json", "")));
+        }
+        Set<String> recipeIds = new HashSet<>();
+        ArticleRecipes.ALL.forEach(r -> recipeIds.add(r.id()));
+        assertEquals(recipeIds, files, "um desbloqueio por receita de crafting, nem mais nem menos");
+
+        for (ArticleRecipes.Recipe r : ArticleRecipes.ALL) {
+            String recipe = "cultivo:" + r.id();
+            JsonObject adv = Resources.json(Resources.data("cultivo", "advancement/recipes/misc/" + r.id() + ".json"));
+            assertEquals("minecraft:recipes/root", adv.get("parent").getAsString(), r.id());
+            JsonArray rewards = adv.getAsJsonObject("rewards").getAsJsonArray("recipes");
+            assertEquals(1, rewards.size(), r.id());
+            assertEquals(recipe, rewards.get(0).getAsString(), r.id());
+
+            JsonObject criteria = adv.getAsJsonObject("criteria");
+            JsonObject hasRecipe = criteria.getAsJsonObject("has_the_recipe");
+            assertEquals("minecraft:recipe_unlocked", hasRecipe.get("trigger").getAsString(), r.id());
+            assertEquals(recipe, hasRecipe.getAsJsonObject("conditions").get("recipes").getAsString(), r.id());
+
+            Set<String> unlockItems = new HashSet<>();
+            for (Map.Entry<String, JsonElement> c : criteria.entrySet()) {
+                if (c.getKey().equals("has_the_recipe")) {
+                    continue;
+                }
+                JsonObject criterion = c.getValue().getAsJsonObject();
+                assertEquals("minecraft:inventory_changed", criterion.get("trigger").getAsString(), c.getKey());
+                criterion.getAsJsonObject("conditions").getAsJsonArray("items")
+                    .forEach(e -> unlockItems.add(e.getAsJsonObject().get("items").getAsString()));
+            }
+            assertEquals(ingredientsOf(r), unlockItems, "qualquer ingrediente desbloqueia " + r.id());
+
+            // Um único grupo OU com todos os critérios: basta um deles
+            JsonArray requirements = adv.getAsJsonArray("requirements");
+            assertEquals(1, requirements.size(), r.id());
+            Set<String> group = new HashSet<>();
+            requirements.get(0).getAsJsonArray().forEach(e -> group.add(e.getAsString()));
+            assertEquals(criteria.keySet(), group, r.id());
+        }
+    }
+
+    @Test
+    void rollingPaperRecipeUnlocksFromPaperOrSugarCane() {
+        JsonObject criteria = Resources.json(Resources.data("cultivo", "advancement/recipes/misc/rolling_paper.json"))
+            .getAsJsonObject("criteria");
+        assertEquals(Set.of("has_paper", "has_sugar_cane", "has_the_recipe"), criteria.keySet());
+        JsonObject joint = Resources.json(Resources.data("cultivo", "advancement/recipes/misc/joint_aurora.json"))
+            .getAsJsonObject("criteria");
+        assertEquals(Set.of("has_aurora_dried_flower", "has_rolling_paper", "has_the_recipe"), joint.keySet());
+    }
+
+    // ------------------------------------------------------------- entradas das estações (previsão do cliente)
+
+    /** Expande "#cultivo:tag" usando os JSONs de tag gerados; itens soltos ficam como estão. */
+    private static Set<String> expand(String ingredient) {
+        if (!ingredient.startsWith("#")) {
+            return Set.of(ingredient);
+        }
+        String tag = ingredient.substring(1);
+        assertTrue(tag.startsWith("cultivo:"), "tag fora do mod: " + tag);
+        Set<String> out = new HashSet<>();
+        for (String value : values(Resources.data("cultivo", "tags/item/" + tag.substring("cultivo:".length()) + ".json"))) {
+            out.addAll(expand(value));
+        }
+        return out;
+    }
+
+    @Test
+    void stationInputTagIds() {
+        assertEquals("drying_rack_inputs", StationKind.DRYING.inputTagId());
+        assertEquals("sieve_inputs", StationKind.SIEVING.inputTagId());
+        assertEquals("press_inputs", StationKind.PRESSING.inputTagId());
+    }
+
+    @Test
+    void stationInputTagsMatchRecipeIngredients() throws IOException {
+        for (StationKind kind : StationKind.values()) {
+            Set<String> fromTag = new HashSet<>();
+            for (String value : values(Resources.data("cultivo", "tags/item/" + kind.inputTagId() + ".json"))) {
+                fromTag.addAll(expand(value));
+            }
+            Set<String> fromRecipes = new HashSet<>();
+            try (Stream<Path> recipes = Files.list(Resources.data("cultivo", "recipe/" + kind.recipeTypeId()))) {
+                for (Path file : recipes.toList()) {
+                    fromRecipes.addAll(expand(Resources.json(file).get("ingredient").getAsString()));
+                }
+            }
+            assertEquals(fromRecipes, fromTag, kind.inputTagId());
+        }
+        assertEquals(Set.of("cultivo:brisa_fresh_flower", "cultivo:aurora_fresh_flower", "cultivo:eclipse_fresh_flower"),
+            expand("#cultivo:drying_rack_inputs"));
+        assertEquals(Set.of("cultivo:brisa_dried_flower", "cultivo:aurora_dried_flower", "cultivo:eclipse_dried_flower"),
+            expand("#cultivo:sieve_inputs"));
+        assertEquals(Set.of("cultivo:resin"), expand("#cultivo:press_inputs"));
+    }
+
+    // ------------------------------------------------------------- artigos: ingrediente x decorativo
+
+    @Test
+    void articlesArePartitionedByUse() {
+        Set<String> devices = new HashSet<>();
+        for (io.github.peixeangola.cultivo.core.SmokeDevice d : io.github.peixeangola.cultivo.core.SmokeDevice.values()) {
+            devices.add(d.itemId());
+        }
+        for (String article : ContentIds.ARTICLES) {
+            int roles = (devices.contains(article) ? 1 : 0) + (article.equals(ContentIds.LIGHTER) ? 1 : 0)
+                + (ContentIds.INGREDIENT_ARTICLES.contains(article) ? 1 : 0)
+                + (ContentIds.DECORATIVE_ARTICLES.contains(article) ? 1 : 0);
+            assertEquals(1, roles, article + " precisa ter exatamente um papel");
+        }
+        assertEquals(List.of("rolling_paper"), ContentIds.INGREDIENT_ARTICLES);
+    }
+
+    @Test
+    void noArticleUsedAsRecipeMaterialIsDecorative() {
+        for (ArticleRecipes.Recipe r : ArticleRecipes.ALL) {
+            for (String ingredient : ingredientsOf(r)) {
+                if (ingredient.startsWith("cultivo:")) {
+                    String id = ingredient.substring("cultivo:".length());
+                    assertFalse(ContentIds.DECORATIVE_ARTICLES.contains(id), id + " é ingrediente de " + r.id());
+                }
+            }
+        }
+        for (String lang : List.of("en_us", "pt_br")) {
+            JsonObject t = Resources.json(Resources.assets("lang/" + lang + ".json"));
+            for (String article : ContentIds.INGREDIENT_ARTICLES) {
+                JsonElement tip = t.get("tooltip.cultivo." + article);
+                assertTrue(tip != null && !tip.getAsString().isBlank(), lang + " sem dica de " + article);
+            }
+        }
+    }
 }
