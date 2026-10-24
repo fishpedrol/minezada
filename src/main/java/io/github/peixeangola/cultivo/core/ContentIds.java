@@ -17,7 +17,10 @@ public final class ContentIds {
     public static final String HASH = "hash";
     public static final String JOINT = "joint";
 
-    /** Artigos de fumo do MVP (itens decorativos, sem efeito de consumo). */
+    /**
+     * Artigos de fumo do MVP. Cachimbo, chillum, bong e narguilé fumam ({@link SmokeDevice}); o isqueiro tem
+     * durabilidade; os demais são decorativos.
+     */
     public static final List<String> ARTICLES = List.of(
         "bong", "pipe", "hookah", "chillum", "rolling_paper", "filter_tip",
         "grinder", "lighter", "rolling_tray", "jar", "ashtray");
@@ -45,7 +48,18 @@ public final class ContentIds {
         "smoke_requires_lighter_and_fuel",
         "smoke_pipe_uses_fuel",
         "smoke_bong_hash_stronger",
-        "smoke_stacking_and_cap");
+        "smoke_stacking_and_cap",
+        "smoke_resmoke_after_heavy",
+        "smoke_at_cap_refused",
+        "smoke_hash_multiplier",
+        "smoke_offhand_fuel_first",
+        "smoke_lighter_breaks",
+        "smoke_creative_consumes_nothing",
+        "smoke_joint_without_strain",
+        "smoke_refusal_messages",
+        "joint_strain_persists",
+        "hash_keeps_strain",
+        "smoke_devices_registered");
 
     private ContentIds() {}
 

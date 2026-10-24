@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 
-/** Baseado e artigos de fumo: itens de coleção/decoração, sem efeitos de consumo no MVP. */
+/** Artigos sem uso próprio (folha de seda, piteira, dichavador, bandeja, pote, cinzeiro): só decoração/coleção. */
 public class DecorativeItem extends Item {
     public DecorativeItem(Properties properties) {
         super(properties);

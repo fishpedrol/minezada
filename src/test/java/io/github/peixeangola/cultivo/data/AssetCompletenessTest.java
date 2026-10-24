@@ -146,7 +146,13 @@ class AssetCompletenessTest {
     void smokingMessagesAndVarietyNamesTranslated() {
         for (String lang : LANGS) {
             JsonObject t = Resources.json(Resources.assets("lang/" + lang + ".json"));
-            for (String key : List.of("message.cultivo.need_lighter", "message.cultivo.need_fuel",
+            for (io.github.peixeangola.cultivo.core.SmokeRules.Refusal refusal
+                : io.github.peixeangola.cultivo.core.SmokeRules.Refusal.values()) {
+                if (refusal.messageKey() != null) {
+                    assertTranslated(t, refusal.messageKey(), lang);
+                }
+            }
+            for (String key : List.of("message.cultivo.lighter_broke",
                 "tooltip.cultivo.smoke.joint", "tooltip.cultivo.smoke.device", "tooltip.cultivo.lighter",
                 "tooltip.cultivo.strain")) {
                 assertTranslated(t, key, lang);
