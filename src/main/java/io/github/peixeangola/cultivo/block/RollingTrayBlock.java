@@ -4,13 +4,13 @@ import io.github.peixeangola.cultivo.core.RollingRules;
 import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.registry.ModComponents;
 import io.github.peixeangola.cultivo.registry.ModItems;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import io.github.peixeangola.cultivo.registry.ModTags;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
@@ -102,7 +102,7 @@ public class RollingTrayBlock extends Block {
         if (!player.getInventory().add(joints)) {
             player.drop(joints, false, Prediction.SERVER_ONLY);
         }
-        level.playSound(null, pos, SoundEvents.BOOK_PAGE_TURN, SoundSource.BLOCKS, 1.0F, 1.0F);
+        level.playSound(null, pos, ModSounds.TRAY_ROLL.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         return InteractionResult.SUCCESS_SERVER;
     }
 

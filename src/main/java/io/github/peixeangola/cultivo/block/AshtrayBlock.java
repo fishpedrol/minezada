@@ -1,11 +1,12 @@
 package io.github.peixeangola.cultivo.block;
 
 import io.github.peixeangola.cultivo.core.AshtrayRules;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
@@ -27,7 +28,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * Cinzeiro de terracota colocado no mundo, no estilo da composteira ({@link AshtrayRules}). A cinza ({@link #ASH},
  * 0–4) sobe 1 a cada sessão de fumo que termina por perto ({@link #catchAsh}, chamado pela sessão no servidor). Cheio,
  * a mão vazia tira 1 farinha de osso e ele volta a 0; segurar qualquer item não esvazia. Comparador: cinza × 3.
- * Quebrado, derruba só a si mesmo (a cinza se perde).
+ * Quebrado, derruba só a si mesmo (a cinza se perde). Cada cinza que cai solta uma lufada de cinza e fumaça (partículas
+ * do servidor, todos veem) e tem som próprio, como o esvaziar.
  */
 public class AshtrayBlock extends Block {
     public static final IntegerProperty ASH = IntegerProperty.create("ash", 0, AshtrayRules.MAX_ASH);
@@ -77,7 +79,12 @@ public class AshtrayBlock extends Block {
         }
         BlockState state = level.getBlockState(nearest);
         level.setBlock(nearest, state.setValue(ASH, AshtrayRules.next(state.getValue(ASH))), Block.UPDATE_ALL);
-        level.playSound(null, nearest, SoundEvents.COMPOSTER_FILL, SoundSource.BLOCKS, 0.3F, 1.0F);
+        double x = nearest.getX() + 0.5D;
+        double y = nearest.getY() + 0.18D;
+        double z = nearest.getZ() + 0.5D;
+        level.sendParticles(ParticleTypes.ASH, x, y, z, 6, 0.12D, 0.04D, 0.12D, 0.0D);
+        level.sendParticles(ParticleTypes.SMOKE, x, y, z, 3, 0.08D, 0.02D, 0.08D, 0.005D);
+        level.playSound(null, nearest, ModSounds.ASHTRAY_ASH.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         return Optional.of(nearest);
     }
 
@@ -98,7 +105,7 @@ public class AshtrayBlock extends Block {
             Block.popResourceFromFace(level, pos, Direction.UP,
                 new ItemStack(Items.BONE_MEAL, AshtrayRules.BONE_MEAL_PER_EMPTYING));
             level.setBlock(pos, state.setValue(ASH, 0), Block.UPDATE_ALL);
-            level.playSound(null, pos, SoundEvents.COMPOSTER_EMPTY, SoundSource.BLOCKS, 1.0F, 1.0F);
+            level.playSound(null, pos, ModSounds.ASHTRAY_EMPTY.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         }
         return InteractionResult.SUCCESS;
     }

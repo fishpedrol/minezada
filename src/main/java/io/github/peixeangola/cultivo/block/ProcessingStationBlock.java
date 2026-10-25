@@ -6,7 +6,11 @@ import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -16,6 +20,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Mirror;
@@ -49,6 +54,10 @@ import org.jetbrains.annotations.Nullable;
  * gira com o facing e as partes de conteúdo aparecem conforme contents. Uma subclasse soma outra propriedade
  * sobrescrevendo {@link #createBlockStateDefinition} e chamando o super, como a {@link SieveBlock} faz com o
  * dichavador: o construtor daqui não lê campos da subclasse, e a BlockEntity só troca contents, preservando as outras.
+ *
+ * <p>Animação: trabalhando, o maço do suporte balança e as flores da peneira tremem (texturas animadas), a placa da
+ * prensa sobe e desce (desenhada no cliente) e {@link #animateTick} solta partículas só no cliente. O som de trabalho e
+ * o sopro do fim de ciclo vêm do servidor ({@link ProcessingStationBlockEntity}).
  */
 public class ProcessingStationBlock extends Block implements EntityBlock {
     public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
@@ -108,6 +117,53 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
     @Override
     protected BlockState mirror(BlockState state, Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
+    }
+
+    /** Pó âmbar que cai da tela da peneira na bandeja (a cor vem do mapa do bloco de favo: laranja). */
+    private static final ParticleOptions SIEVE_DUST =
+        new BlockParticleOption(ParticleTypes.FALLING_DUST, Blocks.HONEYCOMB_BLOCK.defaultBlockState());
+    /** Farelo verde que cai dos maços do suporte de secagem (cor do mapa do bloco de musgo). */
+    private static final ParticleOptions LEAF_DUST =
+        new BlockParticleOption(ParticleTypes.FALLING_DUST, Blocks.MOSS_BLOCK.defaultBlockState());
+
+    /**
+     * Só no cliente, com a estação trabalhando: a peneira solta pó âmbar da tela (y 11) para a bandeja de baixo; a prensa
+     * pinga resina pelas beiradas da placa; o suporte de secagem solta um farelo verde dos maços. O vanilla chama isto
+     * para blocos sorteados perto do jogador (umas 0,4 vez por segundo por bloco), então cada chamada solta um punhado.
+     */
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        if (state.getValue(CONTENTS) != StationContents.WORKING) {
+            return;
+        }
+        double x = pos.getX();
+        double y = pos.getY();
+        double z = pos.getZ();
+        switch (kind) {
+            case SIEVING -> {
+                for (int i = 0; i < 4; i++) {
+                    level.addParticle(SIEVE_DUST, x + 0.2D + random.nextDouble() * 0.6D, y + 0.66D,
+                        z + 0.2D + random.nextDouble() * 0.6D, 0.0D, 0.0D, 0.0D);
+                }
+            }
+            case PRESSING -> {
+                // Um ponto da borda da placa (x ou z em 4/16 ou 12/16), na altura da resina apertada
+                double along = 0.25D + random.nextDouble() * 0.5D;
+                double edge = random.nextBoolean() ? 0.24D : 0.76D;
+                boolean alongX = random.nextBoolean();
+                level.addParticle(ParticleTypes.DRIPPING_HONEY, x + (alongX ? along : edge), y + 0.27D,
+                    z + (alongX ? edge : along), 0.0D, 0.0D, 0.0D);
+            }
+            case DRYING -> {
+                if (random.nextBoolean()) {
+                    // Os maços ficam na linha do meio do cavalete, que gira com o facing
+                    double along = 0.25D + random.nextDouble() * 0.5D;
+                    boolean alongX = state.getValue(FACING).getAxis() == Direction.Axis.Z;
+                    level.addParticle(LEAF_DUST, x + (alongX ? along : 0.5D), y + 0.35D + random.nextDouble() * 0.2D,
+                        z + (alongX ? 0.5D : along), 0.0D, 0.0D, 0.0D);
+                }
+            }
+        }
     }
 
     @Override

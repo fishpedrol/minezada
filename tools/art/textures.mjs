@@ -31,6 +31,37 @@ function render(name, grid, palette) {
   return file;
 }
 
+/**
+ * Textura animada, como a água e o fogo vanilla: os quadros 16x16 ficam empilhados na vertical num PNG de 16 x 16·n e o
+ * <nome>.png.mcmeta diz quantos ticks cada quadro dura (frametime) e, se preciso, a ordem dos quadros. Sem interpolação
+ * (pixel art), e cada quadro segue a regra de alfa só 0 ou 255.
+ * @param frames lista de {grid, palette}
+ */
+function renderAnimation(name, frames, { frametime, order } = {}) {
+  if (!Number.isInteger(frametime) || frametime <= 0) throw new Error(`${name}: frametime inválido`);
+  const size = 16;
+  const rgba = new Uint8Array(size * size * frames.length * 4);
+  frames.forEach(({ grid, palette }, f) => {
+    if (grid.length !== size) throw new Error(`${name}[${f}]: ${grid.length} linhas`);
+    grid.forEach((row, y) => {
+      if (row.length !== size) throw new Error(`${name}[${f}]: linha ${y} tem ${row.length} colunas`);
+      [...row].forEach((ch, x) => {
+        if (ch === '.') return;
+        const hex = palette[ch];
+        if (!hex) throw new Error(`${name}[${f}]: cor ausente para '${ch}'`);
+        rgba.set(parseColor(hex), ((f * size + y) * size + x) * 4);
+      });
+    });
+  });
+  const file = join(OUT, `${name}.png`);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, encodePng(size, size * frames.length, rgba));
+  if (order && order.some((i) => !Number.isInteger(i) || i < 0 || i >= frames.length)) throw new Error(`${name}: ordem inválida`);
+  const animation = order ? { frametime, frames: order } : { frametime };
+  writeFileSync(`${file}.mcmeta`, JSON.stringify({ animation }, null, 2) + '\n');
+  return file;
+}
+
 // ---------------------------------------------------------------- cores
 function rgbToHsl([r, g, b]) {
   const [rn, gn, bn] = [r / 255, g / 255, b / 255];
@@ -469,18 +500,9 @@ const ITEMS = {
     grid: [E, E, ...JOINT_BODY, ...JOINT_PAPER_END, E],
     palette: JOINT_PALETTE,
   },
-  // Aceso (enquanto fuma): brasa laranja/vermelha na ponta e 1 pixel de fumaça
-  joint_lit: {
-    grid: [E, ...JOINT_LIT_BODY, ...JOINT_PAPER_END, E],
-    palette: JOINT_PALETTE,
-  },
   // Com piteira (cultivo:filtered): a boca é um rolinho de papelão creme com o zigue-zague marrom, 1 px mais comprido
   joint_filtered: {
     grid: [E, E, ...JOINT_BODY, ...JOINT_FILTER_END, E],
-    palette: JOINT_PALETTE,
-  },
-  joint_filtered_lit: {
-    grid: [E, ...JOINT_LIT_BODY, ...JOINT_FILTER_END, E],
     palette: JOINT_PALETTE,
   },
   // Bong: tubo de vidro, câmara com água, downstem de 1 px e fornilho de lado
@@ -779,12 +801,29 @@ const BUNDLE = [E, E,
   E, E, E, E, E, E,
 ];
 
+// Flores secas espalhadas na tela da peneira (cutout): moitas verdes com pontos roxos e laranja
+const SIEVE_FLOWERS = [
+  'GgGGgGGgGGgGGgGG',
+  '................',
+  '................',
+  '...GgG.gGG..gG..',
+  '..gGpGGGoGg.GGg.',
+  '...GGg.gGGGgGpG.',
+  '....gGGGg.GGgG..',
+  '...gGoGgGGg..gG.',
+  '..GGGgG..gGpGGg.',
+  '...gGpG.GgGGgG..',
+  '....GGgGGoGg....',
+  '...gGGgGgGGGgG..',
+  '..GgoGG.gGpGGg..',
+  '...GgGg..gGGg...',
+  '................',
+  '................',
+];
+const SIEVE_FLOWERS_PALETTE = { G: '#8a9a4a', g: '#5f6b30', p: '#7a4f78', o: '#c07a30' };
+
 const BLOCKS = {
   drying_rack_wood: { grid: WOOD_GRID, palette: { W: '#a87c4c', w: '#8a6038', l: '#c49a66' } },
-  drying_bundle_fresh: {
-    grid: BUNDLE,
-    palette: { s: '#e6dcb4', S: '#5f8a34', L: '#6aae3e', B: '#a8cc6a', b: '#5e8a3a', P: '#f0a640' },
-  },
   drying_bundle_dried: {
     grid: BUNDLE,
     palette: { s: '#e6dcb4', S: '#6b5a3a', L: '#7f7a3a', B: '#a8a05a', b: '#6a6232', P: '#b0702c' },
@@ -797,28 +836,6 @@ const BLOCKS = {
       return y % 3 === 0 || x % 3 === 0 ? 'm' : '.';
     }).join('')),
     palette: { m: '#9a9690', N: '#6a6660' },
-  },
-  // Flores secas espalhadas na tela (cutout): moitas verdes com pontos roxos e laranja
-  sieve_flowers: {
-    grid: [
-      'GgGGgGGgGGgGGgGG',
-      '................',
-      '................',
-      '...GgG.gGG..gG..',
-      '..gGpGGGoGg.GGg.',
-      '...GGg.gGGGgGpG.',
-      '....gGGGg.GGgG..',
-      '...gGoGgGGg..gG.',
-      '..GGGgG..gGpGGg.',
-      '...gGpG.GgGGgG..',
-      '....GGgGGoGg....',
-      '...gGGgGgGGGgG..',
-      '..GgoGG.gGpGGg..',
-      '...GgGg..gGGg...',
-      '................',
-      '................',
-    ],
-    palette: { G: '#8a9a4a', g: '#5f6b30', p: '#7a4f78', o: '#c07a30' },
   },
   sieve_resin: { grid: RESIN_GRID, palette: RESIN_PALETTE },
   press_wood: { grid: WOOD_GRID, palette: { W: '#6e4a2a', w: '#553820', l: '#8a5e36' } },
@@ -993,7 +1010,94 @@ const MODEL_TEXTURES = {
   model_steel: { grid: grainGrid(43, 'M', 'g', 'h'), palette: { M: '#a7afb7', g: '#5d6670', h: '#e4e8ec' } },
   // Cinza apagada e brasa acesa, no fornilho/ponta (o modelo "_lit" troca uma pela outra)
   smoke_ash: { grid: material(45, 'a', [['A', 0.3]]), palette: { a: '#3a3636', A: '#6a6662' } },
-  smoke_ember: { grid: material(47, 'e', [['r', 0.3], ['y', 0.2]]), palette: { e: '#ff7a22', r: '#c83a14', y: '#ffd060' } },
+};
+
+// ---------------------------------------------------------------- texturas animadas (.png.mcmeta)
+/** Desloca uma linha da grade em `dx` colunas, preenchendo com transparente (sem dar a volta). */
+function shiftRow(row, dx) {
+  if (dx === 0) return row;
+  const cells = [...row];
+  const out = Array(cells.length).fill('.');
+  cells.forEach((ch, x) => {
+    if (x + dx >= 0 && x + dx < cells.length) out[x + dx] = ch;
+  });
+  return out.join('');
+}
+
+/** Ponta do baseado aceso, quadro a quadro: [linha 0, fumaça, brasa de cima, brasa de baixo]. */
+const JOINT_EMBER_FRAMES = [
+  // brasa normal, 1 pixel de fumaça logo acima
+  [E, '.............m..', '.............ye.', '............wEr.'],
+  // a brasa aviva e a fumaça sobe
+  ['..............m.', E, '.............Ey.', '............wyE.'],
+  // a brasa esmorece, sem fumaça
+  [E, E, '.............er.', '............wer.'],
+  // nova baforada saindo
+  [E, '............m...', '.............yE.', '............wEe.'],
+];
+const jointLitFrames = (end) => JOINT_EMBER_FRAMES.map((top) => ({
+  grid: [...top, ...JOINT_LIT_BODY.slice(3), ...end, E],
+  palette: JOINT_PALETTE,
+}));
+
+/** Água do bong borbulhando (só no modelo aceso): bolhas claras sobem 2 px por quadro em colunas defasadas. */
+const BUBBLE_COLUMNS = [[1, 3], [4, 11], [6, 6], [9, 14], [11, 1], [14, 9]];
+const WATER_BASE = material(21, 'w', [['W', 0.25], ['s', 0.02]]);
+const bubblingWaterFrames = Array.from({ length: 8 }, (_, f) => {
+  const rows = WATER_BASE.map((row) => [...row]);
+  for (const [x, phase] of BUBBLE_COLUMNS) {
+    const y = (((phase - 2 * f) % 16) + 16) % 16;
+    rows[y][x] = 'o';
+    rows[(y + 1) % 16][x] = 'O';
+  }
+  return { grid: rows.map((r) => r.join('')), palette: { w: '#4e94b4', W: '#5fa6c4', s: '#a8dcf0', o: '#ffffff', O: '#bfe8f8' } };
+});
+
+/** Brasa dos modelos acesos (fornilho, ponta do baseado): os pontos quentes mudam de lugar e o brilho pulsa. */
+const EMBER_PALETTES = [
+  { e: '#ff7a22', r: '#c83a14', y: '#ffd060' },
+  { e: '#ff8c30', r: '#d84a1c', y: '#ffe488' },
+  { e: '#ff7a22', r: '#c83a14', y: '#ffd060' },
+  { e: '#f06a1c', r: '#b0300e', y: '#ffc04a' },
+];
+const emberFrames = EMBER_PALETTES.map((palette, f) => ({
+  grid: material(47 + 100 * f, 'e', [['r', 0.3], ['y', 0.2]]),
+  palette,
+}));
+
+/** Carvão do narguilé aceso: o carvão escuro fica parado e as rachaduras acendem e apagam devagar. */
+const COAL_GRID = material(61, 'c', [['C', 0.25], ['a', 0.2], ['g', 0.14], ['y', 0.04]]);
+const coalFrames = ['#a8300c', '#c83a10', '#e85418', '#ff7a28', '#e85418', '#c83a10'].map((g, f) => ({
+  grid: COAL_GRID,
+  palette: { c: '#2a2420', C: '#3a322c', a: '#8a8682', g, y: ['#e8803a', '#ff9a40', '#ffb850', '#ffd070', '#ffb850', '#ff9a40'][f] },
+}));
+
+/** Maço fresco no suporte trabalhando: a ponta de baixo balança de leve para os lados (só a janela UV [6,2,10,10]). */
+const BUNDLE_FRESH_PALETTE = { s: '#e6dcb4', S: '#5f8a34', L: '#6aae3e', B: '#a8cc6a', b: '#5e8a3a', P: '#f0a640' };
+const bundleSwayFrames = [0, 1, 0, -1].map((dx) => ({
+  grid: BUNDLE.map((row, y) => (y >= 8 ? shiftRow(row, dx) : row)),
+  palette: BUNDLE_FRESH_PALETTE,
+}));
+
+/** Flores na tela da peneira trabalhando: as linhas tremem 1 px para um lado e para o outro, como numa peneira sacudida. */
+const sieveShakeFrames = [[0, 0], [1, -1], [0, 0], [-1, 1]].map(([odd, even]) => ({
+  grid: SIEVE_FLOWERS.map((row, y) => shiftRow(row, y % 2 ? odd : even)),
+  palette: SIEVE_FLOWERS_PALETTE,
+}));
+
+/**
+ * Texturas animadas: quadros e frametime (ticks por quadro). Todas aparecem enquanto algo acontece: o baseado aceso e
+ * a brasa só enquanto o jogador fuma, a água borbulhando só no bong aceso, o maço fresco e as flores da peneira só com a
+ * estação trabalhando.
+ */
+export const ANIMATED = {
+  'item/joint_lit': { frames: jointLitFrames(JOINT_PAPER_END), frametime: 4 },
+  'item/joint_filtered_lit': { frames: jointLitFrames(JOINT_FILTER_END), frametime: 4 },
+  'item/smoke_ember': { frames: emberFrames, frametime: 3 },
+  'item/model_water_bubbling': { frames: bubblingWaterFrames, frametime: 2 },
+  'item/hookah_coal': { frames: coalFrames, frametime: 4 },
+  'block/drying_bundle_fresh': { frames: bundleSwayFrames, frametime: 8 },
+  'block/sieve_flowers': { frames: sieveShakeFrames, frametime: 2 },
 };
 
 // Ícone do efeito cultivo:high (18x18): folha estilizada com um fio de fumaça
@@ -1052,6 +1156,7 @@ export function generateAll(strains) {
   for (const [id, t] of Object.entries(MODEL_TEXTURES)) written.push(render(`item/${id}`, t.grid, t.palette));
   for (const [id, t] of Object.entries(BLOCKS)) written.push(render(`block/${id}`, t.grid, t.palette));
   for (const [id, t] of Object.entries(EFFECTS)) written.push(render(`mob_effect/${id}`, t.grid, t.palette));
+  for (const [id, a] of Object.entries(ANIMATED)) written.push(renderAnimation(id, a.frames, { frametime: a.frametime }));
   return written;
 }
 

@@ -1,0 +1,73 @@
+{
+  "parent": "cultivo:item/hookah_in_hand_lit",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        45,
+        8,
+        0
+      ],
+      "translation": [
+        -0.62,
+        0.504,
+        1.604
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        45,
+        -8,
+        0
+      ],
+      "translation": [
+        -0.62,
+        0.504,
+        1.604
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -25,
+        5
+      ],
+      "translation": [
+        -1,
+        5,
+        -2
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        25,
+        -5
+      ],
+      "translation": [
+        -1,
+        5,
+        -2
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    }
+  }
+}

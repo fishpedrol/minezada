@@ -57,6 +57,28 @@ public final class ContentIds {
     /** Efeitos próprios (textura em textures/mob_effect/&lt;id&gt;.png, 18×18). */
     public static final List<String> EFFECTS = List.of("high");
 
+    /**
+     * Eventos de som cultivo:&lt;id&gt; (registrados em ModSounds, definidos em assets/cultivo/sounds.json pelo gerador, a
+     * partir da seção "sounds" do manifesto). Não há áudio próprio: cada evento reaproveita um evento vanilla e tem
+     * legenda subtitles.cultivo.&lt;id&gt;.
+     */
+    public static final List<String> SOUNDS = List.of(
+        "smoke.inhale",
+        "smoke.exhale",
+        "bong.bubble",
+        "lighter.click",
+        "drying_rack.rustle",
+        "sieve.sift",
+        "press.squeeze",
+        "station.finish",
+        "tray.roll",
+        "jar.open",
+        "jar.close",
+        "jar.cured",
+        "grinder.grind",
+        "ashtray.ash",
+        "ashtray.empty");
+
     public static final List<String> STATIONS =
         Arrays.stream(StationKind.values()).map(StationKind::blockId).toList();
 
@@ -124,7 +146,10 @@ public final class ContentIds {
         "tray_rolls_joints",
         "jar_cures_flowers",
         "ashtray_collects_ash",
-        "placeable_articles_drop_self");
+        "placeable_articles_drop_self",
+        "sound_events_registered",
+        "smoke_use_effects_run",
+        "station_effects_run");
 
     private ContentIds() {}
 

@@ -1,5 +1,14 @@
 {
-  "_comment": "Manifesto único do conteúdo do Cultivo. tools/gen/generate.mjs gera blockstates, modelos, definições de item, lang, loot, receitas, tags, worldgen e test_instance a partir dele. Os testes JUnit conferem o resultado contra as classes puras em core/.",
+  "_comment": "Manifesto único do conteúdo do Cultivo. tools/gen/generate.mjs gera blockstates, modelos, definições de item, lang, sons, loot, receitas, tags, worldgen e test_instance a partir dele. Os testes JUnit conferem o resultado contra as classes puras em core/.",
+  "_portuguese_comment": "Pedido do dono: o mod aparece todo em português em qualquer idioma do cliente. Com portuguese_everywhere = true o gerador escreve os textos pt_br também no en_us.json (o fallback de todos os idiomas). Os textos em inglês continuam aqui como fonte (lang.en_us, campos en e name_patterns.*.en): com false o en_us.json volta a sair em inglês. O gerador confere que toda chave tem as duas línguas.",
+  "portuguese_everywhere": true,
+  "name_patterns": {
+    "_comment": "Nomes gerados por variedade; %s é o nome da variedade (pt ou en). Plantio segue o vanilla pt_br (Plantio de Trigo).",
+    "seeds": { "en": "%s Seeds", "pt": "Sementes de %s" },
+    "crop": { "en": "%s Crop", "pt": "Plantio de %s" },
+    "fresh_flower": { "en": "Fresh %s Flower", "pt": "Flor Fresca de %s" },
+    "dried_flower": { "en": "Dried %s Flower", "pt": "Flor Seca de %s" }
+  },
   "_strains_comment": "Tabela das variedades, na mesma ordem e com os mesmos atributos do enum core/Variety.java (DataConsistencyTest confere coluna por coluna). origin: nativa | catalogo; rarity: comum | incomum | rara; cycle: automatica | fotoperiodo; genetics: sativa | hibrida | indica; growth: rapida (x1,25) | media (x1,0) | lenta (x0,8); potency: 1..3; family: paleta das texturas em tools/art/textures.mjs. Os nomes pt/en são paródias; os nomes reais ficam só em docs/strains-catalog.json.",
   "strains": [
     { "id": "brisa", "pt": "Brisa", "en": "Brisa", "origin": "nativa", "rarity": "comum", "cycle": "automatica", "genetics": "sativa", "growth": "rapida", "potency": 1, "family": "brisa" },
@@ -57,8 +66,8 @@
     { "id": "filter_tip", "en": "Filter Tip", "pt": "Piteira" },
     { "id": "grinder", "en": "Grinder", "pt": "Dichavador" },
     { "id": "lighter", "en": "Lighter", "pt": "Isqueiro" },
-    { "id": "rolling_tray", "en": "Rolling Tray", "pt": "Bandeja", "placeable": true },
-    { "id": "jar", "en": "Stash Jar", "pt": "Pote", "placeable": true },
+    { "id": "rolling_tray", "en": "Rolling Tray", "pt": "Bandeja de Enrolar", "placeable": true },
+    { "id": "jar", "en": "Stash Jar", "pt": "Pote de Vidro", "placeable": true },
     { "id": "ashtray", "en": "Ashtray", "pt": "Cinzeiro", "placeable": true }
   ],
   "_placeable_comment": "Artigos com \"placeable\": true viram bloco (mesmo ID do item, que mantém o ícone plano): blockstate, modelos (tools/gen/models.mjs), loot que derruba o próprio item e o nome block.cultivo.<id>. Espelho de ContentIds.PLACEABLE_ARTICLES.",
@@ -72,6 +81,36 @@
   "effects": [
     { "id": "high", "en": "High", "pt": "Chapado" }
   ],
+  "_sounds_comment": "Eventos de som cultivo:<id> (espelho de ContentIds.SOUNDS, registrados em ModSounds). Não há áudio próprio: cada um aponta para um evento vanilla (\"type\": \"event\" no sounds.json) com volume e tom próprios, que multiplicam os do vanilla. A legenda é subtitles.cultivo.<id> (pt/en). Todos tocam no servidor (level.playSound com jogador nulo), então todo mundo por perto ouve.",
+  "sounds": [
+    { "id": "smoke.inhale", "event": "minecraft:entity.player.breath", "volume": 0.6, "pitch": 1.1, "en": "Inhaling", "pt": "Tragando" },
+    { "id": "smoke.exhale", "event": "minecraft:entity.horse.breathe", "volume": 0.45, "pitch": 1.5, "en": "Smoke exhaled", "pt": "Fumaça soprada" },
+    { "id": "bong.bubble", "event": "minecraft:block.bubble_column.upwards_ambient", "volume": 0.8, "pitch": 1.5, "en": "Bong bubbles", "pt": "Bong borbulha" },
+    { "id": "lighter.click", "event": "minecraft:item.flintandsteel.use", "volume": 0.6, "pitch": 1.3, "en": "Lighter clicks", "pt": "Isqueiro acende" },
+    { "id": "drying_rack.rustle", "event": "minecraft:block.azalea_leaves.step", "volume": 0.4, "pitch": 1.2, "en": "Bundles rustle", "pt": "Maços farfalham" },
+    { "id": "sieve.sift", "event": "minecraft:item.brush.brushing.sand", "volume": 0.8, "pitch": 1.1, "en": "Sieve sifts", "pt": "Peneira sacode" },
+    { "id": "press.squeeze", "event": "minecraft:block.piston.contract", "volume": 0.3, "pitch": 0.6, "en": "Press squeezes", "pt": "Prensa aperta" },
+    { "id": "station.finish", "event": "minecraft:block.composter.ready", "volume": 0.7, "pitch": 1.2, "en": "Processing done", "pt": "Processo concluído" },
+    { "id": "tray.roll", "event": "minecraft:item.book.page_turn", "volume": 0.9, "pitch": 1.3, "en": "Joint rolled", "pt": "Baseado enrolado" },
+    { "id": "jar.open", "event": "minecraft:block.barrel.open", "volume": 0.5, "pitch": 1.8, "en": "Jar opens", "pt": "Pote aberto" },
+    { "id": "jar.close", "event": "minecraft:block.barrel.close", "volume": 0.5, "pitch": 1.8, "en": "Jar closes", "pt": "Pote fechado" },
+    { "id": "jar.cured", "event": "minecraft:block.amethyst_block.chime", "volume": 1.0, "pitch": 1.2, "en": "Flowers cured", "pt": "Flores curadas" },
+    { "id": "grinder.grind", "event": "minecraft:block.grindstone.use", "volume": 0.8, "pitch": 1.5, "en": "Grinder grinds", "pt": "Dichavador mói" },
+    { "id": "ashtray.ash", "event": "minecraft:block.composter.fill", "volume": 1.0, "pitch": 1.4, "en": "Ash falls into ashtray", "pt": "Cinza cai no cinzeiro" },
+    { "id": "ashtray.empty", "event": "minecraft:block.composter.empty", "volume": 0.8, "pitch": 1.3, "en": "Ashtray emptied", "pt": "Cinzeiro esvaziado" }
+  ],
+  "_smoke_animation_comment": "Animação de fumar na 3ª pessoa (espelho de core/SmokeAnimation.java). arm/support_arm: xRot e yRot (radianos) do braço que segura e do que apoia (bong e narguilé, com a outra mão vazia) no fim da subida, com a cabeça reta. O gerador acha a translação que leva mouth_point (1/16 do modelo na mão) até target (px do modelo do jogador; padrão: a boca) com essa pose, e gera <aparelho>_in_hand_lit (na boca) e os quadros _k0.._k(keyframes-1), interpolados entre o jeito de segurar e a boca, um por tick (range_dispatch em minecraft:use_duration). Na 1ª pessoa o modelo aceso usa a exibição de quem segura e o cliente anima até a boca.",
+  "smoke_animation": {
+    "keyframes": 5,
+    "mouth": [0, -2, -4.6],
+    "poses": {
+      "joint": { "arm": [-1.25, -0.7], "rotation": [0, 40, 0], "scale": 0.7, "mouth_point": [3, 8, 8] },
+      "pipe": { "arm": [-1.25, -0.7], "rotation": [0, -120, 0], "scale": 0.6, "mouth_point": [15, 5, 8] },
+      "chillum": { "arm": [-1.25, -0.7], "rotation": [-50, 0, 0], "scale": 0.6, "mouth_point": [8, 0, 8] },
+      "bong": { "arm": [-1.3, -0.6], "support_arm": [-0.75, 0.35], "rotation": [0, 20, 0], "scale": 0.55, "mouth_point": [8, 16, 8], "target": [0, -1.5, -7.5] },
+      "hookah": { "arm": [-0.95, -0.5], "support_arm": [-0.8, 0.45], "rotation": [0, 20, 0], "scale": 0.55, "mouth_point": [8, 16, 8], "target": [0, 3, -8] }
+    }
+  },
   "processing": {
     "drying": { "ticks": 600 },
     "sieving": { "ticks": 200, "ingredient": "#cultivo:dried_flowers", "result": "cultivo:resin", "count": 1 },
@@ -190,7 +229,10 @@
     { "name": "tray_rolls_joints", "max_ticks": 100 },
     { "name": "jar_cures_flowers", "max_ticks": 100 },
     { "name": "ashtray_collects_ash", "max_ticks": 100 },
-    { "name": "placeable_articles_drop_self", "max_ticks": 100 }
+    { "name": "placeable_articles_drop_self", "max_ticks": 100 },
+    { "name": "sound_events_registered", "max_ticks": 100 },
+    { "name": "smoke_use_effects_run", "max_ticks": 100 },
+    { "name": "station_effects_run", "max_ticks": 100 }
   ],
   "lang": {
     "en_us": {
@@ -215,7 +257,7 @@
       "tooltip.cultivo.potency.2": "Potency ★★☆",
       "tooltip.cultivo.potency.3": "Potency ★★★",
       "tooltip.cultivo.smoke.joint": "Hold right-click to smoke · needs a lighter",
-      "tooltip.cultivo.smoke.device": "Hold right-click to smoke · needs a lighter and dried flower or hash (off hand first)",
+      "tooltip.cultivo.smoke.device": "Hold right-click to smoke · needs a lighter and dried flower or hash (the off hand is used first)",
       "tooltip.cultivo.lighter": "Needed to smoke · loses 1 durability per use",
       "tooltip.cultivo.strain": "Variety: %s",
       "message.cultivo.need_lighter": "You need a lighter in your inventory",
@@ -223,19 +265,19 @@
       "message.cultivo.too_high": "You are already as high as it gets, wait a bit",
       "message.cultivo.lighter_broke": "Your lighter ran out",
       "tooltip.cultivo.station.drying": "Dries fresh flowers over time",
-      "tooltip.cultivo.station.sieving": "Sifts dried flowers into fictional resin",
+      "tooltip.cultivo.station.sieving": "Sifts dried flowers and separates the fictional resin",
       "tooltip.cultivo.station.pressing": "Presses 2 resin into 1 hash",
-      "tooltip.cultivo.station.usage": "Right-click with an ingredient to insert; empty hand collects (output first)",
+      "tooltip.cultivo.station.usage": "Right-click holding the ingredient to put it in · empty hand takes things out (finished first)",
       "tooltip.cultivo.rolling_paper": "Roll with a dried flower to make a joint · 3 papers on a rolling tray roll 3 joints",
       "tooltip.cultivo.filter_tip": "Add to a joint: lasts longer, less nausea",
       "tooltip.cultivo.filtered": "Filtered",
-      "tooltip.cultivo.grinder": "Right-click a Bench Sieve to install: +1 resin per cycle · sneak with empty hands to remove",
-      "tooltip.cultivo.rolling_tray": "Place it and right-click with 2 identical dried flowers: 3 rolling papers become 3 joints",
+      "tooltip.cultivo.grinder": "Right-click a Bench Sieve to install: +1 resin per cycle · sneak with empty hands and right-click to remove",
+      "tooltip.cultivo.rolling_tray": "Place it and right-click holding 2 identical dried flowers: 3 rolling papers become 3 joints",
       "tooltip.cultivo.jar": "Stores one stack · cures dried flowers: +1 quality, once",
       "tooltip.cultivo.cured": "Cured",
       "tooltip.cultivo.ashtray": "Catches ash when someone smokes nearby · when full, an empty hand takes bone meal",
       "message.cultivo.tray_need_flowers": "You need 2 identical dried flowers in hand",
-      "message.cultivo.tray_need_papers": "You need 3 rolling papers"
+      "message.cultivo.tray_need_papers": "You need 3 rolling papers in your inventory"
     },
     "pt_br": {
       "itemGroup.cultivo": "Cultivo",
@@ -258,28 +300,28 @@
       "tooltip.cultivo.potency.1": "Potência ★☆☆",
       "tooltip.cultivo.potency.2": "Potência ★★☆",
       "tooltip.cultivo.potency.3": "Potência ★★★",
-      "tooltip.cultivo.smoke.joint": "Segure o botão direito para fumar · precisa de isqueiro",
-      "tooltip.cultivo.smoke.device": "Segure o botão direito para fumar · precisa de isqueiro e flor seca ou haxixe (mão secundária primeiro)",
-      "tooltip.cultivo.lighter": "Necessário para fumar · perde 1 de durabilidade por uso",
+      "tooltip.cultivo.smoke.joint": "Segure o botão direito para fumar · precisa de um isqueiro",
+      "tooltip.cultivo.smoke.device": "Segure o botão direito para fumar · precisa de um isqueiro e de flor seca ou haxixe (usa primeiro o da mão secundária)",
+      "tooltip.cultivo.lighter": "Necessário para fumar · gasta 1 de durabilidade a cada uso",
       "tooltip.cultivo.strain": "Variedade: %s",
       "message.cultivo.need_lighter": "Você precisa de um isqueiro no inventário",
       "message.cultivo.need_fuel": "Você precisa de flor seca ou haxixe no inventário",
       "message.cultivo.too_high": "Você já está chapado ao máximo, espere um pouco",
       "message.cultivo.lighter_broke": "Seu isqueiro acabou",
       "tooltip.cultivo.station.drying": "Seca flores frescas com o tempo",
-      "tooltip.cultivo.station.sieving": "Peneira flores secas em resina fictícia",
+      "tooltip.cultivo.station.sieving": "Peneira flores secas e separa a resina fictícia",
       "tooltip.cultivo.station.pressing": "Prensa 2 resinas em 1 haxixe",
-      "tooltip.cultivo.station.usage": "Clique direito com ingrediente para inserir; mão vazia retira (saída primeiro)",
+      "tooltip.cultivo.station.usage": "Clique com o botão direito segurando o ingrediente para colocar · a mão vazia retira (o que está pronto sai primeiro)",
       "tooltip.cultivo.rolling_paper": "Enrole com flor seca para fazer um baseado · 3 folhas na bandeja enrolam 3 baseados",
       "tooltip.cultivo.filter_tip": "Junte a um baseado: dura mais e dá menos náusea",
       "tooltip.cultivo.filtered": "Com piteira",
-      "tooltip.cultivo.grinder": "Instale na Peneira de Bancada com clique direito: +1 resina por ciclo · agache com as mãos vazias para tirar",
-      "tooltip.cultivo.rolling_tray": "Coloque e clique direito com 2 flores secas iguais: 3 folhas de seda viram 3 baseados",
+      "tooltip.cultivo.grinder": "Clique com ele na Peneira de Bancada para instalar: +1 resina por ciclo · agachado e de mãos vazias, clique para tirar",
+      "tooltip.cultivo.rolling_tray": "Coloque no chão e clique com 2 flores secas iguais na mão: 3 folhas de seda viram 3 baseados",
       "tooltip.cultivo.jar": "Guarda uma pilha · cura flores secas: +1 de qualidade, uma vez só",
       "tooltip.cultivo.cured": "Cura concluída",
-      "tooltip.cultivo.ashtray": "Junta a cinza de quem fuma por perto · cheio, a mão vazia tira farinha de osso",
+      "tooltip.cultivo.ashtray": "Junta a cinza de quem fuma por perto · quando está cheio, a mão vazia tira farinha de osso",
       "message.cultivo.tray_need_flowers": "Você precisa de 2 flores secas iguais na mão",
-      "message.cultivo.tray_need_papers": "Você precisa de 3 folhas de seda"
+      "message.cultivo.tray_need_papers": "Você precisa de 3 folhas de seda no inventário"
     }
   }
 }

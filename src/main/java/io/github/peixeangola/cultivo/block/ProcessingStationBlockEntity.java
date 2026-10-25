@@ -2,6 +2,7 @@ package io.github.peixeangola.cultivo.block;
 
 import com.mojang.logging.LogUtils;
 import io.github.peixeangola.cultivo.core.ProcessingRules;
+import io.github.peixeangola.cultivo.core.StationAnimation;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.StationVisualRules;
 import io.github.peixeangola.cultivo.core.Variety;
@@ -10,14 +11,18 @@ import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import io.github.peixeangola.cultivo.registry.ModComponents;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModRecipes;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import io.github.peixeangola.cultivo.registry.ModTags;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.Containers;
@@ -40,6 +45,10 @@ import org.slf4j.Logger;
  * bloco acompanha os slots (a cada mudança e a cada tick, o que também acerta mundos salvos antes dela) com
  * setBlock(UPDATE_CLIENTS) só quando o valor muda, como o LIT da fornalha: o bloco é o mesmo, então esta BlockEntity
  * continua no lugar.
+ *
+ * <p>Enfeites do servidor, para todos por perto: enquanto o progresso anda, o som de trabalho de cada estação no ritmo
+ * de {@link StationAnimation} (o aperto da prensa bate quando a placa animada chega embaixo); no fim do ciclo, um sopro
+ * de partículas e o som de pronto.
  */
 public class ProcessingStationBlockEntity extends BlockEntity {
     public static final int INPUT = 0;
@@ -225,13 +234,46 @@ public class ProcessingStationBlockEntity extends BlockEntity {
                     output.grow(result.getCount());
                 }
                 contentsChanged();
+                finishEffects(level);
                 return;
             }
         }
         if (progress != previous) {
             setChanged();
+            if (progress > previous) {
+                workSounds(level);
+            }
         }
         syncVisualState();
+    }
+
+    /** Som de trabalho no ritmo da estação; a peneira com dichavador também mói. */
+    private void workSounds(ServerLevel level) {
+        if (!StationAnimation.playsWorkSound(kind(), level.getGameTime(), worldPosition.asLong())) {
+            return;
+        }
+        SoundEvent sound = switch (kind()) {
+            case DRYING -> ModSounds.DRYING_RACK_RUSTLE.get();
+            case SIEVING -> ModSounds.SIEVE_SIFT.get();
+            case PRESSING -> ModSounds.PRESS_SQUEEZE.get();
+        };
+        float pitch = 0.9F + level.getRandom().nextFloat() * 0.2F;
+        level.playSound(null, worldPosition, sound, SoundSource.BLOCKS, 1.0F, pitch);
+        if (SieveBlock.hasGrinder(getBlockState())) {
+            level.playSound(null, worldPosition, ModSounds.GRINDER_GRIND.get(), SoundSource.BLOCKS, 0.6F, pitch);
+        }
+    }
+
+    /** Fim de ciclo: um sopro de partículas onde está o produto (todos veem) e o som de pronto. */
+    private void finishEffects(ServerLevel level) {
+        double height = switch (kind()) {
+            case DRYING -> 0.6D;
+            case SIEVING -> 0.75D;
+            case PRESSING -> 0.35D;
+        };
+        level.sendParticles(ParticleTypes.POOF, worldPosition.getX() + 0.5D, worldPosition.getY() + height,
+            worldPosition.getZ() + 0.5D, 5, 0.18D, 0.05D, 0.18D, 0.01D);
+        level.playSound(null, worldPosition, ModSounds.STATION_FINISH.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
     }
 
     @Override

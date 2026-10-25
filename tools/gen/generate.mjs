@@ -6,8 +6,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artFamilies, CROP_STAGE_COUNT, generateAll as generateTextures } from '../art/textures.mjs';
 import {
-  articleBlockstate, articleModels, FILTERED_HAND, handModels, LIT_DEVICES, LIT_DISPLAY, LIT_TEXTURE_VAR,
-  stationBlockstate, stationModels,
+  articleBlockstate, articleModels, filteredHandModels, handModels, LIT_DEVICES, LIT_TEXTURES, pressPlatenBlockstate,
+  pressPlatenModel, smokeDisplays, stationBlockstate, stationModels,
 } from './models.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -101,19 +101,32 @@ for (const item of flatItems) flatModel(item);
 for (const variant of ['joint_lit', 'joint_filtered', 'joint_filtered_lit']) flatModel(variant);
 for (const family of families) flatModel(`hash_${family}`);
 
-// Modelos 3D na mão dos aparelhos de fumo e do isqueiro (+ variante acesa com brasa)
+// Modelos 3D na mão dos aparelhos de fumo e do isqueiro, mais, enquanto o jogador fuma: o modelo aceso (brasa animada,
+// na boca na 3ª pessoa) e os quadros k0..k(K-1) da subida/descida na 3ª pessoa (seção smoke_animation do manifesto)
 const hand = handModels();
+const SMOKE_KEYFRAMES = M.smoke_animation.keyframes;
+const smoke = smokeDisplays(M.smoke_animation, hand);
 for (const [device, model] of Object.entries(hand)) {
   write(`assets/${NS}/models/item/${device}_in_hand.json`, model);
   if (LIT_DEVICES.includes(device)) {
+    if (!smoke[device]) throw new Error(`aparelho aceso sem pose de fumar: ${device}`);
     write(`assets/${NS}/models/item/${device}_in_hand_lit.json`, {
       parent: id(`item/${device}_in_hand`),
-      textures: { [LIT_TEXTURE_VAR[device]]: id('item/smoke_ember') },
-      display: LIT_DISPLAY[device],
+      textures: LIT_TEXTURES[device],
+      display: smoke[device].lit,
     });
+    smoke[device].keyframes.forEach((display, i) => write(`assets/${NS}/models/item/${device}_in_hand_lit_k${i}.json`, {
+      parent: id(`item/${device}_in_hand_lit`),
+      display,
+    }));
   }
 }
-for (const [name, model] of Object.entries(FILTERED_HAND)) write(`assets/${NS}/models/item/${name}.json`, model);
+for (const [name, model] of Object.entries(filteredHandModels(SMOKE_KEYFRAMES))) {
+  write(`assets/${NS}/models/item/${name}.json`, model);
+}
+// Placa da prensa que o cliente anima (estado sintético cultivo:press_platen, registrado no cliente)
+write(`assets/${NS}/models/block/press_platen_moving.json`, pressPlatenModel());
+write(`assets/${NS}/blockstates/press_platen.json`, pressPlatenBlockstate());
 
 // Definições de item (assets/cultivo/items): modelo simples, ou árvore de seleção do 26.3
 const model = (path) => ({ type: 'minecraft:model', model: id(path) });
@@ -135,47 +148,102 @@ itemDefinitions.hash = {
   })),
   fallback: model('item/hash'),
 };
-// Baseado: com piteira (cultivo:filtered) ou não e, em cada caso, aceso (brasa e fumaça) enquanto o jogador fuma,
-// também no ícone da hotbar (o mesmo idioma de condições aninhadas do items/bow.json vanilla)
+// Enquanto o jogador fuma: ícone aceso no inventário; na 1ª pessoa o modelo aceso com a exibição de quem segura (o
+// cliente anima até a boca); na 3ª pessoa os quadros k<i> nos primeiros K ticks (subindo) e nos últimos K (descendo),
+// e o modelo na boca no meio, um quadro por tick (como o arco vanilla, range_dispatch em minecraft:use_duration)
+const FP_CONTEXTS = ['firstperson_righthand', 'firstperson_lefthand'];
+const keyframe = (base, i) => model(`item/${base}_k${i}`);
+const thirdPersonInUse = (base) => ({
+  type: 'minecraft:range_dispatch', property: 'minecraft:use_duration',
+  entries: [
+    ...Array.from({ length: SMOKE_KEYFRAMES }, (_, i) => ({ threshold: i, model: keyframe(base, i) })),
+    {
+      threshold: SMOKE_KEYFRAMES,
+      model: {
+        type: 'minecraft:range_dispatch', property: 'minecraft:use_duration', remaining: true,
+        entries: [
+          ...Array.from({ length: SMOKE_KEYFRAMES - 1 }, (_, i) => ({ threshold: i + 1, model: keyframe(base, i + 1) })),
+          { threshold: SMOKE_KEYFRAMES, model: model(`item/${base}`) },
+        ],
+        fallback: keyframe(base, 0),
+      },
+    },
+  ],
+  fallback: keyframe(base, 0),
+});
+const inUse = (flatLit, base) => ({
+  type: 'minecraft:select', property: 'minecraft:display_context',
+  cases: [{ when: FLAT_CONTEXTS, model: flatLit }, { when: FP_CONTEXTS, model: model(`item/${base}`) }],
+  fallback: thirdPersonInUse(base),
+});
+// Baseado: com piteira (cultivo:filtered) ou não e, em cada caso, aceso (brasa animada e fumaça) enquanto o jogador
+// fuma, também no ícone da hotbar (o mesmo idioma de condições aninhadas do items/bow.json vanilla)
 itemDefinitions.joint = {
   type: 'minecraft:condition', property: 'minecraft:has_component', component: id('filtered'),
   on_true: usingItem(
-    flatOrHand(model('item/joint_filtered_lit'), model('item/joint_filtered_in_hand_lit')),
+    inUse(model('item/joint_filtered_lit'), 'joint_filtered_in_hand_lit'),
     flatOrHand(model('item/joint_filtered'), model('item/joint_filtered_in_hand')),
   ),
   on_false: usingItem(
-    flatOrHand(model('item/joint_lit'), model('item/joint_in_hand_lit')),
+    inUse(model('item/joint_lit'), 'joint_in_hand_lit'),
     flatOrHand(model('item/joint'), model('item/joint_in_hand')),
   ),
 };
 for (const device of Object.keys(hand)) {
   if (device === 'joint') continue;
-  const inHand = LIT_DEVICES.includes(device)
-    ? usingItem(model(`item/${device}_in_hand_lit`), model(`item/${device}_in_hand`))
-    : model(`item/${device}_in_hand`);
-  itemDefinitions[device] = flatOrHand(model(`item/${device}`), inHand);
+  const idle = flatOrHand(model(`item/${device}`), model(`item/${device}_in_hand`));
+  // O isqueiro não fuma: só o ícone e o modelo na mão
+  itemDefinitions[device] = LIT_DEVICES.includes(device)
+    ? usingItem(inUse(model(`item/${device}`), `${device}_in_hand_lit`), idle)
+    : idle;
 }
 for (const [item, def] of Object.entries(itemDefinitions)) write(`assets/${NS}/items/${item}.json`, { model: def });
 
 // ------------------------------------------------------------------ assets: lang
-for (const lang of ['en_us', 'pt_br']) {
-  const en = lang === 'en_us';
-  const t = { ...M.lang[lang] };
+// As duas tabelas saem do manifesto: textos fixos (lang.<idioma>), nomes gerados por variedade (name_patterns), itens,
+// blocos, efeito e legendas de som. Toda chave precisa existir nas duas línguas, senão o gerador para.
+function langTable(lang) {
+  const t = { ...M.lang[lang === 'en' ? 'en_us' : 'pt_br'] };
+  const named = (kind, name) => M.name_patterns[kind][lang].replace('%s', () => name);
   for (const v of strains) {
-    const name = en ? v.en : v.pt;
-    t[`item.${NS}.${v.id}_seeds`] = en ? `${name} Seeds` : `Sementes de ${name}`;
-    t[`block.${NS}.${v.id}_crop`] = en ? `${name} Crop` : `Plantação de ${name}`;
-    t[`item.${NS}.${v.id}_fresh_flower`] = en ? `Fresh ${name} Flower` : `Flor Fresca de ${name}`;
-    t[`item.${NS}.${v.id}_dried_flower`] = en ? `Dried ${name} Flower` : `Flor Seca de ${name}`;
+    const name = v[lang];
+    t[`item.${NS}.${v.id}_seeds`] = named('seeds', name);
+    t[`block.${NS}.${v.id}_crop`] = named('crop', name);
+    t[`item.${NS}.${v.id}_fresh_flower`] = named('fresh_flower', name);
+    t[`item.${NS}.${v.id}_dried_flower`] = named('dried_flower', name);
     // Nome da variedade gravada em cultivo:strain (baseado, resina, haxixe)
     t[`tooltip.${NS}.variety.${v.id}`] = name;
   }
-  for (const g of [...M.generic_items, ...M.articles]) t[`item.${NS}.${g.id}`] = en ? g.en : g.pt;
+  for (const g of [...M.generic_items, ...M.articles]) t[`item.${NS}.${g.id}`] = g[lang];
   // Artigos colocáveis: o bloco tem o mesmo nome do item
-  for (const b of [...stations, wild, ...placeables]) t[`block.${NS}.${b.id}`] = en ? b.en : b.pt;
-  for (const e of M.effects) t[`effect.${NS}.${e.id}`] = en ? e.en : e.pt;
-  write(`assets/${NS}/lang/${lang}.json`, Object.fromEntries(Object.entries(t).sort(([a], [b]) => a.localeCompare(b))));
+  for (const b of [...stations, wild, ...placeables]) t[`block.${NS}.${b.id}`] = b[lang];
+  for (const e of M.effects) t[`effect.${NS}.${e.id}`] = e[lang];
+  for (const s of M.sounds) t[`subtitles.${NS}.${s.id}`] = s[lang];
+  return t;
 }
+const english = langTable('en');
+const portuguese = langTable('pt');
+for (const [a, b, nameA] of [[english, portuguese, 'en'], [portuguese, english, 'pt']]) {
+  for (const [key, value] of Object.entries(a)) {
+    if (typeof value !== 'string' || !value.trim()) throw new Error(`texto vazio em ${nameA}: ${key}`);
+    if (!(key in b)) throw new Error(`chave só em ${nameA}: ${key}`);
+  }
+}
+const sortedLang = (t) => Object.fromEntries(Object.entries(t).sort(([a], [b]) => a.localeCompare(b)));
+write(`assets/${NS}/lang/pt_br.json`, sortedLang(portuguese));
+// en_us.json é o fallback de todos os idiomas do cliente: com portuguese_everywhere, o mod aparece em português sempre
+write(`assets/${NS}/lang/en_us.json`, sortedLang(M.portuguese_everywhere ? portuguese : english));
+
+// ------------------------------------------------------------------ assets: sons
+// Eventos cultivo:<id> que reaproveitam eventos vanilla ("type": "event"), com legenda própria em subtitles.cultivo.<id>
+const soundDefinitions = {};
+for (const s of M.sounds) {
+  soundDefinitions[s.id] = {
+    subtitle: `subtitles.${NS}.${s.id}`,
+    sounds: [{ name: s.event, type: 'event', volume: s.volume, pitch: s.pitch }],
+  };
+}
+write(`assets/${NS}/sounds.json`, soundDefinitions);
 
 // ------------------------------------------------------------------ data: loot tables (formato 26.3: type/condition/modifier)
 const blockState = (block, age) => ({ type: 'minecraft:match_block', blocks: id(block), state: { age: String(age) } });

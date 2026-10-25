@@ -83,11 +83,14 @@ class ParodyNamesTest {
         JsonObject pt = Resources.json(Resources.assets("lang/pt_br.json"));
         JsonObject en = Resources.json(Resources.assets("lang/en_us.json"));
         assertEquals("Sementes de Manga Gelada", pt.get("item.cultivo.manga_gelada_seeds").getAsString());
-        assertEquals("Frozen Mango Seeds", en.get("item.cultivo.manga_gelada_seeds").getAsString());
         assertEquals("Flor Seca de Bananona", pt.get("item.cultivo.bananona_dried_flower").getAsString());
         assertEquals("Cola de Gorila #4", pt.get("tooltip.cultivo.variety.cola_de_gorila").getAsString());
-        assertEquals("Ape Paste #4", en.get("tooltip.cultivo.variety.cola_de_gorila").getAsString());
-        assertEquals("Plantação de Dó-Si-Dó", pt.get("block.cultivo.do_si_do_crop").getAsString());
+        assertEquals("Plantio de Dó-Si-Dó", pt.get("block.cultivo.do_si_do_crop").getAsString());
+        // O dono pediu o mod todo em português: o en_us.json (fallback de todos os idiomas) mostra as mesmas paródias
+        // em português; as paródias em inglês continuam no manifesto (manifestUsesTheCatalogParodyNames)
+        assertTrue(Resources.json(StrainColumns.MANIFEST).get("portuguese_everywhere").getAsBoolean());
+        assertEquals("Sementes de Manga Gelada", en.get("item.cultivo.manga_gelada_seeds").getAsString());
+        assertEquals("Cola de Gorila #4", en.get("tooltip.cultivo.variety.cola_de_gorila").getAsString());
         for (Variety v : Variety.values()) {
             for (JsonObject lang : List.of(pt, en)) {
                 JsonElement name = lang.get("tooltip.cultivo.variety." + v.id());

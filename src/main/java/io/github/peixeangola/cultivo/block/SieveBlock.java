@@ -4,9 +4,9 @@ import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.ProcessingRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.registry.ModItems;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
@@ -69,7 +69,7 @@ public class SieveBlock extends ProcessingStationBlock {
         }
         level.setBlock(pos, state.setValue(GRINDER, true), Block.UPDATE_ALL);
         stack.consume(1, player);
-        level.playSound(null, pos, SoundEvents.SMITHING_TABLE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+        level.playSound(null, pos, ModSounds.GRINDER_GRIND.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         return InteractionResult.SUCCESS_SERVER;
     }
 
@@ -87,7 +87,7 @@ public class SieveBlock extends ProcessingStationBlock {
         if (!player.getInventory().add(grinder)) {
             player.drop(grinder, false, Prediction.SERVER_ONLY);
         }
-        level.playSound(null, pos, SoundEvents.SMITHING_TABLE_USE, SoundSource.BLOCKS, 1.0F, 0.8F);
+        level.playSound(null, pos, ModSounds.GRINDER_GRIND.get(), SoundSource.BLOCKS, 1.0F, 0.8F);
         return InteractionResult.SUCCESS_SERVER;
     }
 }

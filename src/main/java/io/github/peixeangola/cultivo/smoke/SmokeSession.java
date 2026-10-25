@@ -21,7 +21,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.stats.Stats;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffect;
@@ -32,14 +31,13 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemStackTemplate;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.ForgeEventFactory;
 
 /**
  * Fumar no jogo, sempre decidido no servidor: confere isqueiro e material, consome o baseado ou 1 flor
- * seca/haxixe, gasta 1 de durabilidade do isqueiro, aplica os efeitos calculados por {@link SmokeRules}, solta
- * fumaça e deixa 1 de cinza no cinzeiro mais próximo ({@link AshtrayBlock#catchAsh}). O cliente só mostra a animação
- * e as mensagens.
+ * seca/haxixe, gasta 1 de durabilidade do isqueiro, aplica os efeitos calculados por {@link SmokeRules}, solta a
+ * baforada ({@link SmokeEffects#exhale}) e deixa 1 de cinza no cinzeiro mais próximo ({@link AshtrayBlock#catchAsh}).
+ * O cliente só mostra a animação, as partículas do uso e as mensagens.
  */
 public final class SmokeSession {
     private SmokeSession() {}
@@ -164,11 +162,8 @@ public final class SmokeSession {
             damageLighter(level, player, lighter);
         }
 
-        Vec3 mouth = player.getEyePosition().add(player.getLookAngle().scale(0.4D));
-        level.sendParticles(ParticleTypes.WHITE_SMOKE, mouth.x, mouth.y - 0.1D, mouth.z, 6 + effects.size(),
-            0.12D, 0.08D, 0.12D, 0.01D);
-        level.playSound(null, player.blockPosition(), SoundEvents.FLINTANDSTEEL_USE, SoundSource.PLAYERS, 0.5F, 1.2F);
-        level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.15F, 1.6F);
+        // Baforada para todos verem e ouvirem (o isqueiro já tocou no começo do uso, em SmokingItem#use)
+        SmokeEffects.exhale(level, player, 6 + effects.size());
         // A cinza da sessão cai no cinzeiro mais próximo que não está cheio (também no criativo: nada é gasto)
         AshtrayBlock.catchAsh(level, player.blockPosition());
         return Optional.of(effects);

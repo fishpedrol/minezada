@@ -1,19 +1,20 @@
 {
   "parent": "cultivo:item/bong_in_hand",
   "textures": {
-    "bowl": "cultivo:item/smoke_ember"
+    "bowl": "cultivo:item/smoke_ember",
+    "water": "cultivo:item/model_water_bubbling"
   },
   "display": {
     "thirdperson_righthand": {
       "rotation": [
         0,
-        0,
+        20,
         0
       ],
       "translation": [
-        0,
-        1,
-        1
+        -0.89,
+        -0.62,
+        2.25
       ],
       "scale": [
         0.55,
@@ -24,13 +25,13 @@
     "thirdperson_lefthand": {
       "rotation": [
         0,
-        0,
+        -20,
         0
       ],
       "translation": [
-        0,
-        1,
-        1
+        -0.89,
+        -0.62,
+        2.25
       ],
       "scale": [
         0.55,
@@ -41,13 +42,13 @@
     "firstperson_righthand": {
       "rotation": [
         0,
-        -15,
-        0
+        -25,
+        5
       ],
       "translation": [
-        -5,
-        4,
-        -3
+        -1,
+        5,
+        -2
       ],
       "scale": [
         0.55,
@@ -58,13 +59,13 @@
     "firstperson_lefthand": {
       "rotation": [
         0,
-        15,
-        0
+        25,
+        -5
       ],
       "translation": [
-        -5,
-        4,
-        -3
+        -1,
+        5,
+        -2
       ],
       "scale": [
         0.55,

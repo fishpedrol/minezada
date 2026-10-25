@@ -176,7 +176,8 @@ export function stationModels() {
       ]),
       templates: {},
       parts: {
-        // Placa em cima (vazia ou pronta) e embaixo apertando a resina (trabalhando)
+        // Placa parada em cima (vazia ou pronta). Trabalhando, só a resina fica no modelo do bloco: a placa que sobe e
+        // desce é desenhada pelo cliente (PressPlatenRenderer, modelo press_platen_moving)
         platen_up: {
           when: { contents: ['empty', 'done'] },
           model: blockParent({ particle: id('block/press_iron'), iron: id('block/press_iron') }, [
@@ -184,11 +185,9 @@ export function stationModels() {
             box([4, 7, 4], [12, 8.5, 12], '#iron', { grain: 'x' }),
           ]),
         },
-        platen_down: {
+        squeeze: {
           when: { contents: ['working'] },
-          model: blockParent({ particle: id('block/press_iron'), iron: id('block/press_iron'), resin: id('block/press_resin') }, [
-            box([7.5, 6, 7.5], [8.5, 12, 8.5], '#iron', { grain: 'y', faces: ['north', 'south', 'west', 'east'] }),
-            box([4, 4.5, 4], [12, 6, 12], '#iron', { grain: 'x' }),
+          model: blockParent({ particle: id('block/press_resin'), resin: id('block/press_resin') }, [
             box([3.5, 3, 3.5], [12.5, 4.5, 12.5], '#resin', { faces: ['up', 'north', 'south', 'west', 'east'] }),
           ]),
         },
@@ -460,29 +459,126 @@ export function handModels() {
   };
 }
 
+// ------------------------------------------------------------------ animação de fumar
+const DEG = Math.PI / 180;
+const PX = 1 / 16;
+// Matrizes 4x4 row-major (só para resolver a posição na mão; o jogo usa as do JOML, com a mesma convenção)
+const mat = {
+  mul(a, b) {
+    const r = new Array(16).fill(0);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) r[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
+    return r;
+  },
+  chain: (...ms) => ms.reduce((acc, m) => mat.mul(acc, m)),
+  T: (x, y, z) => [1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1],
+  S: (s) => [s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, 0, 1],
+  RX: (a) => [1, 0, 0, 0, 0, Math.cos(a), -Math.sin(a), 0, 0, Math.sin(a), Math.cos(a), 0, 0, 0, 0, 1],
+  RY: (a) => [Math.cos(a), 0, Math.sin(a), 0, 0, 1, 0, 0, -Math.sin(a), 0, Math.cos(a), 0, 0, 0, 0, 1],
+  RZ: (a) => [Math.cos(a), -Math.sin(a), 0, 0, Math.sin(a), Math.cos(a), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+  apply: (m, [x, y, z]) => [0, 1, 2].map((r) => m[r * 4] * x + m[r * 4 + 1] * y + m[r * 4 + 2] * z + m[r * 4 + 3]),
+};
+const round3 = (v) => Math.round(v * 1000) / 1000;
+
 /**
- * Exibição do modelo aceso, usado só enquanto o jogador fuma: na 3ª pessoa o braço está erguido (pose TOOT_HORN),
- * então o aparelho fica em pé diante do rosto (bong, narguilé, chillum) ou com a boquilha na boca (cachimbo,
- * baseado). Na 1ª pessoa o uso não move a mão; o aparelho chega um pouco para o centro, sem cobrir a tela.
+ * Translação de exibição (em 1/16 de bloco) que leva o ponto `point` do modelo na mão (1/16) até `target` (px do
+ * modelo do jogador, cabeça reta) com o braço direito em [xRot, yRot] (radianos) e a exibição com `rotation`/`scale`.
+ * É a cadeia do 26.3: ModelPart do braço (pivô (-5, 2, 0) px, rotação Z·Y·X), ItemInHandLayer (X -90°, Y 180° e
+ * (1, 2, -10) px) e ItemTransform (translação, rotação XYZ, escala, -0,5).
  */
-export const LIT_DISPLAY = {
-  bong: HAND({ rotation: [0, 0, 0], translation: [0, 1, 1], scale: [0.55, 0.55, 0.55] }, { rotation: [0, -15, 0], translation: [-5, 4, -3], scale: [0.55, 0.55, 0.55] }),
-  hookah: HAND({ rotation: [0, 0, 0], translation: [0, 1, 1], scale: [0.55, 0.55, 0.55] }, { rotation: [0, -15, 0], translation: [-5, 4, -3], scale: [0.55, 0.55, 0.55] }),
-  pipe: HAND({ rotation: [0, -90, 0], translation: [0, 1, -2], scale: [0.6, 0.6, 0.6] }, { rotation: [0, -90, 0], translation: [-6, 3, -1], scale: [0.65, 0.65, 0.65] }),
-  chillum: HAND({ rotation: [0, 0, 0], translation: [0, 3, -1], scale: [0.6, 0.6, 0.6] }, { rotation: [0, -20, -10], translation: [-5, 4, -2], scale: [0.6, 0.6, 0.6] }),
-  joint: HAND({ rotation: [0, 90, 0], translation: [0, 2, -2], scale: [0.7, 0.7, 0.7] }, { rotation: [0, 90, 0], translation: [-7, 2, -2], scale: [0.7, 0.7, 0.7] }),
+export function solveHandTranslation(arm, rotation, scale, point, target) {
+  const A = mat.chain(mat.T(-5 * PX, 2 * PX, 0), mat.RY(arm[1]), mat.RX(arm[0]), mat.RX(-90 * DEG), mat.RY(180 * DEG),
+    mat.T(PX, 2 * PX, -10 * PX));
+  const RS = mat.chain(mat.RX(rotation[0] * DEG), mat.RY(rotation[1] * DEG), mat.RZ(rotation[2] * DEG), mat.S(scale));
+  const local = mat.apply(RS, point.map((v) => v / 16 - 0.5));
+  const d = target.map((v, k) => v * PX - A[k * 4 + 3]);
+  // A é rígida: a inversa da rotação é a transposta
+  const back = [0, 1, 2].map((c) => A[c] * d[0] + A[4 + c] * d[1] + A[8 + c] * d[2]);
+  return back.map((v, k) => Math.round((v - local[k]) * 1600) / 100);
+}
+
+/**
+ * Exibições da animação de fumar (seção smoke_animation do manifesto): `lit` é o modelo aceso com o aparelho na boca na
+ * 3ª pessoa e a exibição de quem segura na 1ª (o cliente anima a subida, SmokeAnimation.firstPersonMatrix); `keyframes`
+ * são os quadros k0..k(K-1) da 3ª pessoa, interpolados (rotação XYZ, translação e escala) entre segurar (k0) e a boca,
+ * um por tick, no mesmo ritmo do braço (SmokeAnimation.thirdPersonRaise).
+ */
+export function smokeDisplays(animation, hand) {
+  const K = animation.keyframes;
+  const out = {};
+  for (const [device, pose] of Object.entries(animation.poses)) {
+    if (!hand[device]) throw new Error(`pose de fumar sem modelo na mão: ${device}`);
+    const idleTP = hand[device].display.thirdperson_righthand;
+    const idleFP = hand[device].display.firstperson_righthand;
+    const s = [pose.scale, pose.scale, pose.scale];
+    const mouthTP = {
+      rotation: pose.rotation,
+      translation: solveHandTranslation(pose.arm, pose.rotation, pose.scale, pose.mouth_point, pose.target ?? animation.mouth),
+      scale: s,
+    };
+    const lerp3 = (a, b, f) => a.map((v, k) => round3(v + (b[k] - v) * f));
+    const at = (f) => ({
+      rotation: lerp3(idleTP.rotation, mouthTP.rotation, f),
+      translation: lerp3(idleTP.translation, mouthTP.translation, f),
+      scale: lerp3(idleTP.scale, mouthTP.scale, f),
+    });
+    out[device] = { lit: HAND(mouthTP, idleFP), keyframes: Array.from({ length: K }, (_, i) => HAND(at(i / K), idleFP)) };
+  }
+  return out;
+}
+
+/**
+ * Texturas trocadas no modelo aceso: a brasa (animada) no fornilho ou na ponta; no bong também a água, que borbulha; no
+ * narguilé, o carvão em brasa.
+ */
+export const LIT_TEXTURES = {
+  bong: { bowl: id('item/smoke_ember'), water: id('item/model_water_bubbling') },
+  hookah: { bowl: id('item/hookah_coal') },
+  pipe: { bowl: id('item/smoke_ember') },
+  chillum: { bowl: id('item/smoke_ember') },
+  joint: { tip: id('item/smoke_ember') },
 };
 
 /**
- * Baseado com piteira (cultivo:filtered): os modelos na mão herdam os do baseado (geometria e exibição, aceso ou não)
- * e só trocam a ponta da boca de papel pela piteira de papelão.
+ * Baseado com piteira (cultivo:filtered): os modelos na mão herdam os do baseado (geometria e exibição, aceso ou não,
+ * inclusive os quadros da animação) e só trocam a ponta da boca de papel pela piteira de papelão.
  */
-export const FILTERED_HAND = {
-  joint_filtered_in_hand: { parent: id('item/joint_in_hand'), textures: { crutch: id('item/model_cardboard') } },
-  joint_filtered_in_hand_lit: { parent: id('item/joint_in_hand_lit'), textures: { crutch: id('item/model_cardboard') } },
-};
+export function filteredHandModels(keyframes) {
+  const crutch = { crutch: id('item/model_cardboard') };
+  const out = {
+    joint_filtered_in_hand: { parent: id('item/joint_in_hand'), textures: crutch },
+    joint_filtered_in_hand_lit: { parent: id('item/joint_in_hand_lit'), textures: crutch },
+  };
+  for (let i = 0; i < keyframes; i++) {
+    out[`joint_filtered_in_hand_lit_k${i}`] = { parent: id(`item/joint_in_hand_lit_k${i}`), textures: crutch };
+  }
+  return out;
+}
+
+// ------------------------------------------------------------------ placa da prensa (desenhada pelo cliente)
+/** Quanto a placa da prensa desce (px) no fundo do curso (espelho de StationAnimation.PRESS_STROKE_PIXELS). */
+export const PRESS_STROKE_PIXELS = 2.5;
+
+/**
+ * Placa e parafuso da prensa que sobem e descem enquanto ela trabalha. O cliente desenha este modelo pelo estado
+ * sintético cultivo:press_platen (só facing) com o deslocamento da animação. Em repouso fica na altura de platen_up; o
+ * parafuso vai até dentro da travessa (y 15), então não abre vão quando a placa desce PRESS_STROKE_PIXELS.
+ */
+export function pressPlatenModel() {
+  return blockParent({ particle: id('block/press_iron'), iron: id('block/press_iron') }, [
+    box([7.5, 8.5, 7.5], [8.5, 15, 8.5], '#iron', { grain: 'y', faces: ['north', 'south', 'west', 'east'] }),
+    box([4, 7, 4], [12, 8.5, 12], '#iron', { grain: 'x' }),
+  ]);
+}
+
+/** Blockstate do estado sintético cultivo:press_platen: o modelo da placa girado pelo facing, como a prensa. */
+export function pressPlatenBlockstate() {
+  const variants = {};
+  for (const facing of STATION_PROPERTIES.facing) {
+    const y = FACING_Y[facing];
+    variants[`facing=${facing}`] = y ? { model: id('block/press_platen_moving'), y } : { model: id('block/press_platen_moving') };
+  }
+  return { variants };
+}
 
 /** Aparelhos cujo modelo na mão ganha a variante "_lit" (brasa) enquanto o jogador fuma. */
 export const LIT_DEVICES = ['bong', 'hookah', 'pipe', 'chillum', 'joint'];
-/** Textura trocada na variante acesa de cada modelo na mão. */
-export const LIT_TEXTURE_VAR = { bong: 'bowl', hookah: 'bowl', pipe: 'bowl', chillum: 'bowl', joint: 'tip' };

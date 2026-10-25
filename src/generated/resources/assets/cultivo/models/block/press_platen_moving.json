@@ -2,27 +2,26 @@
   "parent": "minecraft:block/block",
   "textures": {
     "particle": "cultivo:block/press_iron",
-    "iron": "cultivo:block/press_iron",
-    "resin": "cultivo:block/press_resin"
+    "iron": "cultivo:block/press_iron"
   },
   "elements": [
     {
       "from": [
         7.5,
-        6,
+        8.5,
         7.5
       ],
       "to": [
         8.5,
-        12,
+        15,
         8.5
       ],
       "faces": {
         "north": {
           "uv": [
-            4,
+            1,
             7.5,
-            10,
+            7.5,
             8.5
           ],
           "rotation": 90,
@@ -30,9 +29,9 @@
         },
         "south": {
           "uv": [
-            4,
+            1,
             7.5,
-            10,
+            7.5,
             8.5
           ],
           "rotation": 90,
@@ -40,9 +39,9 @@
         },
         "west": {
           "uv": [
-            4,
+            1,
             7.5,
-            10,
+            7.5,
             8.5
           ],
           "rotation": 90,
@@ -50,9 +49,9 @@
         },
         "east": {
           "uv": [
-            4,
+            1,
             7.5,
-            10,
+            7.5,
             8.5
           ],
           "rotation": 90,
@@ -63,12 +62,12 @@
     {
       "from": [
         4,
-        4.5,
+        7,
         4
       ],
       "to": [
         12,
-        6,
+        8.5,
         12
       ],
       "faces": {
@@ -93,97 +92,38 @@
         "north": {
           "uv": [
             4,
-            10,
+            7.5,
             12,
-            11.5
+            9
           ],
           "texture": "#iron"
         },
         "south": {
           "uv": [
             4,
-            10,
+            7.5,
             12,
-            11.5
+            9
           ],
           "texture": "#iron"
         },
         "west": {
           "uv": [
             4,
-            10,
+            7.5,
             12,
-            11.5
+            9
           ],
           "texture": "#iron"
         },
         "east": {
           "uv": [
             4,
-            10,
+            7.5,
             12,
-            11.5
+            9
           ],
           "texture": "#iron"
-        }
-      }
-    },
-    {
-      "from": [
-        3.5,
-        3,
-        3.5
-      ],
-      "to": [
-        12.5,
-        4.5,
-        12.5
-      ],
-      "faces": {
-        "up": {
-          "uv": [
-            3.5,
-            3.5,
-            12.5,
-            12.5
-          ],
-          "texture": "#resin"
-        },
-        "north": {
-          "uv": [
-            3.5,
-            11.5,
-            12.5,
-            13
-          ],
-          "texture": "#resin"
-        },
-        "south": {
-          "uv": [
-            3.5,
-            11.5,
-            12.5,
-            13
-          ],
-          "texture": "#resin"
-        },
-        "west": {
-          "uv": [
-            3.5,
-            11.5,
-            12.5,
-            13
-          ],
-          "texture": "#resin"
-        },
-        "east": {
-          "uv": [
-            3.5,
-            11.5,
-            12.5,
-            13
-          ],
-          "texture": "#resin"
         }
       }
     }

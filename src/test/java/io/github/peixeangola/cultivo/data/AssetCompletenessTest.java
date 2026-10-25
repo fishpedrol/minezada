@@ -304,7 +304,8 @@ class AssetCompletenessTest {
 
     /**
      * Baseado: primeiro a piteira (minecraft:has_component cultivo:filtered), depois aceso enquanto o jogador fuma
-     * (minecraft:using_item), no ícone e na mão, como as condições aninhadas do items/bow.json vanilla.
+     * (minecraft:using_item), como as condições aninhadas do items/bow.json vanilla. Em uso: ícone aceso no inventário,
+     * modelo aceso na 1ª pessoa e, na 3ª, os quadros k0..k4 da animação e o modelo aceso na boca.
      */
     @Test
     void jointShowsTheFilterAndLightsUpWhileUsed() {
@@ -318,12 +319,22 @@ class AssetCompletenessTest {
             assertEquals("minecraft:condition", branch.get("type").getAsString());
             assertEquals("minecraft:using_item", branch.get("property").getAsString());
         }
-        assertEquals(List.of("cultivo:item/joint_filtered_lit", "cultivo:item/joint_filtered_in_hand_lit"),
-            itemModels(filtered.getAsJsonObject("on_true")));
-        assertEquals(List.of("cultivo:item/joint_filtered", "cultivo:item/joint_filtered_in_hand"),
-            itemModels(filtered.getAsJsonObject("on_false")));
-        assertEquals(List.of("cultivo:item/joint_lit", "cultivo:item/joint_in_hand_lit"), itemModels(plain.getAsJsonObject("on_true")));
-        assertEquals(List.of("cultivo:item/joint", "cultivo:item/joint_in_hand"), itemModels(plain.getAsJsonObject("on_false")));
+        for (Map.Entry<String, JsonObject> branch : Map.of("joint_filtered", filtered, "joint", plain).entrySet()) {
+            String base = "cultivo:item/" + branch.getKey();
+            JsonObject inUse = branch.getValue().getAsJsonObject("on_true");
+            assertEquals("minecraft:select", inUse.get("type").getAsString());
+            assertEquals("minecraft:display_context", inUse.get("property").getAsString());
+            JsonArray cases = inUse.getAsJsonArray("cases");
+            assertEquals(List.of(base + "_lit"), itemModels(cases.get(0).getAsJsonObject().getAsJsonObject("model")));
+            assertEquals(List.of(base + "_in_hand_lit"), itemModels(cases.get(1).getAsJsonObject().getAsJsonObject("model")));
+            Set<String> thirdPerson = new HashSet<>(itemModels(inUse.getAsJsonObject("fallback")));
+            Set<String> expected = new HashSet<>(List.of(base + "_in_hand_lit"));
+            for (int k = 0; k < io.github.peixeangola.cultivo.core.SmokeAnimation.KEYFRAMES; k++) {
+                expected.add(base + "_in_hand_lit_k" + k);
+            }
+            assertEquals(expected, thirdPerson, branch.getKey());
+            assertEquals(List.of(base, base + "_in_hand"), itemModels(branch.getValue().getAsJsonObject("on_false")));
+        }
 
         JsonObject lit = Resources.json(Resources.assets("models/item/joint_in_hand_lit.json"));
         assertEquals("cultivo:item/smoke_ember", lit.getAsJsonObject("textures").get("tip").getAsString());
@@ -628,6 +639,14 @@ class AssetCompletenessTest {
                     out.addAll(itemModels(node.getAsJsonObject("fallback")));
                 }
             }
+            case "minecraft:range_dispatch" -> {
+                for (JsonElement e : node.getAsJsonArray("entries")) {
+                    out.addAll(itemModels(e.getAsJsonObject().getAsJsonObject("model")));
+                }
+                if (node.has("fallback")) {
+                    out.addAll(itemModels(node.getAsJsonObject("fallback")));
+                }
+            }
             default -> fail("tipo de modelo de item sem suporte no teste: " + node.get("type"));
         }
         return out;
@@ -642,6 +661,13 @@ class AssetCompletenessTest {
         if (type.equals("minecraft:condition")) {
             collectSelects(node.getAsJsonObject("on_true"), property, out);
             collectSelects(node.getAsJsonObject("on_false"), property, out);
+        } else if (type.equals("minecraft:range_dispatch")) {
+            for (JsonElement e : node.getAsJsonArray("entries")) {
+                collectSelects(e.getAsJsonObject().getAsJsonObject("model"), property, out);
+            }
+            if (node.has("fallback")) {
+                collectSelects(node.getAsJsonObject("fallback"), property, out);
+            }
         } else if (type.equals("minecraft:select")) {
             for (JsonElement c : node.getAsJsonArray("cases")) {
                 collectSelects(c.getAsJsonObject().getAsJsonObject("model"), property, out);
@@ -741,6 +767,10 @@ class AssetCompletenessTest {
         assertPng(png, 16);
     }
 
+    /**
+     * PNG quadrado de {@code size} px. Uma textura animada (com &lt;nome&gt;.png.mcmeta ao lado) é uma pilha vertical de
+     * quadros quadrados: a altura é um múltiplo da largura (AnimatedTexturesTest confere o .mcmeta).
+     */
     static void assertPng(Path png, int size) {
         try (InputStream in = Files.newInputStream(png)) {
             byte[] header = in.readNBytes(24);
@@ -748,7 +778,12 @@ class AssetCompletenessTest {
             assertEquals("IHDR", new String(header, 12, 4));
             ByteBuffer buf = ByteBuffer.wrap(header);
             assertEquals(size, buf.getInt(16), png + " largura");
-            assertEquals(size, buf.getInt(20), png + " altura");
+            int height = buf.getInt(20);
+            if (Files.exists(Path.of(png + ".mcmeta"))) {
+                assertTrue(height >= 2 * size && height % size == 0, png + " animada com altura " + height);
+            } else {
+                assertEquals(size, height, png + " altura");
+            }
         } catch (IOException e) {
             fail("textura faltando: " + png);
         }

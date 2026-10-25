@@ -23,7 +23,7 @@
         "contents": "working"
       },
       "apply": {
-        "model": "cultivo:block/press_platen_down"
+        "model": "cultivo:block/press_squeeze"
       }
     },
     {
@@ -60,7 +60,7 @@
         "contents": "working"
       },
       "apply": {
-        "model": "cultivo:block/press_platen_down",
+        "model": "cultivo:block/press_squeeze",
         "y": 90
       }
     },
@@ -99,7 +99,7 @@
         "contents": "working"
       },
       "apply": {
-        "model": "cultivo:block/press_platen_down",
+        "model": "cultivo:block/press_squeeze",
         "y": 180
       }
     },
@@ -138,7 +138,7 @@
         "contents": "working"
       },
       "apply": {
-        "model": "cultivo:block/press_platen_down",
+        "model": "cultivo:block/press_squeeze",
         "y": 270
       }
     },

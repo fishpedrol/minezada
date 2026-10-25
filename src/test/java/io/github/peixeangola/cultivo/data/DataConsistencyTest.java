@@ -585,7 +585,8 @@ class DataConsistencyTest {
         JsonObject pt = Resources.json(Resources.assets("lang/pt_br.json"));
         assertEquals("Enrole com flor seca para fazer um baseado · 3 folhas na bandeja enrolam 3 baseados",
             pt.get("tooltip.cultivo.rolling_paper").getAsString());
-        JsonObject en = Resources.json(Resources.assets("lang/en_us.json"));
+        // O inglês continua como fonte no manifesto (o en_us.json sai em português com portuguese_everywhere)
+        JsonObject en = Resources.json(StrainColumns.MANIFEST).getAsJsonObject("lang").getAsJsonObject("en_us");
         assertEquals("Add to a joint: lasts longer, less nausea", en.get("tooltip.cultivo.filter_tip").getAsString());
         assertEquals("Stores one stack · cures dried flowers: +1 quality, once", en.get("tooltip.cultivo.jar").getAsString());
     }

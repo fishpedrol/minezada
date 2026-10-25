@@ -1,0 +1,73 @@
+{
+  "parent": "cultivo:item/joint_in_hand_lit",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        18,
+        50,
+        0
+      ],
+      "translation": [
+        0.656,
+        3.536,
+        2.096
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        18,
+        -50,
+        0
+      ],
+      "translation": [
+        0.656,
+        3.536,
+        2.096
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        30,
+        40
+      ],
+      "translation": [
+        0,
+        5,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        -30,
+        -40
+      ],
+      "translation": [
+        0,
+        5,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    }
+  }
+}

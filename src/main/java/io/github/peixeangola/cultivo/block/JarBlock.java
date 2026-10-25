@@ -1,10 +1,10 @@
 package io.github.peixeangola.cultivo.block;
 
 import io.github.peixeangola.cultivo.registry.ModBlockEntities;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Prediction;
 import net.minecraft.world.Containers;
@@ -94,7 +94,8 @@ public class JarBlock extends Block implements EntityBlock {
             stack.shrink(moved);
         }
         float fill = (float) jar.getItem().getCount() / jar.getItem().getMaxStackSize();
-        level.playSound(null, pos, SoundEvents.DECORATED_POT_INSERT, SoundSource.BLOCKS, 0.8F, 1.0F + 0.5F * fill);
+        // Fecha a tampa; quanto mais cheio, mais agudo
+        level.playSound(null, pos, ModSounds.JAR_CLOSE.get(), SoundSource.BLOCKS, 1.0F, 0.9F + 0.3F * fill);
         return InteractionResult.SUCCESS_SERVER;
     }
 
@@ -114,7 +115,7 @@ public class JarBlock extends Block implements EntityBlock {
         if (!player.getInventory().add(taken)) {
             player.drop(taken, false, Prediction.SERVER_ONLY);
         }
-        level.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.2F);
+        level.playSound(null, pos, ModSounds.JAR_OPEN.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         return InteractionResult.SUCCESS_SERVER;
     }
 

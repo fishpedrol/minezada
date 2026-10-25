@@ -4,13 +4,16 @@ import com.mojang.logging.LogUtils;
 import io.github.peixeangola.cultivo.core.CuringRules;
 import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import io.github.peixeangola.cultivo.registry.ModComponents;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import io.github.peixeangola.cultivo.registry.ModTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.Unit;
 import net.minecraft.world.ContainerHelper;
@@ -35,6 +38,7 @@ import org.slf4j.Logger;
  *   <li>A pilha vai para o cliente a cada mudança (para o bloco prever o clique); o contador não.</li>
  *   <li>A propriedade filled do bloco acompanha a pilha, gravada com setBlock(UPDATE_CLIENTS) só quando muda; o bloco é
  *       o mesmo, então esta BlockEntity continua no lugar.</li>
+ *   <li>Quando a cura termina, brilho e som saem do servidor, para todos por perto.</li>
  * </ul>
  */
 public class JarBlockEntity extends BlockEntity {
@@ -154,6 +158,9 @@ public class JarBlockEntity extends BlockEntity {
             stored.set(ModComponents.QUALITY.get(), CuringRules.curedQuality(stored.get(ModComponents.QUALITY.get())));
             stored.set(ModComponents.CURED.get(), Unit.INSTANCE);
             contentsChanged();
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, worldPosition.getX() + 0.5D, worldPosition.getY() + 0.45D,
+                worldPosition.getZ() + 0.5D, 8, 0.18D, 0.2D, 0.18D, 0.0D);
+            level.playSound(null, worldPosition, ModSounds.JAR_CURED.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
             return;
         }
         if (tick.progress() != cureProgress) {

@@ -11,6 +11,7 @@ import io.github.peixeangola.cultivo.registry.ModEffects;
 import io.github.peixeangola.cultivo.registry.ModItems;
 import io.github.peixeangola.cultivo.registry.ModLootFunctions;
 import io.github.peixeangola.cultivo.registry.ModRecipes;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import io.github.peixeangola.cultivo.village.FarmerReplant;
 import io.github.peixeangola.cultivo.village.WanderingTraderSeeds;
 import net.minecraft.resources.Identifier;
@@ -36,6 +37,7 @@ public final class Cultivo {
         ModRecipes.SERIALIZERS.register(modBusGroup);
         ModLootFunctions.LOOT_FUNCTIONS.register(modBusGroup);
         ModEffects.EFFECTS.register(modBusGroup);
+        ModSounds.SOUNDS.register(modBusGroup);
         ModCreativeTabs.CREATIVE_TABS.register(modBusGroup);
         CultivoGameTests.TESTS.register(modBusGroup);
 

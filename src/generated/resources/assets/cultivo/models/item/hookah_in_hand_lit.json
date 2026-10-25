@@ -1,19 +1,19 @@
 {
   "parent": "cultivo:item/hookah_in_hand",
   "textures": {
-    "bowl": "cultivo:item/smoke_ember"
+    "bowl": "cultivo:item/hookah_coal"
   },
   "display": {
     "thirdperson_righthand": {
       "rotation": [
         0,
-        0,
+        20,
         0
       ],
       "translation": [
-        0,
-        1,
-        1
+        -1.55,
+        -1.74,
+        1.76
       ],
       "scale": [
         0.55,
@@ -24,13 +24,13 @@
     "thirdperson_lefthand": {
       "rotation": [
         0,
-        0,
+        -20,
         0
       ],
       "translation": [
-        0,
-        1,
-        1
+        -1.55,
+        -1.74,
+        1.76
       ],
       "scale": [
         0.55,
@@ -41,13 +41,13 @@
     "firstperson_righthand": {
       "rotation": [
         0,
-        -15,
-        0
+        -25,
+        5
       ],
       "translation": [
-        -5,
-        4,
-        -3
+        -1,
+        5,
+        -2
       ],
       "scale": [
         0.55,
@@ -58,13 +58,13 @@
     "firstperson_lefthand": {
       "rotation": [
         0,
-        15,
-        0
+        25,
+        -5
       ],
       "translation": [
-        -5,
-        4,
-        -3
+        -1,
+        5,
+        -2
       ],
       "scale": [
         0.55,

@@ -11,6 +11,7 @@ import io.github.peixeangola.cultivo.block.RollingTrayBlock;
 import io.github.peixeangola.cultivo.block.SieveBlock;
 import io.github.peixeangola.cultivo.block.StationContents;
 import io.github.peixeangola.cultivo.core.ArticleRecipes;
+import io.github.peixeangola.cultivo.core.AshtrayRules;
 import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.CuringRules;
 import io.github.peixeangola.cultivo.core.SeedSources;
@@ -138,6 +139,9 @@ public final class CultivoGameTests {
         TESTS.register("jar_cures_flowers", () -> CultivoGameTests::jarCuresFlowers);
         TESTS.register("ashtray_collects_ash", () -> CultivoGameTests::ashtrayCollectsAsh);
         TESTS.register("placeable_articles_drop_self", () -> CultivoGameTests::placeableArticlesDropSelf);
+        TESTS.register("sound_events_registered", () -> CultivoGameTests::soundEventsRegistered);
+        TESTS.register("smoke_use_effects_run", () -> CultivoGameTests::smokeUseEffectsRun);
+        TESTS.register("station_effects_run", () -> CultivoGameTests::stationEffectsRun);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -1986,6 +1990,103 @@ public final class CultivoGameTests {
             check(drops.size() == 1 && drops.get(0).getItem().is(ModItems.ARTICLES.get(ContentIds.ASHTRAY).get())
                 && drops.get(0).getItem().getCount() == 1, "cinzeiro cheio derrubou " + drops);
             drops.forEach(ItemEntity::discard);
+        });
+    }
+
+    // ------------------------------------------------------------------ sons, partículas e animação (estágio 4)
+
+    /**
+     * Os 15 eventos de som do mod estão registrados no servidor, e cada evento vanilla que o sounds.json gerado
+     * reaproveita existe no registro (um nome errado tocaria silêncio no cliente sem erro nenhum).
+     */
+    public static void soundEventsRegistered(GameTestHelper helper) {
+        run(helper, () -> {
+            check(ContentIds.SOUNDS.size() == 15, "sons: " + ContentIds.SOUNDS.size());
+            for (String id : ContentIds.SOUNDS) {
+                check(BuiltInRegistries.SOUND_EVENT.containsKey(Cultivo.id(id)), "som não registrado: " + id);
+            }
+            com.google.gson.JsonObject sounds;
+            try (java.io.InputStream in = CultivoGameTests.class.getResourceAsStream("/assets/cultivo/sounds.json")) {
+                check(in != null, "sounds.json fora do classpath");
+                sounds = com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in,
+                    java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+            } catch (java.io.IOException e) {
+                throw new Failure("sounds.json ilegível: " + e.getMessage());
+            }
+            check(sounds.keySet().equals(Set.copyOf(ContentIds.SOUNDS)), "sounds.json com eventos " + sounds.keySet());
+            for (String id : ContentIds.SOUNDS) {
+                for (com.google.gson.JsonElement sound : sounds.getAsJsonObject(id).getAsJsonArray("sounds")) {
+                    Identifier vanilla = Identifier.parse(sound.getAsJsonObject().get("name").getAsString());
+                    check(BuiltInRegistries.SOUND_EVENT.containsKey(vanilla), id + " aponta para evento inexistente " + vanilla);
+                }
+            }
+        });
+    }
+
+    /**
+     * Fumar cada aparelho tick a tick como no jogo (use → onUseTick em todos os ticks → finishUsingItem), no servidor:
+     * os sons do isqueiro, da tragada e do borbulhar e a baforada final não atrapalham a sessão, e as partículas do uso
+     * (só do cliente) não fazem nada no servidor. Sem a animação vanilla (NONE): a pose vem das extensões de cliente.
+     */
+    public static void smokeUseEffectsRun(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockPos ashtray = new BlockPos(3, 1, 4);
+            helper.setBlock(ashtray, ModBlocks.ASHTRAY.get().defaultBlockState());
+            for (SmokeDevice device : SmokeDevice.values()) {
+                ItemStack held = device == SmokeDevice.JOINT
+                    ? joint(Variety.BRISA, 2)
+                    : new ItemStack(ModItems.ARTICLES.get(device.itemId()).get());
+                Player player = smoker(helper, held, lighter(),
+                    withQuality(ModItems.DRIED_FLOWERS.get(Variety.AURORA).get(), 1, 2));
+                player.setPos(Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(1, 1, 4))));
+                ItemStack stack = player.getMainHandItem();
+                check(stack.getUseAnimation() == net.minecraft.world.item.ItemUseAnimation.NONE, device + " com animação vanilla");
+                check(stack.getUseDuration(player) == device.useTicks(), device + " duração " + stack.getUseDuration(player));
+                check(stack.getItem().use(level, player, InteractionHand.MAIN_HAND) == InteractionResult.CONSUME, device + " recusado");
+                for (int remaining = device.useTicks(); remaining > 0; remaining--) {
+                    stack.getItem().onUseTick(level, player, stack, remaining);
+                    io.github.peixeangola.cultivo.smoke.SmokeEffects.useTickParticles(level, player, device,
+                        device.useTicks() - remaining);
+                }
+                stack.getItem().finishUsingItem(stack, level, player);
+                player.stopUsingItem();
+                check(highTicks(player) > 0, device + ": a sessão não aplicou o chapado");
+                check(countInInventory(player, ModItems.DRIED_FLOWERS.get(Variety.AURORA).get()) == (device.needsFuel() ? 0 : 1),
+                    device + ": material gasto errado");
+            }
+            check(ashAt(helper, ashtray) == AshtrayRules.MAX_ASH, "cinzeiro: " + ashAt(helper, ashtray));
+        });
+    }
+
+    /**
+     * Com os enfeites (som de trabalho no ritmo da animação, sopro de partículas e som de pronto), as estações ainda
+     * terminam pelo ticker real: a prensa a 45 ticks do fim passa por um aperto (ciclo de 40) e entrega o haxixe; a
+     * peneira com dichavador a 35 ticks do fim entrega 2 resinas (qualidade 2 + dichavador).
+     */
+    public static void stationEffectsRun(GameTestHelper helper) {
+        BlockPos pressRel = SOIL.west(2);
+        BlockPos sieveRel = SOIL.east(2);
+        ProcessingStationBlockEntity press = placeStationAt(helper, StationKind.PRESSING, pressRel);
+        ProcessingStationBlockEntity sieve = placeStationAt(helper, StationKind.SIEVING, sieveRel);
+        ServerLevel level = helper.getLevel();
+        BlockPos sievePos = helper.absolutePos(sieveRel);
+        level.setBlock(sievePos, level.getBlockState(sievePos).setValue(SieveBlock.GRINDER, true), Block.UPDATE_ALL);
+        press.setItem(ProcessingStationBlockEntity.INPUT, withQuality(ModItems.RESIN.get(), 2, 2));
+        press.setProgress(StationKind.PRESSING.defaultTicks() - 45);
+        sieve.setItem(ProcessingStationBlockEntity.INPUT, withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 2));
+        sieve.setProgress(StationKind.SIEVING.defaultTicks() - 35);
+        helper.assertTrue(level.getBlockState(helper.absolutePos(pressRel)).getValue(ProcessingStationBlock.CONTENTS)
+            == StationContents.WORKING, "prensa deveria estar trabalhando");
+        helper.runAfterDelay(20, () -> helper.assertTrue(press.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
+            "prensa terminou antes da hora"));
+        helper.succeedWhen(() -> {
+            ItemStack hash = press.getItem(ProcessingStationBlockEntity.OUTPUT);
+            helper.assertTrue(hash.is(ModItems.HASH.get()) && hash.getCount() == 1, "ainda prensando: " + hash);
+            helper.assertTrue(level.getBlockState(helper.absolutePos(pressRel)).getValue(ProcessingStationBlock.CONTENTS)
+                == StationContents.DONE, "prensa pronta deveria mostrar o haxixe");
+            ItemStack resin = sieve.getItem(ProcessingStationBlockEntity.OUTPUT);
+            helper.assertTrue(resin.is(ModItems.RESIN.get()) && resin.getCount() == 2, "peneira com dichavador: " + resin);
         });
     }
 }
