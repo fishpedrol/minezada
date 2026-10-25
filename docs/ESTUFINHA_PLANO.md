@@ -7,7 +7,7 @@ Pedido do dono em 25/10/2026: trocar a estufa de vidro por uma **estufinha** cra
 - **Colheita:** colhe e esvazia. Clique direito na planta madura entrega flores e sementes como a lavoura, e a estufinha fica vazia para replantar.
 - **Qualidade:** 4–5, como a estufa de hoje.
 
-O dono aprovou este plano em 25/10/2026 ("aprovo o plano"). **Nada dele foi implementado ainda.**
+O dono aprovou este plano em 25/10/2026 ("aprovo o plano"). Implementado em 25/10/2026 na branch `claude/estufinha`, com as correções da revisão abaixo.
 
 **Situação deste documento:** é o projeto gerado na nuvem a partir de 5 leituras do código e das fontes do Minecraft/Forge 26.3. A etapa de crítica adversarial não terminou na nuvem; a revisão abaixo foi feita no PC do dono em 25/10/2026, antes de codar.
 
@@ -20,6 +20,16 @@ Conferido nas fontes decompiladas (`forge-26.3-66.0.13-sources.jar`) e no jar `S
 3. **`Block.getDrops(..., Entity, ItemInstance tool)`**: o último parâmetro é `ItemInstance` (o `ItemStack` serve). Confirmado.
 4. **Item:** sem `useBlockDescriptionPrefix`. O `AssetCompletenessTest.everyIdIsTranslatedInBothLanguages` exige `item.cultivo.<id>` para todo item plano e `block.cultivo.<id>` para todo bloco, como nos artigos colocáveis; o gerador escreve as duas chaves.
 5. **`ContentIds`:** a estufinha entra numa lista própria `CULTIVATION_BLOCKS` (em `allBlocks()`) e em `flatItems()` (o ícone é `textures/item/grow_tent`), como os artigos colocáveis, e não em `blocksWithItems()` (que é para itens com modelo de bloco).
+
+**Achados durante a implementação (25/10/2026):**
+
+6. O elemento de modelo do 26.3 **não tem** a chave `"shade": false` (o `CuboidModelElement.Deserializer` só lê `from`, `to`, `rotation`, `faces`, `shade_direction_override` e `light_emission`). O painel de LEDs usa `"light_emission": 15` com `"shade_direction_override": "up"`, como o `cross_emissive.json` vanilla.
+7. `Properties#isViewBlocking` recebe um `StateArgumentPredicate<AABB>` no 26.3, não o `StatePredicate` de 3 argumentos; como o bloco já é `noOcclusion`, a chamada saiu.
+8. `BonemealSource` é uma classe própria em `net.minecraft.world.level.block` (precisa de import).
+9. `Level#canSeeSky` no 26.3 é `getBrightness(SKY, pos) >= 15`: depende do motor de luz, que o servidor atualiza depois. Um GameTest síncrono não pode usá-lo logo depois de pôr um teto; o `grow_tent_plants_and_grows` confere o bloco sólido acima.
+10. Na área de GameTest sem `sky_access`, `canSeeSky` deu verdadeiro na posição da estufinha (a causa exata não foi apurada: teto da estrutura ou luz ainda não recalculada). O teste põe um teto de pedra logo acima da estufinha e confere o bloco, não a luz.
+
+**Situação:** implementado na branch `claude/estufinha` (commit `8de8b1a` e seguintes). Evidências em TODO.md, seção 3f.
 
 **Riscos da seção 8, conferidos:**
 

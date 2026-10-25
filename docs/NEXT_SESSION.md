@@ -1,20 +1,32 @@
 # Orientação para a próxima sessão
 
-**Atualizado em 25/10/2026, na branch `claude/forge-compat-seasons` (commits `0590b40`, `c737633`, `2f6ae47` e `bea20be`, sobre a `main` em `6d6ed4a`).** Este é o documento para retomar o projeto sem a conversa anterior. Regras e números de jogo: [DECISIONS.md](DECISIONS.md). Evidências: [TODO.md](TODO.md). Passo a passo do dono (leigo em Java): [GUIA_INICIANTE.md](GUIA_INICIANTE.md). Prompt pronto para a nuvem: [CLOUD_PROMPT.md](CLOUD_PROMPT.md).
+**Atualizado em 25/10/2026, na branch `claude/estufinha` (commits `ff45eee`, `8de8b1a`, `6e1fcc8` e seguintes, sobre a `main` em `bd1b745`, que já tem o PR #6 da compatibilidade).** Este é o documento para retomar o projeto sem a conversa anterior. Regras e números de jogo: [DECISIONS.md](DECISIONS.md). Evidências: [TODO.md](TODO.md). Passo a passo do dono (leigo em Java): [GUIA_INICIANTE.md](GUIA_INICIANTE.md). Prompt pronto para a nuvem: [CLOUD_PROMPT.md](CLOUD_PROMPT.md).
 
 ## 1. Estado
 
 O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecraft 26.3 + Forge 26.3-66.0.13 (o build) e roda a partir do Forge 66.0.2 (o do launcher do dono):
 
-- **40 genéticas:** 3 nativas (Brisa, Aurora, Eclipse) e 37 do catálogo do dono (`docs/strains-catalog.json`), com nomes de paródia. Lavoura com 8 estágios visuais, estufa com qualidade superior, planta silvestre, duas abas criativas.
+- **40 genéticas:** 3 nativas (Brisa, Aurora, Eclipse) e 37 do catálogo do dono (`docs/strains-catalog.json`), com nomes de paródia. Lavoura com 8 estágios visuais, planta silvestre, duas abas criativas.
+- **Estufinha** (pedido de 25/10/2026, no lugar da estufa de vidro): bloco craftável de 2 de altura com luz roxa e um pé de planta dentro, sem farmland nem água; colhe no clique direito com qualidade 4–5 e fica vazia. O vidro não dá mais bônus (fora da estufinha, 2–3).
 - **Fontes de sementes:** baús de casa de 4 dos 5 tipos de aldeia (todas as genéticas, peso pela raridade), lavouras de aldeia de planície e planta silvestre (só nativas) e o mascate (2 ofertas do catálogo). O fazendeiro replanta a lavoura do mod que colhe.
 - **Processamento:** suporte de secagem, peneira de bancada (com o dichavador como melhoria) e prensa manual, por ticks, com estados visuais, animações, partículas e sons.
 - **Artigos:** todos têm uso. Baseado com piteira, bandeja de enrolar, pote de vidro que cura flores, cinzeiro que vira farinha de osso, além dos artigos de fumar e do isqueiro.
 - **Mecânica fictícia de fumar** (pedida em 21/10/2026), com animação própria em 1ª e 3ª pessoa.
-- **Tudo em português** em qualquer idioma do cliente (pedido de 24/10/2026), com 16 eventos de som do mod.
+- **Tudo em português** em qualquer idioma do cliente (pedido de 24/10/2026), com 18 eventos de som do mod.
 - **Compatível com o Serene Seasons** (25/10/2026): as 40 lavouras e as 40 sementes estão nas tags de verão e outono do Serene Seasons, como o trigo. Sem o Serene Seasons, essas tags ficam sem leitor.
 
-**Verificado** no PC do dono (Windows 11, Temurin 25.0.4.1+1), com o código de `f515cb9` (25/10/2026):
+**Verificado com a estufinha** no PC do dono (Windows 11, Temurin 25.0.4.1+1, Node 24.19.0), com o código de `afa87eb` (25/10/2026):
+
+| Verificação | Resultado |
+|---|---|
+| `node tools/gen/generate.mjs` | `292 texturas e 805 arquivos JSON`, sem diferença no `git status` |
+| `.\gradlew.bat build` | `BUILD SUCCESSFUL`, 317 testes JUnit, 0 falhas |
+| `.\gradlew.bat runGameTestServer` | `All 70 required tests passed :)` (69 do Cultivo + `minecraft:always_pass`) |
+| O mesmo com `"-Pcultivo_run_dir=run-compat-ss"` (Serene Seasons 26.1.2.0.7 + GlitchCore 26.3.0.0.5 do launcher do dono), no Forge 66.0.13 e com `"-Pcultivo_forge_version=26.3-66.0.2"` | `All 70 required tests passed :)` nos dois; a estufinha cresce na primavera do SS |
+| Testes negativos | Quebrar a rota da qualidade e o drop da planta derruba `grow_tent_harvest`, `grow_tent_breaks_either_half` e `grow_tent_creative_break`; trocar o multiplicador derruba 3 testes de `GrowTentRulesTest` |
+| Teste visual automático (`run-probe.ps1`, `runClient`) | 50 prints, log limpo; estufinhas com a planta no vaso e o interior lilás, colher e replantar de verdade |
+
+**Verificado antes** no PC do dono, com o código de `f515cb9` (25/10/2026):
 
 | Verificação | Resultado |
 |---|---|
@@ -41,23 +53,23 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
 **Visto num cliente de verdade (25/10/2026):** o teste visual automático abriu o `runClient` com o código de `f515cb9` (a branch `claude/forge-compat-seasons` não mexeu em asset nem em código de cliente: acrescentou tags de dados, o GameTest `serene_seasons_compat`, `ContentIds.SERENE_SEASONS_CROP_SEASONS`, as propriedades do build e a faixa do Forge no `mods.toml`) e passou por todas as cenas: árvores de modelo de item, blockstates multipart, texturas animadas, placa da prensa (BlockEntityRenderer), poses de braço, partículas e legendas dos sons. **Ainda não visto:** mão esquerda, os artigos de todos os lados, ouvir os sons e o multiplayer do começo ao fim. Erros de carregamento de modelo do cliente não aparecem no `runGameTestServer`; rode o teste visual depois de mexer em asset.
 
 **Branches:**
-- `main` está em `6d6ed4a` (merge do PR #4, o polimento de `claude/polish-visual-uses`).
-- A branch `claude/forge-compat-seasons`, criada de `6d6ed4a`, tem a compatibilidade com o Forge 66.0.2 e com o Serene Seasons: `0590b40` (propriedades do build e script de produção), `c737633` (sondas de console), `2f6ae47` (tags do Serene Seasons e `mods.toml` `[66.0.2,)`), `bea20be` (evidências e inspeção do jar no TODO) e o commit destes docs. Ela entra na `main` por PR.
+- `main` está em `bd1b745` (merge do PR #6: a compatibilidade com o Forge 66.0.2 e o Serene Seasons, e o plano aprovado da estufinha).
+- A branch `claude/estufinha`, criada de `bd1b745`, tem a estufinha: `ff45eee` (revisão do plano nas fontes do 26.3), `8de8b1a` (o bloco, as regras, os testes e o fim do bônus do vidro), `6e1fcc8` (cena no teste visual), o brilho do mylar e os docs. Ela entra na `main` por PR.
 
 ## 2. Como retomar
 
 1. **Escolher a base.**
-   - Rode `git fetch origin`. Se o PR de `claude/forge-compat-seasons` já foi mesclado, parta da `main`; senão, faça `git checkout claude/forge-compat-seasons`.
-   - Para saber se já foi mesclado: `git cat-file -e origin/main:tools/compat/forge-server-compat.sh && echo mesclado`. No PowerShell 5.1, que não tem `&&`: `git cat-file -e origin/main:tools/compat/forge-server-compat.sh; if ($LASTEXITCODE -eq 0) { 'mesclado' }`. O arquivo só existe a partir desta branch, e o teste funciona mesmo se o PR tiver sido mesclado com squash.
+   - Rode `git fetch origin`. Se o PR de `claude/estufinha` já foi mesclado, parta da `main`; senão, faça `git checkout claude/estufinha`.
+   - Para saber se já foi mesclado: `git cat-file -e origin/main:src/main/java/io/github/peixeangola/cultivo/block/GrowTentBlock.java && echo mesclado`. No PowerShell 5.1, que não tem `&&`: `git cat-file -e origin/main:src/main/java/io/github/peixeangola/cultivo/block/GrowTentBlock.java; if ($LASTEXITCODE -eq 0) { 'mesclado' }`. O arquivo só existe a partir desta branch, e o teste funciona mesmo se o PR tiver sido mesclado com squash.
    - Crie uma branch nova `claude/<tema>`. Commits em inglês; entrega por PR para a `main`.
-   - Pronto quando `git log --oneline -1` mostrar o commit destes docs (depois de `bea20be`) ou um mais novo.
+   - Pronto quando `git log --oneline -1` mostrar o commit destes docs (depois de `6e1fcc8`) ou um mais novo.
 2. **Preparar o ambiente** (seção 3).
    - Pronto quando `java -version` mostrar 25 e o primeiro `./gradlew build` terminar.
 3. **Verificar o ponto de partida.** Rode nesta ordem e nunca dois comandos do Gradle ao mesmo tempo:
-   1. `node tools/gen/generate.mjs`: termina com `285 texturas e 791 arquivos JSON gerados em ...`, e `git status` não mostra mudança.
-   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (316 testes, 0 falhas em `2f6ae47`, na nuvem Linux; no Windows ainda não rodado).
-   3. `./gradlew runGameTestServer --console=plain`: `All 63 required tests passed :)`.
-   4. Se mexer em lavouras, sementes ou nas tags do Serene Seasons: `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` (preparo em `tools/compat/README.md`): `All 63 required tests passed :)` e, no log, `Registered synced config with path sereneseasons/fertility.toml`. Sem os jars do Serene Seasons nessa pasta, o `serene_seasons_compat` só confere as tags.
+   1. `node tools/gen/generate.mjs`: termina com `292 texturas e 805 arquivos JSON gerados em ...`, e `git status` não mostra mudança.
+   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (317 testes, 0 falhas com a estufinha, no PC do dono).
+   3. `./gradlew runGameTestServer --console=plain`: `All 70 required tests passed :)`.
+   4. Se mexer em lavouras, sementes ou nas tags do Serene Seasons: `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` (preparo em `tools/compat/README.md`): `All 70 required tests passed :)` (com a estufinha ainda não rodado com o Serene Seasons) e, no log, `Registered synced config with path sereneseasons/fertility.toml`. Sem os jars do Serene Seasons nessa pasta, o `serene_seasons_compat` só confere as tags.
 
    Os números crescem com testes novos; o que vale é zero falha. No Windows (PC do dono), defina antes, na mesma janela: `$env:JAVA_HOME = "C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1"; $env:Path = "$env:JAVA_HOME\bin;$env:Path"`.
 4. **Escolher a tarefa:** o pedido do dono, ou o primeiro item da seção 8 que der para fazer no ambiente que você tem.
@@ -131,7 +143,7 @@ Depois do primeiro build, o ForgeGradle deixa no projeto:
 Pacote `src/main/java/io/github/peixeangola/cultivo/`:
 - `Cultivo` (@Mod): registra os DeferredRegister e os listeners de jogo (`LootTableLoadEvent` → `SeedLootInjector`, `VanillaGameEvent` → `FarmerReplant`, `MobSpawnEvent.FinalizeSpawn` → `WanderingTraderSeeds`).
 - `core/`, regras **puras** sem Minecraft, todas com JUnit:
-  - genéticas e cultivo: `Variety` (as 40 genéticas), `GrowthRules`, `QualityRules`, `GreenhouseRules`, `SeedSources`;
+  - genéticas e cultivo: `Variety` (as 40 genéticas), `GrowthRules`, `QualityRules` (rota `tent`), `GrowTentRules` (estufinha: velocidade, clique, farinha de osso), `SeedSources`;
   - estações: `StationKind`, `ProcessingRules` (dichavador incluso), `StationVisualRules`, `StationAnimation`;
   - fumo: `SmokeRules` (piteira inclusa), `SmokeDevice`, `SmokeAnimation`;
   - artigos: `RollingRules`, `CuringRules`, `AshtrayRules`;
@@ -141,28 +153,30 @@ Pacote `src/main/java/io/github/peixeangola/cultivo/`:
   - `ModBlocks`, `ModItems`, `ModBlockEntities` (`processing_station`, `jar`), `ModRecipes` (drying/sieving/pressing), `ModLootFunctions` (`set_harvest_quality`), `ModEffects` (`cultivo:high`), `ModSounds`;
   - `ModComponents`: `cultivo:quality`, `cultivo:strain`, `cultivo:filtered`, `cultivo:cured`;
   - `ModCreativeTabs` ("Cultivo" e "Cultivo: Genéticas");
-  - `ModTags`: entradas das estações, `jar_storable` e vidro de estufa.
+  - `ModTags`: entradas das estações e `jar_storable` (a tag do vidro de estufa saiu em 25/10/2026).
 - `block/`:
-  - lavoura e mundo: `CannabisCropBlock`, `WildPlantBlock`, `GreenhouseDetector`;
+  - lavoura e mundo: `CannabisCropBlock`, `WildPlantBlock`;
+  - estufinha: `GrowTentBlock` (2 metades como a porta, clique, farinha de osso, random tick, partículas) + `GrowTentBlockEntity` (variedade e idade só na metade de baixo; drops pela tabela da lavoura com a BlockEntity no contexto, que é o que dá 4–5; planta cai no `preRemoveSideEffects`);
   - estações: `ProcessingStationBlock` + `ProcessingStationBlockEntity` (as três estações), `SieveBlock` (dichavador), `StationContents`;
   - artigos colocáveis: `RollingTrayBlock`, `JarBlock` + `JarBlockEntity`, `AshtrayBlock`;
   - `Handouts`: o que vai para a mão do jogador, com sobra caindo aos pés.
 - `item/`:
   - `SeedItem`, `FlowerItem` e `QualityItem`, com `StrainProfile` (linha de raridade · ciclo · genética · potência);
   - `SmokingItem` e `LighterItem`;
-  - `StationBlockItem`, `ArticleBlockItem` (bloco com ícone plano) e `TooltipItem` (dicas em linhas).
+  - `StationBlockItem`, `ArticleBlockItem` (bloco com ícone plano), `GrowTentItem` (`DoubleHighBlockItem` com dica) e `TooltipItem` (dicas em linhas).
 - `smoke/`: `SmokeSession` (servidor: isqueiro, material, consumo, efeitos, cinzeiro) e `SmokeEffects` (partículas e sons do fumo).
 - `effect/HighEffect`, `recipe/ProcessingRecipe`, `loot/SetHarvestQualityFunction`, `loot/SeedLootInjector`.
 - `village/`: `FarmerReplant` e `WanderingTraderSeeds`.
 - `client/`, só no cliente:
   - `SmokingItemClient`: poses de braço e transformação em 1ª pessoa;
   - `PressPlatenRenderer`: placa da prensa;
+  - `GrowTentRenderer`: a lavoura da variedade dentro da estufinha (o mesmo modelo da lavoura, subido 4 px e com 7/8 da largura);
   - `CultivoClientEvents`.
-- `gametest/CultivoGameTests`: 62 GameTests (61 + `serene_seasons_compat`), com os nomes em `ContentIds.GAME_TESTS`.
+- `gametest/CultivoGameTests`: 69 GameTests (com `serene_seasons_compat` e os 8 da estufinha: `grow_tent_harvest`, `grow_tent_places_two_halves`, `grow_tent_plants_and_grows`, `grow_tent_bone_meal`, `glass_gives_no_bonus`, `grow_tent_breaks_either_half`, `grow_tent_creative_break`, `grow_tent_persists`), com os nomes em `ContentIds.GAME_TESTS`.
   - `serene_seasons_compat` sempre confere as tags em jogo; com o Serene Seasons na pasta de mods (só em `-Pcultivo_run_dir=run-compat-ss`), confere também a paridade com o trigo na primavera, sob vidro e no verão. Exige `out_of_season_crop_behavior = 1` e dispara o `TagsUpdatedEvent` como o cliente do single player.
 
 Outras pastas:
-- `src/test/java/.../core` e `.../data`: 316 testes JUnit.
+- `src/test/java/.../core` e `.../data`: 317 testes JUnit (`core/GrowTentRulesTest` trava os números da estufinha).
   - `core`: regras puras.
   - `data`: completude e consistência dos recursos, nomes de paródia, português, sons, texturas animadas, isolamento do cliente, animação e dicas.
   - `data/CompatibilityTest` (5 testes): tags do Serene Seasons (as 40 lavouras e sementes, só verão e outono, sem planta silvestre), `sky_access` do test_instance, `mods.toml` forge `[66.0.2,)` e o padrão 66.0.13 do `build.gradle`.
@@ -205,6 +219,16 @@ Outras pastas:
 - Salva e carrega com `saveAdditional(ValueOutput)` / `loadAdditional(ValueInput)` e `ContainerHelper`. O drop ao quebrar vai em `preRemoveSideEffects`. O tipo é `new BlockEntityType<>(factory, Set.of(block))`, e o ticker usa `createTickerHelper`. Modelo completo: `CampfireBlock`.
 - Sincronização com o cliente: `getUpdatePacket()` + `getUpdateTag(...)` com só os itens, e `level.sendBlockUpdated(...)` quando o conteúdo muda.
 - Recarregar como no load de chunk: `BlockEntity.loadStatic` + `Level#setBlockEntity`, que registra o ticker de novo.
+
+**Bloco de 2 de altura, luz e modelo emissivo** (confirmadas em 25/10/2026 com a estufinha)
+- Padrão da porta: `DoubleBlockHalf HALF`, `getStateForPlacement` checa `pos.getY() < level.getMaxY()` e o bloco de cima `canBeReplaced`, `setPlacedBy` põe a metade de cima, `updateShape` some com a outra metade, item `DoubleHighBlockItem`, loot do item condicionado a `half=lower`. `DoublePlantBlock.preventDropFromBottomPart` é `protected static` do pacote vanilla: fora dele, copie o método (flags 35 e `levelEvent 2001`).
+- `newBlockEntity` pode devolver null na metade de cima. `preRemoveSideEffects` roda com a BlockEntity ainda registrada, também no criativo (flags 35 não têm a 256).
+- `PushReaction` do 26.3: `PUSH_PULL, PUSH, POPPED, IMMOVEABLE, IGNORE_ENTITY` (não há `DESTROY` nem `BLOCK`).
+- `Properties.lightLevel(state -> ...)` é cacheado por estado. `Properties.isViewBlocking` recebe `StateArgumentPredicate<AABB>`.
+- Elemento de modelo com `"light_emission": 0..15` brilha no escuro; não existe `"shade": false` (use `"shade_direction_override"`).
+- `BonemealableBlock` recebe `BonemealSource` (classe de `net.minecraft.world.level.block`); `isValidBonemealTarget` roda também no cliente.
+- `Level#canSeeSky` é `getBrightness(SKY) >= 15`: depende da luz recalculada depois; não use num GameTest síncrono logo depois de mexer em blocos.
+- `Block.getDrops(state, level, pos, blockEntity, entity, tool)` rola a tabela de qualquer estado (a estufinha rola a da lavoura) com a BlockEntity no contexto; o conjunto `BLOCK` aceita `BLOCK_ENTITY` opcional.
 
 **Componentes e receitas**
 - Componentes: `DataComponentType.<T>builder().persistent(codec).networkSynchronized(streamCodec)`. Marca sem valor: `Unit.CODEC`, que é `{}` no JSON.
@@ -275,11 +299,12 @@ Outras pastas:
   - propriedades `-Pcultivo_forge_version`/`-Pcultivo_run_dir` e o script de servidor de produção (`0590b40`), com sondas de console no lugar do `/test` (`c737633`);
   - build e GameTests no Forge 66.0.2 do launcher do dono; achado que o Serene Seasons não age em servidor dedicado no Forge 26.3;
   - lavouras e sementes do Cultivo nas tags de verão e outono do Serene Seasons, `mods.toml` `[66.0.2,)`, `CompatibilityTest` e GameTest `serene_seasons_compat` (`2f6ae47`); evidências no TODO (`bea20be`); estes docs.
+- **25/10/2026, madrugada, PC do dono**, branch `claude/estufinha`: revisão do plano nas fontes (`ff45eee`), a estufinha e o fim do bônus do vidro (`8de8b1a`), cena no teste visual (`6e1fcc8`), mylar brilhando e o `serene_seasons_compat` com a estufinha (`afa87eb`), docs.
 - Detalhes e resultados de cada etapa estão em TODO.md (evidências) e em `git log`. O prompt da sessão de 21/10 está em `git show 319cf0b:docs/CLOUD_PROMPT.md`.
 
 ## 8. Pendências, em ordem
 
-**Próxima tarefa (pedido do dono de 25/10/2026, plano aprovado):** a **estufinha**, que substitui a estufa de vidro. É um bloco craftável de 2 de altura, com luz roxa, um pé de planta dentro, sem farmland nem água, e qualidade 4–5. Siga [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md), com os mapas do código em [estufinha-mapas.md](estufinha-mapas.md). A crítica adversarial do plano não chegou a rodar, então confira as APIs citadas nas fontes do 26.3 antes de codar. Trabalhe numa branch nova `claude/estufinha` a partir da `main`, depois que o PR da compatibilidade (`claude/forge-compat-seasons`) for mesclado. No fim: gerador, `build`, `runGameTestServer` e o TODO com evidências.
+**Estufinha:** feita e testada em 25/10/2026 (branch `claude/estufinha`, PR para a `main`). Falta o dono jogar com ela (GUIA_INICIANTE.md, seção 6.1, "Plantas e estufinha") e confirmar os números de balanço (base 4, × 1,25, luz 12: DECISIONS.md, "Estufinha"). Se ele achar a luz roxa fraca ou forte, o brilho do mylar é `GROW_TENT_MYLAR_GLOW` em `tools/gen/models.mjs` (regere e rode o teste visual).
 
 1. **Multiplayer completo** (PC do dono): `run-probe.ps1 -Multiplayer` com o PC folgado (o de 25/10 foi parado por falta de memória: são dois Minecraft e dois Gradle). Depois, dois jogadores de verdade numa estação e fumando perto um do outro (GUIA, seção 6.3).
 2. **O que o teste visual não cobre** (PC do dono, seção 6.1 do guia): mão esquerda, artigos de todos os lados e ouvir os sons.

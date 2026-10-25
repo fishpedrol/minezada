@@ -5,7 +5,7 @@
 **O que é o Cultivo:** um mod para **Minecraft Java 26.3** com **Forge 26.3**, versão **66.0.2 ou mais nova** (o projeto compila com a 66.0.13). No jogo, você:
 
 - acha sementes de **40 genéticas** em baús de aldeia, em lavouras de aldeia, na natureza e com o Mercador Ambulante. São 3 nativas e 37 inspiradas no catálogo da Santa Semente, com nomes de paródia;
-- planta como trigo e colhe flores com qualidade: a estufa dá as melhores, e o pote de vidro ainda cura e melhora um pouco;
+- planta como trigo e colhe flores com qualidade: a **estufinha** (uma barraca de cultivo com luz roxa) dá as melhores, e o pote de vidro ainda cura e melhora um pouco;
 - processa as flores em três estações (secar, peneirar e prensar), que mostram quando estão trabalhando;
 - crafta o baseado e os artigos (bong, cachimbo, bandeja, pote, cinzeiro…), cada um com um uso;
 - pode "fumar" para ganhar efeitos de status do próprio Minecraft, com animação própria.
@@ -20,8 +20,8 @@ Tudo é ficção de jogo, e todo o texto do mod aparece em português.
 
 | Comando | Para que serve | Como é o sucesso |
 |---|---|---|
-| `.\gradlew.bat build` | Compila, roda os testes automáticos rápidos (JUnit; hoje são 316) e gera `build\libs\cultivo-0.1.0.jar` | `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 63) | `All 63 required tests passed :)` |
+| `.\gradlew.bat build` | Compila, roda os testes automáticos rápidos (JUnit; hoje são 317) e gera `build\libs\cultivo-0.1.0.jar` | `BUILD SUCCESSFUL` |
+| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 70) | `All 70 required tests passed :)` |
 | `.\gradlew.bat runClient` | Abre o Minecraft de teste já com o mod | a janela do jogo abre |
 
 - **As quantidades de testes mudam** quando alguém acrescenta testes. O que importa é aparecer `BUILD SUCCESSFUL` e `All N required tests passed :)` (com o número que for), sem `FAILED`.
@@ -81,7 +81,7 @@ Este guia é para você, dono do projeto, que está começando em Java, em Gradl
 | **MDK** (Mod Development Kit) | O projeto-modelo que o Forge distribui para quem vai criar um mod. | Este repositório começou do MDK 26.3 (`build.gradle`, `gradlew`, `settings.gradle` vieram dele). |
 | **.jar** | Um arquivo compactado, parecido com um .zip, com o código compilado e os recursos (texturas, traduções…). | O mod pronto é `build\libs\cultivo-0.1.0.jar`. |
 | **Pasta `mods`** | Onde o Forge procura os mods ao abrir o jogo ou o servidor. | Jogo normal no Windows: `%APPDATA%\.minecraft\mods`. Servidor: pasta `mods` ao lado do `run.bat`. |
-| **JUnit** | Testes automáticos rápidos que **não abrem o Minecraft**. Conferem as regras (contas de qualidade, pesos de sementes, efeitos) e se os arquivos JSON batem com o código Java. | Ficam em `src/test/java/`. Rodam no `test` e no `build` (hoje, 316 testes). |
+| **JUnit** | Testes automáticos rápidos que **não abrem o Minecraft**. Conferem as regras (contas de qualidade, pesos de sementes, efeitos) e se os arquivos JSON batem com o código Java. | Ficam em `src/test/java/`. Rodam no `test` e no `build` (hoje, 317 testes). |
 | **GameTest** | Testes que rodam **dentro de um servidor Minecraft de verdade**, sem janela: a planta cresce, a estação processa, fumar aplica o efeito. | Ficam em `src/main/java/io/github/peixeangola/cultivo/gametest/CultivoGameTests.java`. Rodam no `runGameTestServer`: hoje são 63 no total, sendo 62 do Cultivo + 1 de exemplo que vem com o próprio Minecraft (`minecraft:always_pass`). |
 | **Node.js** | Programa que roda JavaScript fora do navegador. | Usado só para gerar texturas, modelos, sons e arquivos JSON (`tools/gen/generate.mjs`). Você precisa dele se for mudar recursos ou qualquer número marcado "Sim" na seção 7.2. |
 | **Tick** | A "batida" do relógio do jogo. | **20 ticks = 1 segundo.** Todos os tempos do mod são em ticks. |
@@ -292,9 +292,9 @@ Rode tudo **no terminal, na pasta do projeto** (`C:\dev\minezada`, seção 2.8).
 
 | Comando **[terminal]** | O que faz | Como é o sucesso |
 |---|---|---|
-| `.\gradlew.bat build` | Compila, roda os testes JUnit (hoje 316) e gera o .jar | `BUILD SUCCESSFUL in ...` |
+| `.\gradlew.bat build` | Compila, roda os testes JUnit (hoje 317) e gera o .jar | `BUILD SUCCESSFUL in ...` |
 | `.\gradlew.bat test` | Só os testes JUnit | linhas `... PASSED` e `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 63 required tests passed :)` (o número muda se entrarem testes novos) |
+| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 70 required tests passed :)` (o número muda se entrarem testes novos) |
 | `.\gradlew.bat runClient` | Abre o Minecraft de desenvolvimento já com o mod | a janela do jogo abre |
 | `.\gradlew.bat runServer` | Liga um servidor dedicado na pasta `run\` | `Done (...)! For help, type "help"` |
 | `.\gradlew.bat --stop` | Desliga os processos do Gradle que ficam rodando em segundo plano ("daemons") | útil quando algo trava |
@@ -338,7 +338,7 @@ Mostra uma linha por teste. Quando algo falha, aparece assim:
 SeedSourcesTest > chestProbabilities() FAILED
     org.opentest4j.AssertionFailedError at SeedSourcesTest.java:73
 
-316 tests completed, 1 failed
+317 tests completed, 1 failed
 There were failing tests. See the report at: file:///.../build/reports/tests/test/index.html
 ```
 
@@ -347,7 +347,7 @@ O terminal só mostra o arquivo e a linha. A mensagem completa fica no relatóri
 ### 3.3 `runGameTestServer`
 
 - Não abre janela e **não pede a EULA**: esse servidor de teste não lê o `eula.txt` (só o servidor dedicado da seção 3.5 lê).
-- Sucesso: `All 63 required tests passed :)`. Hoje, 63 é o **total** de testes: os 62 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
+- Sucesso: `All 70 required tests passed :)`. Hoje, 70 é o **total** de testes: os 69 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
 - Falha: o log lista o nome de cada teste obrigatório que falhou e a mensagem dele. Estas linhas são de uma rodada real que falhou durante o desenvolvimento:
   ```
   3 required tests failed :(
@@ -452,18 +452,19 @@ powershell -ExecutionPolicy Bypass -File tools\visual-probe\run-probe.ps1 -OutDi
 - **Não mexa no mouse nem no teclado enquanto ele roda:** o script aperta teclas e move o mouse na janela do jogo (F1, F2, F5, E, Esc, Shift, 1, 2 e os botões do mouse). Leva uns 5 minutos depois que o jogo abre.
 - No fim, ele fecha o jogo.
 
-**O resultado**, na pasta do `-OutDir`, são 47 prints, os logs (`gradle-client.log` e `client-latest.log`) e o `log-problems.txt`, que separa os avisos ligados ao Cultivo dos avisos normais do jogo. Os avisos `Object did not get ID it asked for` vêm do mundo de teste antigo e são normais.
+**O resultado**, na pasta do `-OutDir`, são 50 prints, os logs (`gradle-client.log` e `client-latest.log`) e o `log-problems.txt`, que separa os avisos ligados ao Cultivo dos avisos normais do jogo. Os avisos `Object did not get ID it asked for` vêm do mundo de teste antigo e são normais.
 
 | Prints | Mostram |
 |---|---|
 | `01` e `02` | as 3 nativas nas 8 idades e uma planta de cada família de cor |
 | `03` a `07` | suporte, peneira e prensa vazios, trabalhando e prontos (a placa da prensa em 3 momentos) |
-| `08` a `11` | bandeja, pote, cinzeiro de 0 a 4, o pote terminando a cura e a estufa |
+| `08` a `11` | bandeja, pote, cinzeiro de 0 a 4, o pote terminando a cura e 3 estufinhas numa sala escura (vazia, crescendo e madura) |
 | `12` a `15` | as 40 genéticas (semente, flor fresca e seca), produtos, artigos e modelos na mão |
 | `16` a `26` | inventário e as dicas (tooltips) de sementes, flor curada, haxixe, baseado, isqueiro, dichavador e estações |
 | `27` a `29` | as duas abas do modo criativo |
 | `30` a `34` | cliques de verdade: enrolar na bandeja, recusa sem folhas, pôr e tirar (agachado) do suporte, instalar o dichavador |
 | `35` a `47` | fumar cada aparelho em 1ª e 3ª pessoa, o efeito "Chapado" e a recusa sem material |
+| `48` a `50` | a dica da estufinha e cliques de verdade nela: colher a madura de mão vazia e plantar de novo com uma semente |
 
 **Olhe os prints um por um:** o script só tira as fotos; quem diz se está certo é você. O que cada print deve mostrar, e o que seria bug, está em `tools\visual-probe\PRINTS.md`.
 
@@ -746,46 +747,53 @@ Fontes: `core/SeedSources.java`, `tools/gen/manifest.json` (`seed_sources`) e `t
    - `looking_at_block_state`: mira na planta e mostra `age: 0` a `age: 7`. Mirando numa estação, mostra `facing`, `contents` (seção 5.6) e, na peneira, `grinder`.
    - `biome`: mostra o bioma onde você está.
 
-### 5.5 Estufa e qualidade
+### 5.5 Estufinha e qualidade
 
-**A estufa (regra exata, `core/GreenhouseRules.java`):**
+**O que mudou em 25/10/2026:** você pediu para trocar a estufa de vidro pela **estufinha**. A caixa de vidro **não dá mais bônus nenhum**: uma planta na terra arada dentro do vidro cresce e colhe igual a uma ao ar livre (qualidade 2 ou 3). A qualidade alta (4 ou 5) agora só sai da estufinha.
 
-1. **Teto:** o primeiro bloco que não é ar acima da planta, até 6 blocos de altura, precisa ser vidro de estufa. Uma tocha ou um bloco de pedra entre a planta e o vidro estraga o teto.
-2. **Paredes:** em cada uma das 4 direções (norte, sul, leste, oeste), precisa haver vidro de estufa a até 6 blocos de distância, na altura da planta ou um bloco acima. **Não** precisa ter caminho livre até o vidro: o jogo só procura vidro naquela linha, mesmo com outros blocos no meio.
-3. **Vidro de estufa** é: vidro, vidro fosco, vidraça, os 16 vidros tingidos e as 16 vidraças tingidas (35 blocos, na tag `cultivo:greenhouse_glass`).
-   - Cuidado com o **vidro fosco**: ele conta como estufa, mas **bloqueia a luz**. Com teto de vidro fosco, ponha tochas dentro, senão a planta não cresce (seção 5.4).
-
-**Exemplo** (é o mesmo dos GameTests): vidro 2 blocos acima da planta e vidro a 2 blocos de distância nas 4 direções. Uma caixa de vidro em volta funciona:
+**A estufinha** (`block/GrowTentBlock.java`, regras em `core/GrowTentRules.java`) é uma barraca de cultivo de **2 blocos de altura**, com uma lâmpada roxa no teto e um vaso dentro. Cabe **um pé** da planta, no tamanho normal.
 
 ```
-Vista de cima (na altura da planta)      Vista de lado (corte pelo meio)
+Vista de frente (a frente é aberta)
 
-  V V V V V                                V V V V V   ← teto: 2 blocos acima da planta
-  V . . . V                                V . . . V
-  V . P . V                                V . P . V   ← P = planta, na altura dela
-  V . . . V                                # # T # #   ← T = terra arada, # = chão
-  V V V V V
-
-V = vidro de estufa   . = ar   P = planta
+  ┌─────────┐   ← teto com a lâmpada roxa (brilha no escuro)
+  │ ░ LED ░ │
+  │   \|/   │   ← metade de cima: a planta madura chega um pouco aqui
+  ├─────────┤
+  │  \|/    │   ← metade de baixo: a planta
+  │  [vaso] │   ← vaso de tecido com terra
+  └─────────┘
+  ###########   ← chão firme qualquer (pedra, madeira, terra...). Nada de terra arada nem água.
 ```
 
-Também vale mais apertado: teto logo acima da planta (1 bloco) e paredes encostadas nela (1 bloco de distância). E vale maior, até 6 blocos. A água para hidratar a terra arada pode ficar dentro ou fora, a até 4 blocos.
+**Como usar, passo a passo:**
 
-**O que a estufa dá:**
+1. **Faça** a estufinha na mesa de trabalho (receita na seção 5.7: lã roxa, ametista, tocha e vaso de flor; **sem vidro**).
+2. **Coloque** no chão: precisa de **2 blocos livres** de altura e de um chão firme embaixo. A frente aberta fica virada para você.
+3. **Plante:** clique com o botão direito na estufinha (em cima ou embaixo, tanto faz) segurando **uma semente** de qualquer genética. Gasta 1 semente e aparece uma mudinha no vaso.
+4. **Espere** ela crescer, ou use **farinha de osso** nela (cada uso adianta de 2 a 5 estágios, como no trigo). Ela cresce **em qualquer lugar**: num porão escuro, debaixo da terra, sem céu. A luz roxa é dela mesma.
+5. **Colha:** quando a planta estiver **madura** (as colas grandes e coloridas, como na lavoura), clique com o botão direito. Você recebe **1 flor fresca com qualidade 4 ou 5** e de 1 a 4 sementes, direto no inventário (o que não couber cai aos seus pés). A estufinha fica **vazia na hora**, pronta para plantar de novo.
 
-- crescimento ×1,25, **multiplicado** pelo crescimento da genética (por exemplo, Eclipse: 0,8 × 1,25 = 1,0);
-- qualidade maior na colheita.
+**O que mais é bom saber:**
+- Antes de madura, o clique **não colhe**. Se quiser tirar uma planta que ainda não está pronta, quebre a estufinha: ela devolve **1 semente** (e a estufinha).
+- **Quebrar** qualquer metade derruba **1 estufinha** e o que estava plantado (madura: a flor 4–5 e as sementes). No **Criativo**, a estufinha não cai (como a porta), mas a planta cai.
+- Fortuna (na ferramenta da mão principal) dá mais sementes na colheita, como na lavoura.
+- A luz da lâmpada ilumina em volta (luz 12 no alto, uns 11 embaixo): monstros não nascem colados nela.
+- Pistões não empurram a estufinha. Aldeões não mexem nela.
+- **Com o Serene Seasons**, a estufinha cresce **o ano todo** (as estações não pegam nela).
+
+**Velocidade** (`core/GrowTentRules.java`): o mesmo sorteio do trigo, como se a planta estivesse numa terra arada molhada, com um bônus de ×1,25. A cada "random tick" (o sorteio do jogo), a planta passa para o próximo estágio com chance de 1 em 5 (genética rápida), 1 em 6 (média) ou 1 em 7 (lenta). Ao ar livre, numa terra arada molhada sozinha, seria 1 em 6, 7 e 8. Na velocidade normal do jogo, uma genética média leva uns 48 minutos para madurar (rápida uns 40, lenta uns 56).
 
 **Qualidade** (`core/QualityRules.java`): é um número gravado no item e mostrado no tooltip. A escala vai de 1 a 5, mas a colheita só dá de 2 a 5. A qualidade 1 só aparece em item criado por comando (`/give`).
 
-| Rota | Base | Resultado possível | Depois da cura no pote (seção 5.9) |
+| Onde a planta cresceu | Base | Resultado possível | Depois da cura no pote (seção 5.9) |
 |---|---|---|---|
-| Ao ar livre | 2 | 2 (Regular) ou 3 (Boa) | 3 ou 4 |
-| Estufa | 4 | 4 (Ótima) ou 5 (Excepcional) | 5 |
+| Ao ar livre (ou sob vidro, ou em qualquer lugar fora da estufinha) | 2 | 2 (Regular) ou 3 (Boa) | 3 ou 4 |
+| Estufinha | 4 | 4 (Ótima) ou 5 (Excepcional) | 5 |
 
-O "+1" sai com a chance da potência da genética (20%, 35% ou 50%). A qualidade é sorteada **no servidor, na hora em que você quebra a planta madura**, então a estufa precisa estar montada nesse momento. Mesmo com a cura, a estufa continua dando o melhor produto. As cores no tooltip são: 1 cinza-escuro, 2 cinza, 3 verde, 4 azul-claro, 5 lilás (roxo-claro).
+O "+1" sai com a chance da potência da genética (20%, 35% ou 50%). A qualidade é sorteada **no servidor, na hora da colheita**. Mesmo com a cura, a estufinha continua dando o melhor produto. As cores no tooltip são: 1 cinza-escuro, 2 cinza, 3 verde, 4 azul-claro, 5 lilás (roxo-claro).
 
-**Com o Serene Seasons:** uma estufa com teto de **bloco** de vidro também protege a planta das estações do ano; com teto de vidraça, não. A qualidade não muda ([seção 5.11](#511-com-o-serene-seasons-estações-do-ano)).
+**Mundos antigos:** se você tinha uma estufa de vidro, as plantas continuam lá, mas passam a dar 2 ou 3. Flores já colhidas com 4 ou 5 continuam com a qualidade delas.
 
 ### 5.6 Estações de processamento
 
@@ -863,6 +871,7 @@ Legenda: V = Vidro (`glass`), A = Balde de Água (`water_bucket`; o balde vazio 
 | Suporte de Secagem | `GGG` / `L·L` / `GGG` | mesa | 1 |
 | Peneira de Bancada | `TLT` / `T·T` | mesa | 1 |
 | Prensa Manual | `FFF` / `·G·` / `TTT` | mesa | 1 |
+| **Estufinha** | `RmR` / `RtR` / `RvR` (R = Lã Roxa, m = Fragmento de Ametista, t = Tocha, v = Vaso de flor) | mesa | 1 |
 | Folha de Seda | sem forma: Papel + Cana-de-açúcar | inventário ou mesa | 4 |
 | Piteira | sem forma: Papel + Linha | inventário ou mesa | 4 |
 | **Baseado** | sem forma: **1 Flor Seca** (de qualquer genética) + **1 Folha de Seda** | inventário ou mesa | 1 |
@@ -885,6 +894,7 @@ Fontes: `core/ArticleRecipes.java` e `manifest.json` (`crafting` e `joint_recipe
 | Bandeja de Enrolar | coloca no chão: enrola 3 baseados com 2 flores secas e 3 folhas de seda (seção 5.9) |
 | Pote de Vidro | coloca no chão: guarda uma pilha e cura flores secas (seção 5.9) |
 | Cinzeiro | coloca no chão: junta a cinza de quem fuma por perto e dá farinha de osso (seção 5.9) |
+| Estufinha | coloca no chão: planta um pé sem terra arada nem água e colhe com qualidade 4 ou 5 (seção 5.5) |
 
 ### 5.8 Fumar (mecânica fictícia de jogo)
 
@@ -1040,8 +1050,8 @@ O **Serene Seasons** é outro mod, de estações do ano, que o dono usa no launc
 - **Primavera e inverno:** crescem devagar, cerca de 1/6 da velocidade normal. O trigo fica igual.
   - A farinha de osso que você usa numa planta fora da estação pode ser gasta sem ela crescer (às vezes cresce).
   - Um **mundo novo começa no início da primavera**, e cada estação dura 24 dias de jogo (3 partes de 8 dias). Então as primeiras plantações são lentas.
-- **Bloco de vidro protege da estação:** um **bloco** de vidro (vidro, vidro fosco ou um dos 16 vidros tingidos; o vidro fosco bloqueia a luz: seção 5.5) de 1 a 16 blocos acima da planta, na mesma coluna, faz ela crescer normalmente o ano todo. Não precisa de paredes. **Vidraça (o painel fino) não conta.**
-- **A estufa do Cultivo** (seção 5.5) com teto de **bloco** de vidro também vale: a planta cresce normalmente o ano todo e a colheita sai com qualidade 4 ou 5. Com teto de vidraça, a qualidade 4 ou 5 continua, mas a planta fica lenta na primavera e no inverno.
+- **Bloco de vidro protege da estação:** um **bloco** de vidro (vidro, vidro fosco ou um dos 16 vidros tingidos; o vidro fosco bloqueia a luz, e a planta precisa de luz 9: seção 5.4) de 1 a 16 blocos acima da planta, na mesma coluna, faz ela crescer normalmente o ano todo. Não precisa de paredes. **Vidraça (o painel fino) não conta.** Isso é regra do Serene Seasons; o vidro não dá qualidade melhor no Cultivo.
+- **A estufinha** (seção 5.5) não é afetada pelas estações: a planta dentro dela cresce o ano todo e a colheita sai com qualidade 4 ou 5.
 - **A qualidade não muda** com o Serene Seasons: a colheita segue a tabela da seção 5.5.
 - **Dica na semente:** com o jogo em português, as sementes do Cultivo ganham a linha **"Estações férteis:"** com Verão e Outono, igual à semente de trigo. Essa linha vem do Serene Seasons.
 - **Onde a estação não atrapalha (ou atrapalha sempre):**
@@ -1059,7 +1069,7 @@ O **Serene Seasons** é outro mod, de estações do ano, que o dono usa no launc
 
 ## 6. O que você precisa testar à mão
 
-Os testes automáticos não abrem a tela do jogo. Estes itens só você consegue conferir. Em 25/10/2026 o teste visual automático (seção 3.8) já viu num jogo aberto os modelos 3D, as animações, as partículas e as legendas dos sons (47 prints). Ainda ninguém viu a mão esquerda nem os artigos de todos os lados, ninguém **ouviu** os sons, e o multiplayer não foi feito do começo ao fim. Por isso esta checklist continua importante.
+Os testes automáticos não abrem a tela do jogo. Estes itens só você consegue conferir. Em 25/10/2026 o teste visual automático (seção 3.8) já viu num jogo aberto os modelos 3D, as animações, as partículas e as legendas dos sons (47 prints; com a estufinha, 50). Ainda ninguém viu a mão esquerda nem os artigos de todos os lados, ninguém **ouviu** os sons, e o multiplayer não foi feito do começo ao fim. Por isso esta checklist continua importante.
 
 **Onde marcar:** as caixinhas `[ ]` deste guia não dá para marcar no site do GitHub. Use uma folha de papel ou um arquivo de texto à parte: para cada item, anote "ok" ou o que deu errado. No fim, registre o resultado no `docs/TODO.md` como explica a [seção 6.4](#64-como-reportar-um-problema).
 
@@ -1086,13 +1096,24 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
   - cachimbo, chillum, bong e narguilé: "Segure o botão direito para fumar", "Precisa de isqueiro e flor seca ou haxixe" e "Usa primeiro o da mão secundária";
   - isqueiro: barra de durabilidade, "Necessário para fumar" e "Gasta 1 de durabilidade a cada uso";
   - estações: uma linha de função e quatro de uso, começando com "Clique com o botão direito:";
-  - folha de seda, piteira, dichavador, bandeja, pote e cinzeiro: cada um explica o próprio uso em linhas curtas; nenhum diz "Item decorativo".
+  - folha de seda, piteira, dichavador, bandeja, pote e cinzeiro: cada um explica o próprio uso em linhas curtas; nenhum diz "Item decorativo";
+  - estufinha: "Clique com o botão direito:", "com semente, planta sem terra nem água", "de mão vazia, colhe a planta madura" e "Luz roxa: qualidade 4 a 5".
 
-**Plantas e estufa**
+**Plantas e estufinha**
 - [ ] **8 estágios:** plantar em terra arada, ver os 8 estágios (um por idade) e usar farinha de osso. Na idade 6 a flor ainda é pequena; só na idade 7 aparecem as flores grandes e coloridas.
 - [ ] **Catálogo:** plantar 3 ou 4 genéticas do catálogo de cores diferentes e ver as cores da família na plantação.
 - [ ] **Colheita:** colher madura e verde, e conferir os drops (madura: flor fresca da mesma genética + sementes; verde: 1 semente).
-- [ ] **Estufa:** montar uma, colher e ver qualidade 4 ou 5. Fora dela, 2 ou 3.
+- [ ] **Estufinha** (seção 5.5), no Sobrevivência:
+  1. **Fazer:** na mesa de trabalho, 6 lãs roxas nas colunas da esquerda e da direita, e no meio, de cima para baixo, fragmento de ametista, tocha e vaso de flor. Sai 1 Estufinha.
+  2. **Colocar:** num chão de pedra ou madeira (sem terra arada nem água por perto). Ela fica com 2 blocos de altura e a frente aberta virada para você. Tente também debaixo de um teto baixo (1 bloco livre só): ela não deve ser colocada nem gastar o item.
+  3. **Olhar:** lona escura, prateado por dentro, um painel de LEDs roxos aceso no teto, um pontinho roxo no poste da frente e pó roxo caindo da lâmpada. À noite ou numa sala fechada, a luz roxa deve aparecer bem e iluminar o chão em volta.
+  4. **Plantar:** clique com o botão direito segurando uma semente. Gasta 1 semente, aparece a mudinha **dentro do vaso** e a legenda "Semente plantada na estufinha". Clicar de novo com outra semente não planta por cima.
+  5. **Crescer:** use farinha de osso (de 2 a 5 estágios por uso) ou espere. A planta deve ficar dentro da barraca, sem atravessar a lona. Monte uma num porão fechado, sem céu: ela cresce do mesmo jeito.
+  6. **Colher:** madura, clique de **mão vazia**. Devem vir 1 flor fresca com **qualidade 4 (Ótima) ou 5 (Excepcional)** e algumas sementes, a legenda "Estufinha colhida", e a estufinha fica vazia. Colha várias vezes e veja as duas qualidades aparecerem.
+  7. **Replantar** logo em seguida com outra semente: deve funcionar na hora.
+  8. **Quebrar:** com uma planta madura dentro, quebre a metade **de cima** de uma estufinha e a metade **de baixo** de outra. Cada uma deve dar **1 estufinha** e a flor (4 ou 5) com as sementes, sem duplicar nada. Uma estufinha vazia dá só ela mesma; uma com planta verde dá ela e 1 semente.
+  9. **Salvar e voltar:** saia do mundo com uma planta pela metade dentro, entre de novo: ela deve estar lá, no mesmo tamanho.
+  10. **Vidro não dá bônus:** uma planta na terra arada dentro de uma caixa de vidro deve dar 2 ou 3, como ao ar livre.
 
 **Estações**
 - [ ] **Colocar:** a frente de cada estação fica virada para você. Com o machado elas quebram mais rápido.
@@ -1326,7 +1347,7 @@ O `runClient` não carrega os mods do launcher (seção 3.4), então este teste 
   7. Espere uns 30 segundos olhando. Esperado: **ao ar livre**, o Cultivo e o trigo crescem devagar e parecidos; **sob o vidro**, os dois crescem bem mais rápido.
   8. (Opcional) Troque um dos vidros por uma vidraça e replante embaixo dela: ali a planta fica lenta, como ao ar livre.
 - [ ] **Normal no verão:** `/season set mid_summer`, quebre e replante a parte ao ar livre: agora o Cultivo e o trigo crescem rápido mesmo sem vidro.
-- [ ] **(Opcional) Estufa do Cultivo:** ainda na primavera (`/season set early_spring`), monte a estufa da seção 5.5 com teto de **bloco** de vidro: a planta cresce normalmente. Para colher, mude para `/gamemode survival` (no Criativo, quebrar a planta não solta nada): a colheita madura dá qualidade 4 ou 5. Ao ar livre, a qualidade continua 2 ou 3 em qualquer estação.
+- [ ] **(Opcional) Estufinha:** ainda na primavera (`/season set early_spring`), plante numa estufinha (seção 5.5): ela cresce normalmente, sem esperar o verão. Colha de mão vazia, no Sobrevivência: qualidade 4 ou 5. Ao ar livre (com ou sem vidro), a qualidade continua 2 ou 3 em qualquer estação.
 - [ ] **Voltar ao normal:** `/gamerule random_tick_speed 3` (3 é o valor normal do jogo).
 - [ ] **Log:** abra `%APPDATA%\.minecraft\logs\latest.log` no Bloco de Notas e procure (Ctrl+F) por `Couldn't load tag` e por `cultivo` perto de `ERROR`. No teste da nuvem, `Couldn't load tag` não apareceu nenhuma vez.
 
@@ -1447,25 +1468,25 @@ SmokeRulesTest > exactDurationsPerDeviceQualityAndHash() FAILED
 
 No relatório aparece `expected: <1080> but was: <1170>` (54 s viraram 58,5 s). Como a mudança foi de propósito, troque o `1080` por `1170` nessa linha de `SmokeRulesTest.java` e atualize a linha do Chillum na tabela da seção 5.8.
 
-#### 7.2.3 Cultivo: qualidade, genéticas e estufa
+#### 7.2.3 Cultivo: qualidade, genéticas e estufinha
 
 | O que você quer mudar | Onde mudar | Precisa rodar o gerador? |
 |---|---|---|
-| Qualidade base (2 ao ar livre, 4 na estufa) | `core/QualityRules.java` | Não |
+| Qualidade base (2 fora, 4 na estufinha) | `core/QualityRules.java` (`OUTDOOR_BASE`, `TENT_BASE`) | Não |
 | Chance de +1 de qualidade por potência (20%, 35%, 50%) | `core/Variety.java`: método `potencyBonusChance` | Não |
 | Velocidade de cada classe de crescimento (×1,25, ×1,0, ×0,8) | `core/Variety.java`: `FAST(1.25F)`, `MEDIUM(1.0F)`, `SLOW(0.8F)` | Não |
 | Raridade, ciclo, genética, crescimento ou potência de **uma** genética | a linha dela em `core/Variety.java` **e** em `manifest.json` → `strains` **e** em `docs/strains-catalog.json` (as três precisam bater) | **Sim** |
-| Bônus de crescimento da estufa, luz mínima para crescer (9) | `core/GrowthRules.java`. A luz para não se soltar (8) vem do trigo do Minecraft e não muda aqui | Não |
-| Tamanho da estufa (6 blocos) | `core/GreenhouseRules.java` (`RANGE`) | Não |
-| Quais vidros contam para a estufa | `manifest.json` → `greenhouse_glass` | **Sim** |
+| Luz mínima para a lavoura crescer (9) | `core/GrowthRules.java`. A luz para não se soltar (8) vem do trigo do Minecraft e não muda aqui | Não |
+| Velocidade da estufinha (base 4 e × 1,25), luz da lâmpada (12), farinha de osso (2 a 5) | `core/GrowTentRules.java` (`SOIL_SPEED`, `MULTIPLIER`, `LAMP_LIGHT`, `BONE_MEAL_MIN/MAX`) | Não |
+| Receita da estufinha | `manifest.json` → `crafting` (a linha `grow_tent`) **e** `core/ArticleRecipes.java` (lista `CULTIVATION`) | **Sim** |
 
 Testes que vão reclamar:
 
-- **Qualidade base:** `QualityRulesTest` e os GameTests `greenhouse_quality` (espera 4–5 na estufa e 2–3 fora) e `catalog_strain_grows_and_drops` (2–3 ao ar livre).
+- **Qualidade base:** `QualityRulesTest`, `GrowTentRulesTest` e os GameTests `grow_tent_harvest` (espera 4–5 na estufinha), `glass_gives_no_bonus` (2–3 sob vidro) e `catalog_strain_grows_and_drops` (2–3 ao ar livre).
 - **Chance e velocidade:** `QualityRulesTest`, `VarietyAndGrowthTest` e `StrainCatalogTest`.
 - **Uma genética:** `StrainCatalogTest` (contagem por raridade e as regras "automática = rápida" e "lenta = sativa"), `ParodyNamesTest` e `DataConsistencyTest` (as três listas iguais).
-- **Estufa e luz:** `VarietyAndGrowthTest`, `GreenhouseRulesTest`.
-- **Vidros:** `DataConsistencyTest` (espera 35 blocos) e o GameTest `greenhouse_quality`. Ele monta a estufa com vidro, vidro tingido de lima e vidraça (procure `buildGreenhouse`); se tirar um desses da lista, esse teste falha.
+- **Estufinha:** `GrowTentRulesTest` (os números como estão escritos aqui) e o GameTest `grow_tent_plants_and_grows`, que mede a média de random ticks até madurar (35, 42 e 49 para rápida, média e lenta).
+- **Receita:** `DataConsistencyTest` (as duas fontes iguais e a contagem de 56 receitas) e o GameTest `article_recipes`.
 
 **Exemplo:** potência ★★★ com 60% de chance de +1 (em vez de 50%).
 1. Em `core/Variety.java`, no método `potencyBonusChance`, troque `case 3 -> 0.50D;` por `case 3 -> 0.60D;`. Isso vale para todas as genéticas de potência 3, inclusive a Eclipse.
@@ -1628,7 +1649,7 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | Os textos do Cultivo continuam em português com o jogo em English | É de propósito: o dono pediu o mod todo em português (seção 5) | Nada. Para voltar ao inglês, veja a seção 7.2.6 (`portuguese_everywhere`) |
 | Clicar numa estação com um bloco na mão coloca o bloco ao lado | A estação não aceita aquele item, então o jogo faz o uso normal dele (seção 5.6) | Esvazie a mão para retirar o que está pronto, ou agache com as duas mãos vazias para pegar a entrada |
 | A prensa tem resina, mas a placa não mexe | A prensa precisa de 2 resinas iguais; com 1 só, ela fica "carregada", parada (seção 5.6) | Ponha mais uma resina da mesma genética e qualidade |
-| Em single player ou LAN com o Serene Seasons, as plantações do Cultivo crescem devagar | É a primavera ou o inverno do Serene Seasons: o Cultivo segue as mesmas estações do trigo (seção 5.11). Um mundo novo começa na primavera | Normal. Espere o verão, ponha um **bloco** de vidro (não vidraça) até 16 blocos acima, ou use a estufa do Cultivo com teto de bloco de vidro. Se o trigo ao lado crescer bem e o Cultivo não, reporte (seção 6.5) |
+| Em single player ou LAN com o Serene Seasons, as plantações do Cultivo crescem devagar | É a primavera ou o inverno do Serene Seasons: o Cultivo segue as mesmas estações do trigo (seção 5.11). Um mundo novo começa na primavera | Normal. Espere o verão, ponha um **bloco** de vidro (não vidraça) até 16 blocos acima, ou plante numa estufinha (seção 5.5), que cresce o ano todo. Se o trigo ao lado crescer bem e o Cultivo não, reporte (seção 6.5) |
 | Num servidor dedicado com o Serene Seasons, nenhuma plantação liga para a estação (nem o trigo) | Problema do Forge 26.3: o servidor dedicado nunca avisa o Serene Seasons quais blocos são plantações (seção 5.11) | Esperado, não é do Cultivo. Para ter estações nas plantações, jogue em single player ou em LAN |
 | O teste visual automático para com `Falta run\world` | Ainda não existe o mundo do servidor de teste | Rode `.\gradlew.bat runServer` uma vez, aceite a EULA e desligue com `stop` (seção 3.8) |
 | `Failed to download default tool: minecraft-mavenizer-0.5.21.jar` ou `Could not resolve ...` | Sem internet, ou rede bloqueando `maven.minecraftforge.net`, `piston-meta.mojang.com` ou `libraries.minecraft.net` (comum em rede de escola ou empresa) | Use outra rede (por exemplo, a de casa) e tente de novo. Cuidado com dados móveis: o primeiro build pode baixar mais de 1 GB (seção 3.1) |
@@ -1700,7 +1721,7 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | **Repositório** | O projeto com todo o histórico de versões, guardado pelo Git e pelo GitHub. |
 | **Serene Seasons** | Outro mod (precisa do GlitchCore) que traz estações do ano ao Minecraft. Com ele, as plantações do Cultivo seguem as estações do trigo, só em single player e LAN (seção 5.11). |
 | **Servidor dedicado** | Um servidor rodando sozinho, sem janela de jogo (`runServer` ou `run.bat`). |
-| **Tag** | Um grupo de blocos ou itens com um nome, como `cultivo:greenhouse_glass` ou `cultivo:dried_flowers`. |
+| **Tag** | Um grupo de blocos ou itens com um nome, como `cultivo:seeds` ou `cultivo:dried_flowers`. |
 | **Terminal** | Janela onde você digita comandos. No Windows: PowerShell ou cmd. |
 | **Tick** | Unidade de tempo do jogo: 20 ticks = 1 segundo. |
 | **Toolchain** | A versão de Java que o Gradle usa para compilar o projeto (aqui, 25). |
@@ -1739,6 +1760,12 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 - **Cliente:** o teste visual automático (seção 3.8) passou pelas 47 cenas sem erro de modelo, textura ou som; o `-Multiplayer` só rodou 2 cenas (parou por falta de memória).
 - **Falta:** mão esquerda, artigos de todos os lados, ouvir os sons e multiplayer do começo ao fim ([seção 6](#6-o-que-você-precisa-testar-à-mão)).
 
+**Estufinha, verificada no PC do dono em 25/10/2026** (branch `claude/estufinha`, commit `afa87eb`; detalhes no `docs/TODO.md`, seção 3f):
+
+- `node tools/gen/generate.mjs` gera 292 texturas e 805 arquivos JSON; `build` passa com 317 testes JUnit; `runGameTestServer` passa 70 de 70 (69 do Cultivo + 1 do Minecraft), também com o Serene Seasons carregado, no Forge 66.0.13 e no 66.0.2.
+- **Cliente:** o teste visual automático passou pelas 50 cenas sem erro de modelo, textura ou som, viu as estufinhas com a planta dentro e a luz lilás, e colheu e replantou de verdade.
+- **Falta:** você jogar com ela (seção 6.1, "Plantas e estufinha").
+
 **Compatibilidade, verificada na nuvem em 25/10/2026** (Linux, branch `claude/forge-compat-seasons`, commit `2f6ae47`; detalhes no `docs/TODO.md`):
 
 - `build` passa, com 316 testes JUnit; `runGameTestServer` passa 63 de 63 (62 do Cultivo + 1 do próprio Minecraft); `node tools/gen/generate.mjs` gera 285 texturas e 791 arquivos JSON.
@@ -1773,6 +1800,6 @@ JAVA_HOME=/caminho/do/jdk25 sh tools/test-offline.sh
 
 - **No Windows, não use este script.** Ele não foi testado no Windows e foi escrito para Linux/macOS. No Windows, use `.\gradlew.bat test`.
 - Ele também precisa de internet na primeira vez: baixa o JUnit e o Gson de `repo1.maven.org`.
-- O fim da saída tem um resumo, como `N tests successful` e `0 tests failed`. A última vez que ele rodou foi em 24/10/2026, com 88 testes; hoje a suíte tem 316.
+- O fim da saída tem um resumo, como `N tests successful` e `0 tests failed`. A última vez que ele rodou foi em 24/10/2026, com 88 testes; hoje a suíte tem 317.
 - **Dois testes precisam de um build:** os de bytecode do `ClientIsolationTest` leem as classes que o Gradle compila em `build/sourceSets/main`. Sem nenhum build antes, esses dois falham com "classes compiladas não encontradas".
 - Quando um teste falha, ele mostra a mensagem completa (`expected: ... but was: ...`) direto no terminal, ao lado do teste marcado como falho.

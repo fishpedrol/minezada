@@ -1,5 +1,7 @@
 # Plano do mod
 
+**Estufinha (25/10/2026, PC do dono, branch `claude/estufinha`):** `build` com 317 testes JUnit, `runGameTestServer` com `All 70 required tests passed :)` (também com o Serene Seasons, nos Forge 66.0.13 e 66.0.2) e o teste visual com 50 prints (seção 3f).
+
 **Estado em 25/10/2026.** No PC do dono, com o código de `f515cb9` (branch `claude/polish-visual-uses`, já na `main` pelo PR #4). Na nuvem, com a branch `claude/forge-compat-seasons` (compatibilidade com o Forge 66.0.2 do launcher do dono e com o Serene Seasons): `build` com 316 testes JUnit e `runGameTestServer` com `All 63 required tests passed :)`, também no Forge 66.0.2 e com o Serene Seasons carregado (linhas de 25/10/2026, nuvem, na tabela abaixo).
 
 Compilam e passam no PC do dono:
@@ -67,6 +69,18 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 | 25/10/2026 | nuvem: inspeção do jar `build/libs/cultivo-0.1.0.jar` do código `2f6ae47` (`unzip -l`) | 1250 entradas, 285 PNGs, 105 classes (5 em `cultivo/client/`); 0 arquivos em `net/minecraft`, `com/mojang` ou `assets/minecraft`. Dados: `assets/cultivo`, `data/cultivo`, `data/minecraft` (5 tags + `farm_plains.json`, overrides do próprio mod) e `data/sereneseasons` (4 tags). `mods.toml`: `cultivo` 0.1.0, MIT, forge `[66.0.2,)`, minecraft `[26.3,26.4)`. |
 | 25/10/2026 | nuvem, commit `ace0bf3` (revisão: `serene_seasons_compat` termina no meio do verão num `finally`; script de compatibilidade com `trap` de SIGPIPE/EXIT, checagem da pasta de extras e java do `JAVA_HOME`; `CompatibilityTest` tira `\r`): `node tools/gen/generate.mjs` / `./gradlew build --console=plain` / `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` / `./gradlew runGameTestServer --console=plain` | `285 texturas e 791 arquivos JSON`, sem diferença / XML do JUnit: 316 testes, 0 falhas / **`All 63 required tests passed :)`** (com Serene Seasons) / **`All 63 required tests passed :)`** (sem) |
 | 25/10/2026 | nuvem: `bash tools/compat/forge-server-compat.sh 26.3-66.0.2` com o script revisado / mesmo script com pasta de extras inexistente / com uma pasta de extras contendo uma cópia do jar do Cultivo | Código 0, `SONDA diagnostico bioma=plains`, Cultivo [7, 7, 7, 7], trigo [7, 7, 4, 7] / `pasta de mods extras não encontrada`, código 2, antes de baixar ou apagar nada / o Forge ignorou o jar duplicado e a sonda rodou normal (código 0); o caminho "servidor morre no meio" segue sem teste real. |
+| 25/10/2026 | PC local (Windows 11, Temurin 25.0.4.1+1, Node 24.19.0), branch `claude/estufinha` sobre a `main` em `bd1b745` (PR #6 mesclado): revisão do plano nas fontes `forge-26.3-66.0.13-sources.jar` e no jar `SereneSeasons-forge-26.3-26.1.2.0.7.jar` (`javap`) | 5 correções ao plano antes de codar (`PushReaction.DESTROY` não existe, `preventDropFromBottomPart` inacessível, chave do item, lista `CULTIVATION_BLOCKS`) e 5 achadas na implementação (sem `"shade"`, `isViewBlocking`, `BonemealSource`, `canSeeSky` pela luz); os 10 riscos conferidos. O SS só age por `ModFertility.isCrop` no `randomTick` e no `UseBlock`, sem `CropGrowEvent` (ESTUFINHA_PLANO.md, "Revisão") |
+| 25/10/2026 | PC local, commit `8de8b1a` (estufinha): `node tools/gen/generate.mjs` / `.\gradlew.bat build --console=plain` / `.\gradlew.bat runGameTestServer --console=plain` | `292 texturas e 805 arquivos JSON` (285 + 7 texturas da estufinha; sai a tag do vidro e o test_instance antigo) / **`BUILD SUCCESSFUL in 8s`**, XML do JUnit: 317 testes, 0 skipped, 0 falhas, 0 erros / **`All 70 required tests passed :)`** (`70 GAME TESTS COMPLETE IN 1.405 s`; 69 do Cultivo + `minecraft:always_pass`) |
+| 25/10/2026 | PC local: no caminho, 1ª rodada dos GameTests novos | `grow_tent_plants_and_grows` falhou com `o teste deveria rodar sem céu`: `Level#canSeeSky` é pela luz do céu e deu verdadeiro na área do teste. O teste passou a pôr um teto de pedra e conferir o bloco. Também o `PortugueseEverywhereTest` pegou "no" (de "(no soil or water)") no texto inglês da dica, que é palavra do português; a frase virou "without soil or water" |
+| 25/10/2026 | PC local: teste negativo dos GameTests (função de loot com `tent = false &&` e o `preRemoveSideEffects` sem derrubar a planta), `.\gradlew.bat runGameTestServer --console=plain` | `cultivo:grow_tent_breaks_either_half failed ... madura, metade de baixo: 0 flores e 0 sementes`, `cultivo:grow_tent_creative_break failed ... a planta não caiu no criativo: []`, `cultivo:grow_tent_harvest failed ... estufinha deu qualidade 2` e `3 required tests failed :(`. Fontes restauradas com `git checkout -- src/main` |
+| 25/10/2026 | PC local: teste negativo do JUnit (`GrowTentRules.MULTIPLIER` de 1,25 para 1,0), `.\gradlew.bat test --console=plain` | `GrowTentRulesTest > numbersOfTheSpec() FAILED`, `tentBeatsALoneHydratedPlot() FAILED`, `rollBoundsByGrowthClass() FAILED`, `317 tests completed, 3 failed`. Restaurado |
+| 25/10/2026 | PC local: `node tools/visual-probe/gen-datapack.mjs` / `node tools/visual-probe/validate.mjs . tools/visual-probe/datapack tools/visual-probe/run-probe.ps1` (commit `6e1fcc8`) | `30 funcoes, 271 linhas no build` / `30 funcoes, 426 comandos, 28 passos, 26 marcadores`, `blocos conhecidos 48`, `OK: nenhum erro` |
+| 25/10/2026 | PC local: teste visual automático, 1ª rodada com a estufinha (`tools\visual-probe\run-probe.ps1`, `runClient`, código `6e1fcc8`) | `Prints: 50`. `log-problems.txt`: nada ligado ao Cultivo além dos avisos conhecidos `Object did not get ID it asked for` do mundo antigo; nenhum modelo, textura ou som faltando. Nos prints: as 3 estufinhas com a planta dentro do vaso (vazia, Brisa pequena, roxa madura), ícone na vitrine e na aba Cultivo, a dica de 4 linhas, colher de mão vazia (flor fresca na mão, 3 sementes, legenda "Estufinha colhida") e replantar ("Semente plantada na estufinha"). **Achado:** a luz roxa quase não aparecia (o painel de LEDs fica virado para baixo). O número de sementes parecia 8 no print, mas com zoom é 3 com o ícone atrás |
+| 25/10/2026 | PC local, commit `afa87eb` (mylar de dentro com `light_emission` 11 e tingido de lilás, câmera mais perto; `serene_seasons_compat` com a estufinha): teste visual de novo | `Prints: 50`, mesmo log limpo. O interior das 3 estufinhas aparece lilás, iluminado, na sala de pedra-negra; colher e replantar iguais à 1ª rodada |
+| 25/10/2026 | PC local: `.\gradlew.bat runGameTestServer "-Pcultivo_run_dir=run-compat-ss" --console=plain` (jars `SereneSeasons-forge-26.3-26.1.2.0.7.jar` e `GlitchCore-forge-26.3-26.3.0.0.5.jar` copiados do `%APPDATA%\.minecraft\mods` do dono; sha512 começando com `5eddd576de1b540c` e `05f5d12f304c7924`; `fertility.toml` de `tools/compat/config-cant-grow`) | `Registered synced config with path sereneseasons/fertility.toml`; **`All 70 required tests passed :)`**. O `serene_seasons_compat` viu Cultivo e trigo parados no início da primavera e, na mesma primavera, a estufinha crescer até 7 |
+| 25/10/2026 | PC local: o mesmo com `"-Pcultivo_forge_version=26.3-66.0.2"` (a combinação do launcher do dono) | `Forge mod loading, version 66.0.2`; **`All 70 required tests passed :)`** (`BUILD SUCCESSFUL in 3m 25s`, com o download desse Forge) |
+| 25/10/2026 | PC local, rodada final no padrão (`afa87eb`): `node tools/gen/generate.mjs` / `.\gradlew.bat build --console=plain` / `.\gradlew.bat runGameTestServer --console=plain` / `unzip -l build/libs/cultivo-0.1.0.jar` | `292 texturas e 805 arquivos JSON`, `git status` sem mudança em `src/generated` / **`BUILD SUCCESSFUL in 8s`**, XML: 317 testes, 0 falhas / **`All 70 required tests passed :)`** / 1276 entradas, 22 com `grow_tent`, 0 em `net/minecraft`, `com/mojang` ou `assets/minecraft` |
+
 **Conferência dos formatos:**
 - Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: `loot_table/blocks/wheat.json`, `chests/village/village_plains_house.json`, `processor_list/farm_plains.json` (as regras vanilla do mod são idênticas às do jar), `feature/melon.json`, `placed_feature/patch_melon.json`, `recipe/bowl.json`/`book.json` e `test_instance/always_pass.json`.
 - Os formatos novos de 24/10 foram conferidos contra o código e os JSONs do 26.3 e pelos testes JUnit de `data/`; os de cliente carregaram sem erro no `runClient` do teste visual de 25/10. São eles:
@@ -94,9 +108,9 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 
 ## 2. Conteúdo e cultivo
 - [x] **Regras puras** com testes passando:
-  - qualidade: outdoor 2–3, estufa 4–5; bônus 0,20/0,35/0,50 pela potência;
-  - crescimento: fórmula do trigo × crescimento da genética (×1,25/×1,0/×0,8) × 1,25 na estufa, luz ≥ 9;
-  - estufa: teto + 4 paredes de vidro até 6 blocos;
+  - qualidade: fora da estufinha 2–3, estufinha 4–5 (desde 25/10/2026; antes, estufa de vidro); bônus 0,20/0,35/0,50 pela potência;
+  - crescimento: fórmula do trigo × crescimento da genética (×1,25/×1,0/×0,8), luz ≥ 9; o vidro não dá mais bônus;
+  - estufinha: 4 × genética × 1,25, sem farmland, água nem luz de fora (seção 3f);
   - fontes de sementes: 4/5 aldeias; pesos por raridade 4/2/1 com vazio 119; lavoura 0,05/0,025/0,01; silvestre 60/30/10; mascate com 2 ofertas a 2/4/8 esmeraldas.
 - [x] **40 genéticas** (3 nativas + 37 paródias do catálogo) com a mesma tabela no Java, no manifesto e em `docs/strains-catalog.json`. Testes conferem as três; nenhum nome real nos arquivos do jogo.
 - [x] **Dados conferidos por JUnit:**
@@ -113,14 +127,14 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
   - ícones distintos entre genéticas;
   - texturas animadas com `.mcmeta`;
   - traduções completas, com `en_us` = `pt_br`;
-  - 16 eventos de som com legenda;
+  - 18 eventos de som com legenda;
   - nenhuma textura órfã.
 - [x] Código Java de conteúdo compila contra o Forge 26.3-66.0.13.
 - [x] **GameTests:**
-  - cultivo: `outdoor_growth`, `greenhouse_quality`, `harvest_drops`, `catalog_strain_grows_and_drops`;
+  - cultivo: `outdoor_growth`, `harvest_drops`, `catalog_strain_grows_and_drops` e os 8 da estufinha (seção 3f);
   - fontes de sementes: `village_chest_seeds` (1600 baús com semente fixa: 45–55% com semente, as 40 genéticas aparecem, médias dentro de ±25%), `wandering_trader_catalog_seeds`, `villager_replants_mod_crop`;
   - organização e estado: `creative_tabs_split`, `block_states_match_ids`.
-- [x] Dados carregam no servidor de GameTest: os 62 GameTests usam as receitas, o loot e as tags carregados.
+- [x] Dados carregam no servidor de GameTest: os 69 GameTests usam as receitas, o loot e as tags carregados.
 - [x] No cliente, pelo teste visual de 25/10: os 8 estágios, as 12 famílias de cor e os ícones das 40 genéticas.
 - [ ] No cliente, num mundo novo: planta silvestre, lavouras de aldeia e o mascate com sementes.
 
@@ -132,7 +146,7 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
   - saída cheia ou de outra qualidade/genética congela o progresso; sem receita, zera;
   - estado visual vazia/carregada/trabalhando/pronta.
 - [x] **Receitas JSON conferidas por JUnit:**
-  - 55 receitas de crafting (11 artigos + 3 estações + 40 baseados `crafting_transmute` + baseado com piteira), cada uma com avanço do livro de receitas;
+  - 56 receitas de crafting (11 artigos + 3 estações + 40 baseados `crafting_transmute` + baseado com piteira + estufinha), cada uma com avanço do livro de receitas;
   - as receitas `cultivo:drying` (uma por genética), `sieving` e `pressing`;
   - as tags de entrada das estações iguais aos ingredientes.
 - [x] Estações, `ProcessingRecipe` e serializers compilam.
@@ -182,7 +196,7 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 
 ## 3d. Português, animações e sons (pedido de 24/10/2026)
 - [x] Flag `portuguese_everywhere` com `en_us` = `pt_br`, textos revisados e metadado em português (`PortugueseEverywhereTest`).
-- [x] 16 eventos de som com legenda (`SoundsTest`, GameTest `sound_events_registered`).
+- [x] 18 eventos de som com legenda (`SoundsTest`, GameTest `sound_events_registered`).
 - [x] Texturas animadas (`AnimatedTexturesTest`).
 - [x] Animação de fumar e placa da prensa conferidas por regra pura e pelos modelos gerados (`SmokeAnimationTest`, `SmokeAnimationAssetsTest`, `StationAnimationTest`).
 - [x] Isolamento do código de cliente (`ClientIsolationTest`).
@@ -198,23 +212,24 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 - [ ] Decisões do dono sobre o Serene Seasons (DECISIONS.md, "Em aberto").
 **Gate:** automático OK; falta a conferência do dono em single player.
 
-## 3f. Estufinha (pedido de 25/10/2026, plano aprovado, não implementado)
+## 3f. Estufinha (pedido de 25/10/2026, plano aprovado, implementado na branch `claude/estufinha`)
 
-- [ ] Implementar conforme [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md):
-  - bloco de 2 de altura, craftável sem vidro, com luz roxa e partículas roxas;
-  - um pé de planta dentro, sem farmland e sem água;
-  - colheita no clique direito com qualidade 4–5, e a estufinha fica vazia.
-- [ ] Remover o bônus da estufa de vidro: `GreenhouseRules`, `GreenhouseDetector`, a tag `cultivo:greenhouse_glass`, a função de loot, o GameTest `greenhouse_quality` e os docs. Ao ar livre continua 2–3.
-- [ ] Testes:
-  - JUnit com valores literais;
-  - GameTests: plantar, crescer, farinha de osso, colher 4–5, vazia depois da colheita, quebrar as duas metades, salvar/carregar;
-  - um teste negativo;
-  - uma cena no visual-probe.
-- [ ] Atualizar DECISIONS, GUIA_INICIANTE (seção da estufa e checklist), NEXT_SESSION e este TODO, só com evidências.
+- [x] Implementado conforme [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md), com a revisão das APIs nas fontes do 26.3 (commit `ff45eee`) e o código em `8de8b1a`:
+  - bloco `cultivo:grow_tent` de 2 de altura, craftável sem vidro (lã roxa, ametista, tocha, vaso), luz de bloco 12 em cima, LEDs com `light_emission` 15 e partículas roxas;
+  - um pé de planta dentro (BlockEntity na metade de baixo), sem farmland, sem água e sem céu;
+  - clique direito na madura colhe pela tabela da lavoura com qualidade 4–5 e a estufinha fica vazia; farinha de osso +2 a +5.
+- [x] Bônus da estufa de vidro removido: `GreenhouseRules`, `GreenhouseDetector`, `GreenhouseRulesTest`, a tag `cultivo:greenhouse_glass` e o GameTest `greenhouse_quality` saíram; a função de loot decide pela BlockEntity da estufinha. Fora dela, 2–3 (GameTest `glass_gives_no_bonus`).
+- [x] **Testes:**
+  - JUnit: `GrowTentRulesTest` (7 testes com literais: limites 5/6/7, velocidades 6,25/5/4, clique, farinha de osso, luz 12, qualidade 4–5), `DataConsistencyTest` (`greenhouseGlassTagIsGone`, `growTentLootDropsOnlyFromLowerHalf`, 56 receitas), `AssetCompletenessTest.growTentBlockstateCoversEveryState`, `TooltipHintsTest`, `PortugueseEverywhereTest`, `SoundsTest` (18), `StrainCatalogTest`;
+  - GameTests: `grow_tent_places_two_halves`, `grow_tent_plants_and_grows` (random ticks, médias 35/42/49 com sorteio fixo, sem farmland, água ou céu), `grow_tent_bone_meal`, `grow_tent_harvest` (200 colheitas, 4 e 5 vistos, vazia depois, replanta), `glass_gives_no_bonus`, `grow_tent_breaks_either_half` (7 casos, sem duplicar nem perder), `grow_tent_creative_break`, `grow_tent_persists` (salvar/carregar e visão do cliente); `client_prediction_matches_server` (+30 casos) e `interactions_swing_once` estendidos;
+  - testes negativos (tabela de evidências);
+  - cena nova no visual-probe (`cam_grow_tent`, `use_tent`, dica no inventário), rodada no cliente real com 50 prints;
+  - `serene_seasons_compat`: a estufinha fora das tags do SS e crescendo na primavera com o SS carregado (Forge 66.0.13 e 66.0.2).
+- [ ] Ver no jogo de verdade (GUIA_INICIANTE.md, seção 6.1, "Plantas e estufinha"): a luz roxa no escuro, a planta dentro do vaso sem atravessar a lona, colher, replantar e quebrar.
 
 ## 4. Conteúdo de release
 - [x] Licença escolhida (MIT para código e assets do Cultivo) e registrada em `mods.toml` e `LICENSE`.
-- [x] Jar inspecionado: assets incluídos, nenhum arquivo do Minecraft (última inspeção registrada: código `2f6ae47`, 25/10/2026).
+- [x] Jar inspecionado: assets incluídos, nenhum arquivo do Minecraft (última inspeção registrada: código `afa87eb`, 25/10/2026, 1276 entradas).
 - [x] `build` (com `test`), `runGameTestServer` e `runClient` (teste visual) com o código atual.
 - [ ] Cliente conectado ao servidor dedicado do começo ao fim (25/10 só parcial: entrou e sincronizou 2 cenas; parado por falta de memória).
 

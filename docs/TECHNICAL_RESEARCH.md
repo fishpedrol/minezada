@@ -137,7 +137,7 @@ A tarefa `build` gera o JAR em `build/libs`. O teste com servidor dedicado é ne
 2. **Identidade:** `modId` `cultivo`, group `io.github.peixeangola.cultivo`, versão 0.1.0, licença MIT (DECISIONS.md).
 3. **Processamento:** estações com BlockEntity, inventário, progresso por ticks e sincronização dos slots, com receitas próprias `cultivo:drying`, `cultivo:sieving` e `cultivo:pressing` (DECISIONS.md, "Estações").
 4. **Conteúdo de cultivo:** itens, estágios, colheita, drops, rendimento e receitas documentados em DECISIONS.md.
-5. **Outdoor, aldeias e estufa:** outdoor em qualquer bioma; 4 de 5 tipos de aldeia; lavouras de planície; planta silvestre na selva e na planície; regra da estufa e bônus de qualidade (DECISIONS.md, "Fontes de sementes" e "Estufa").
+5. **Outdoor, aldeias e estufinha:** outdoor em qualquer bioma; 4 de 5 tipos de aldeia; lavouras de planície; planta silvestre na selva e na planície; estufinha e bônus de qualidade (DECISIONS.md, "Fontes de sementes" e "Estufinha").
 6. **Validação:** `build`, `runGameTestServer` e `runServer` rodam a cada incremento. O `runClient` abriu no Windows em 24/10/2026 (código `5bded22`); o teste visual automático conferiu o cliente em 25/10/2026 (47 cenas, `f515cb9`). O cliente entrou no servidor dedicado, mas o multiplayer do começo ao fim continua pendente (o de 25/10 parou por falta de memória; TODO.md).
 
 ## Referência de produto consultada
