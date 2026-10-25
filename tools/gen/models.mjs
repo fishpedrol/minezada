@@ -635,15 +635,32 @@ export const LIT_DEVICES = ['bong', 'hookah', 'pipe', 'chillum', 'joint'];
 /** Metades da estufinha, na ordem do Minecraft (espelho de ContentIds.DOUBLE_BLOCK_HALVES). */
 export const GROW_TENT_HALVES = ['upper', 'lower'];
 
+/** Brilho do mylar de dentro da estufinha: o reflexo da lâmpada roxa aparece mesmo de dia e no escuro. */
+export const GROW_TENT_MYLAR_GLOW = 11;
+
+const OPPOSITE = { north: 'south', south: 'north', west: 'east', east: 'west', up: 'down', down: 'up' };
+
 /**
- * Parede fina da estufinha: lona por fora e mylar (prateado) por dentro. `outside` é a face que dá para fora do bloco;
- * as bordas finas usam a lona.
+ * Parede fina da estufinha: lona por fora (e nas bordas finas) e, por dentro, um plano de mylar que brilha com a luz
+ * roxa (light_emission só vale por elemento, então o mylar é um elemento à parte, sem a face interna da lona atrás).
+ * `outside` é a face que dá para fora.
  */
 function tentWall(from, to, outside) {
-  const inside = { north: 'south', south: 'north', west: 'east', east: 'west' }[outside];
-  const out = box(from, to, '#canvas', { cull: false });
-  out.faces[inside] = { uv: defaultFaceUv(from, to, inside).map(round), texture: '#mylar' };
-  return out;
+  const inside = OPPOSITE[outside];
+  const axis = AXIS[NORMAL_AXIS[inside]];
+  const wall = box(from, to, '#canvas', { cull: false, faces: ALL_FACES.filter((f) => f !== inside) });
+  // O plano fica na superfície de dentro da parede
+  const at = (inside === 'south' || inside === 'east' || inside === 'up') ? to[axis] : from[axis];
+  const planeFrom = [...from];
+  const planeTo = [...to];
+  planeFrom[axis] = at;
+  planeTo[axis] = at;
+  const mylar = {
+    from: planeFrom, to: planeTo,
+    light_emission: GROW_TENT_MYLAR_GLOW,
+    faces: { [inside]: { uv: defaultFaceUv(planeFrom, planeTo, inside).map(round), texture: '#mylar' } },
+  };
+  return [wall, mylar];
 }
 
 /**
@@ -676,9 +693,9 @@ export function growTentModels() {
   const lower = blockParent(textures, [
     ...poles(16),
     box([1, 0, 1], [15, 1, 15], '#canvas'),
-    tentWall([2, 1, 14.5], [14, 16, 15], 'south'),
-    tentWall([1, 1, 2], [1.5, 16, 14], 'west'),
-    tentWall([14.5, 1, 2], [15, 16, 14], 'east'),
+    ...tentWall([2, 1, 14.5], [14, 16, 15], 'south'),
+    ...tentWall([1, 1, 2], [1.5, 16, 14], 'west'),
+    ...tentWall([14.5, 1, 2], [15, 16, 14], 'east'),
     // Soleira da porta: a lona da frente enrolada embaixo
     box([2, 1, 1], [14, 3, 1.5], '#flap', { cull: false }),
     pot,
@@ -687,17 +704,11 @@ export function growTentModels() {
   const lampHousing = [4, 0, 12, 3];
   const upper = blockParent(textures, [
     ...poles(13),
-    tentWall([2, 0, 14.5], [14, 13, 15], 'south'),
-    tentWall([1, 0, 2], [1.5, 13, 14], 'west'),
-    tentWall([14.5, 0, 2], [15, 13, 14], 'east'),
-    {
-      from: [1, 13, 1], to: [15, 14, 15],
-      faces: {
-        up: face('#canvas', [1, 1, 15, 15]), down: face('#mylar', [1, 1, 15, 15]),
-        north: face('#canvas', [1, 2, 15, 3]), south: face('#canvas', [1, 2, 15, 3]),
-        west: face('#canvas', [1, 2, 15, 3]), east: face('#canvas', [1, 2, 15, 3]),
-      },
-    },
+    ...tentWall([2, 0, 14.5], [14, 13, 15], 'south'),
+    ...tentWall([1, 0, 2], [1.5, 13, 14], 'west'),
+    ...tentWall([14.5, 0, 2], [15, 13, 14], 'east'),
+    // Teto: lona em cima e nas bordas, mylar brilhando por baixo
+    ...tentWall([1, 13, 1], [15, 14, 15], 'up'),
     // Aba da frente enrolada no alto, com o puxador do zíper
     box([1.5, 10, 1], [14.5, 13, 3], '#flap', { cull: false }),
     {

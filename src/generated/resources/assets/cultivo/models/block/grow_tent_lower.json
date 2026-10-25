@@ -397,15 +397,6 @@
           ],
           "texture": "#canvas"
         },
-        "north": {
-          "uv": [
-            2,
-            0,
-            14,
-            15
-          ],
-          "texture": "#mylar"
-        },
         "south": {
           "uv": [
             2,
@@ -432,6 +423,30 @@
             15
           ],
           "texture": "#canvas"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        1,
+        14.5
+      ],
+      "to": [
+        14,
+        16,
+        14.5
+      ],
+      "light_emission": 11,
+      "faces": {
+        "north": {
+          "uv": [
+            2,
+            0,
+            14,
+            15
+          ],
+          "texture": "#mylar"
         }
       }
     },
@@ -491,7 +506,22 @@
             15
           ],
           "texture": "#canvas"
-        },
+        }
+      }
+    },
+    {
+      "from": [
+        1.5,
+        1,
+        2
+      ],
+      "to": [
+        1.5,
+        16,
+        14
+      ],
+      "light_emission": 11,
+      "faces": {
         "east": {
           "uv": [
             2,
@@ -551,15 +581,6 @@
           ],
           "texture": "#canvas"
         },
-        "west": {
-          "uv": [
-            2,
-            0,
-            14,
-            15
-          ],
-          "texture": "#mylar"
-        },
         "east": {
           "uv": [
             2,
@@ -568,6 +589,30 @@
             15
           ],
           "texture": "#canvas"
+        }
+      }
+    },
+    {
+      "from": [
+        14.5,
+        1,
+        2
+      ],
+      "to": [
+        14.5,
+        16,
+        14
+      ],
+      "light_emission": 11,
+      "faces": {
+        "west": {
+          "uv": [
+            2,
+            0,
+            14,
+            15
+          ],
+          "texture": "#mylar"
         }
       }
     },

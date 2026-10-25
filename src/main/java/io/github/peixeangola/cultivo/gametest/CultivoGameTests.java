@@ -2972,6 +2972,7 @@ public final class CultivoGameTests {
                         variety.seedsId() + " na tag de item " + season + "_crops deveria ser " + fertile);
                 }
                 check(!wild.defaultBlockState().is(ssBlockTag(season + "_crops")), "planta silvestre em " + season);
+                check(!ModBlocks.GROW_TENT.get().defaultBlockState().is(ssBlockTag(season + "_crops")), "estufinha em " + season);
             }
             check(!crop(Variety.BRISA, 0).is(ssBlockTag("unbreakable_infertile_crops")), "o trigo não está nessa tag");
 
@@ -3017,6 +3018,11 @@ public final class CultivoGameTests {
                 plantBoth.run();
                 check(tickUntilMature(helper, PLANT, 300) == 0, "Cultivo cresceu fora de estação (primavera)");
                 check(tickUntilMature(helper, wheat, 300) == 0, "trigo cresceu fora de estação (primavera): o Serene Seasons não está ativo");
+                // A estufinha não está em tag nenhuma do Serene Seasons: na mesma primavera ela cresce normalmente
+                GrowTentBlockEntity tent = placeTent(helper, new BlockPos(1, 1, 7));
+                tent.plant(Variety.BRISA);
+                tickTentUntilRipe(helper.getLevel(), tent, helper.getLevel().getRandom(), 2000);
+                check(tent.age() == 7, "a estufinha não cresceu na primavera com o Serene Seasons: idade " + tent.age());
 
                 // Um bloco de vidro até 16 acima é a "estufa" do Serene Seasons: os dois crescem mesmo fora de estação.
                 helper.setBlock(PLANT.above(3), Blocks.GLASS.defaultBlockState());

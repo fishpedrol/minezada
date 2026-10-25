@@ -192,7 +192,7 @@ fn.cam_articles = [
   'tp @a 34.5 153.4 10 180 28',
   'say probe:cam_articles',
 ];
-fn.cam_grow_tent = ['tp @a 42.5 152.4 20.5 180 8', 'say probe:cam_grow_tent'];
+fn.cam_grow_tent = ['tp @a 42.5 152 18.6 180 12', 'say probe:cam_grow_tent'];
 fn.cam_strains_a = [`tp @a ${num(centerX(0))} 153.2 35.6 180 0`, 'say probe:cam_strains_a'];
 fn.cam_strains_b = [`tp @a ${num(centerX(1))} 153.2 35.6 180 0`, 'say probe:cam_strains_b'];
 fn.cam_products = ['tp @a 35.1 153.2 34.8 180 0', 'say probe:cam_products'];

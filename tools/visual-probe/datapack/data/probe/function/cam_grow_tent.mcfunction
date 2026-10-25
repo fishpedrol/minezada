@@ -1,2 +1,2 @@
-tp @a 42.5 152.4 20.5 180 8
+tp @a 42.5 152 18.6 180 12
 say probe:cam_grow_tent

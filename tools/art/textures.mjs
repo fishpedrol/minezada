@@ -1162,8 +1162,8 @@ const BLOCKS = {
   },
   // Estufinha (grow tent). Lona: tecido grafite em trama, com uma costura vertical pespontada de roxo
   grow_tent_canvas: { grid: tentCanvasGrid(), palette: { C: '#2b2b30', c: '#34343a', s: '#1f1f24', p: '#6a3fa0' } },
-  // Mylar por dentro: prata em losangos com reflexos lilás da lâmpada
-  grow_tent_mylar: { grid: tentMylarGrid(), palette: { M: '#c8c8d0', m: '#a9a9b6', l: '#d9c2ff' } },
+  // Mylar por dentro: prata em losangos tingida de lilás pela lâmpada roxa (o modelo faz o mylar brilhar)
+  grow_tent_mylar: { grid: tentMylarGrid(), palette: { M: '#cbb8ec', m: '#a58ad2', l: '#f1e4ff' } },
   // Postes de metal escuro
   grow_tent_frame: { grid: grainGrid(71, 'F', 'f', 'h'), palette: { F: '#55555e', f: '#44444b', h: '#6e6e78' } },
   // Aba enrolada: dobras horizontais da lona e o puxador dourado do zíper no meio (linhas 3–6)

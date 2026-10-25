@@ -328,15 +328,6 @@
           ],
           "texture": "#canvas"
         },
-        "north": {
-          "uv": [
-            2,
-            3,
-            14,
-            16
-          ],
-          "texture": "#mylar"
-        },
         "south": {
           "uv": [
             2,
@@ -363,6 +354,30 @@
             16
           ],
           "texture": "#canvas"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        0,
+        14.5
+      ],
+      "to": [
+        14,
+        13,
+        14.5
+      ],
+      "light_emission": 11,
+      "faces": {
+        "north": {
+          "uv": [
+            2,
+            3,
+            14,
+            16
+          ],
+          "texture": "#mylar"
         }
       }
     },
@@ -422,7 +437,22 @@
             16
           ],
           "texture": "#canvas"
-        },
+        }
+      }
+    },
+    {
+      "from": [
+        1.5,
+        0,
+        2
+      ],
+      "to": [
+        1.5,
+        13,
+        14
+      ],
+      "light_emission": 11,
+      "faces": {
         "east": {
           "uv": [
             2,
@@ -482,15 +512,6 @@
           ],
           "texture": "#canvas"
         },
-        "west": {
-          "uv": [
-            2,
-            3,
-            14,
-            16
-          ],
-          "texture": "#mylar"
-        },
         "east": {
           "uv": [
             2,
@@ -499,6 +520,30 @@
             16
           ],
           "texture": "#canvas"
+        }
+      }
+    },
+    {
+      "from": [
+        14.5,
+        0,
+        2
+      ],
+      "to": [
+        14.5,
+        13,
+        14
+      ],
+      "light_emission": 11,
+      "faces": {
+        "west": {
+          "uv": [
+            2,
+            3,
+            14,
+            16
+          ],
+          "texture": "#mylar"
         }
       }
     },
@@ -522,15 +567,6 @@
             15
           ],
           "texture": "#canvas"
-        },
-        "down": {
-          "uv": [
-            1,
-            1,
-            15,
-            15
-          ],
-          "texture": "#mylar"
         },
         "north": {
           "uv": [
@@ -567,6 +603,30 @@
             3
           ],
           "texture": "#canvas"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        13,
+        1
+      ],
+      "to": [
+        15,
+        13,
+        15
+      ],
+      "light_emission": 11,
+      "faces": {
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": "#mylar"
         }
       }
     },

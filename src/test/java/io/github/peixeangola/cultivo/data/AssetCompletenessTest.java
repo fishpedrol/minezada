@@ -215,8 +215,8 @@ class AssetCompletenessTest {
 
     /**
      * Estufinha: uma variante para cada um dos 8 estados (half × facing), com o modelo da metade e girada como as
-     * estações; a metade de cima tem a luz roxa (light_emission 15, do 26.3) e a de baixo não brilha. O item continua com
-     * o ícone plano.
+     * estações; a metade de cima tem o painel de LEDs virado para baixo com light_emission 15 (do 26.3) e o mylar das
+     * duas metades brilha. O item continua com o ícone plano.
      */
     @Test
     void growTentBlockstateCoversEveryState() {
@@ -230,24 +230,40 @@ class AssetCompletenessTest {
             assertEquals("cultivo:block/grow_tent_" + state.get("half"), v.get("model").getAsString(), state.toString());
             assertEquals(FACING_Y.get(state.get("facing")), v.has("y") ? v.get("y").getAsInt() : 0, state.toString());
         }
-        assertTrue(emissiveElements("grow_tent_upper") >= 1, "a metade de cima sem luz roxa");
-        assertEquals(0, emissiveElements("grow_tent_lower"), "a metade de baixo não tem lâmpada");
+        assertTrue(ledPanels("grow_tent_upper") >= 1, "a metade de cima sem o painel de LEDs aceso");
+        assertEquals(0, ledPanels("grow_tent_lower"), "a metade de baixo não tem lâmpada");
+        assertTrue(glowingMylar("grow_tent_lower") >= 3 && glowingMylar("grow_tent_upper") >= 4, "mylar sem brilho");
         JsonObject item = Resources.json(Resources.assets("models/item/grow_tent.json"));
         assertEquals("minecraft:item/generated", item.get("parent").getAsString());
         assertEquals("cultivo:item/grow_tent", item.getAsJsonObject("textures").get("layer0").getAsString());
     }
 
-    private static long emissiveElements(String model) {
+    /** Elementos com a face de baixo na textura da lâmpada e brilho 15 (o painel de LEDs). */
+    private static long ledPanels(String model) {
+        return emissive(model).stream().filter(el -> el.get("light_emission").getAsInt() == 15
+            && el.getAsJsonObject("faces").has("down")
+            && el.getAsJsonObject("faces").getAsJsonObject("down").get("texture").getAsString().equals("#lamp")).count();
+    }
+
+    /** Planos de mylar que brilham (as paredes e o teto por dentro). */
+    private static long glowingMylar(String model) {
+        return emissive(model).stream().filter(el -> el.getAsJsonObject("faces").entrySet().stream()
+            .allMatch(f -> f.getValue().getAsJsonObject().get("texture").getAsString().equals("#mylar"))).count();
+    }
+
+    /** Elementos com light_emission, todos entre 1 e 15 (o CuboidModelElement do 26.3 recusa fora de 0–15). */
+    private static List<JsonObject> emissive(String model) {
         JsonArray elements = Resources.json(Resources.assets("models/block/" + model + ".json")).getAsJsonArray("elements");
-        long count = 0;
+        List<JsonObject> out = new ArrayList<>();
         for (JsonElement e : elements) {
             JsonObject el = e.getAsJsonObject();
             if (el.has("light_emission")) {
-                assertEquals(15, el.get("light_emission").getAsInt(), model);
-                count++;
+                int glow = el.get("light_emission").getAsInt();
+                assertTrue(glow >= 1 && glow <= 15, model + " light_emission " + glow);
+                out.add(el);
             }
         }
-        return count;
+        return out;
     }
 
     /** Pote: o conteúdo atrás do vidro só com filled=true. Cinzeiro: uma camada de cinza por nível, nada no 0. */
