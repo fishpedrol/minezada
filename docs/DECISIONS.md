@@ -25,7 +25,7 @@ Atualizado em 24/10/2026, com o código do commit `319cf0b`. As constantes ficam
 ## Alvo de loader
 - **Forge 26.3-66.0.13.** Em 21/10/2026 era a release estável; o NeoForge 26.3 só tinha artefatos beta. A matriz exata está em [TECHNICAL_RESEARCH.md](TECHNICAL_RESEARCH.md); não há suporte duplo.
 - **Mesma versão para todos:** cada jogador e o servidor usam o mesmo Forge e o mesmo jar do Cultivo.
-- **Ambiente do dono (24/10/2026):** o launcher dele tem um perfil com Forge 26.3-66.0.2 e outros mods Forge, entre eles o Serene Seasons, o que confirma o Forge como loader do grupo. A compatibilidade está em "Em aberto".
+- **Ambiente do dono (24/10/2026):** o launcher dele tem um perfil com Forge 26.3-66.0.2 e outros mods Forge, entre eles o Serene Seasons, o que confirma o Forge como loader do grupo. Desde 25/10/2026 esse Forge é suportado: o `mods.toml` aceita `[66.0.2,)`, e o Cultivo foi testado no 66.0.2 com o Serene Seasons (seção "Compatibilidade: Serene Seasons e versões do Forge").
 
 ## Outras regras
 - Crescimento, qualidade, inventário, processamento, crafting, drops e fumo são decididos no servidor.
@@ -366,12 +366,51 @@ O dono pediu: "deixe tudo no mod em português, também crie as animações".
   - o dichavador soa ao instalar e ao tirar.
 - **Isolamento do cliente:** todo código só do cliente fica no pacote `client/`, e o código comum só chega lá por `SmokingItem.initializeClient`, que o Forge chama apenas no cliente físico. `ClientIsolationTest` confere as fontes e o bytecode, e o `runGameTestServer` (servidor dedicado) passa.
 
+## Compatibilidade: Serene Seasons e versões do Forge
+Em 25/10/2026 o Cultivo foi testado no ambiente do dono: Forge 26.3-66.0.2 com o Serene Seasons (SS) 26.1.2.0.7 para Forge 26.3 e o GlitchCore 26.3.0.0.5, baixados do Modrinth com o sha512 conferido. O SS pede forge `[66.0.2,)` e glitchcore `[26.3.0.0.3,)`.
+
+- **Faixa do Forge:** o `mods.toml` passou de `[66,)` para `[66.0.2,)`.
+  - O 66.0.2 é a menor versão testada: `build` e `runGameTestServer` passaram compilando contra ela, e o servidor oficial 66.0.2 rodou o jar compilado contra o 66.0.13 (as lavouras do Cultivo e o trigo cresceram).
+  - O 66.0.0 e o 66.0.1 ficam de fora: não foram testados, e o 66.0.2 corrige "Fix players dropping items", que o Cultivo usa para devolver sobras com `Player#drop` (`block/Handouts`). O changelog do 66.0.x só tem correções.
+  - O build continua no 66.0.13 da matriz (padrão do `build.gradle`). `-Pcultivo_forge_version` e `-Pcultivo_run_dir` servem só para testar outra versão ou outra pasta de mods.
+- **Como o SS age nas lavouras:** um mixin no começo do `randomTick` de todo bloco (`BlockBehaviour$BlockStateBase`). Ele não passa pelos eventos do Forge (`CropGrowEvent`, `BonemealEvent`) e só age nos blocos das tags `sereneseasons:spring_crops`, `summer_crops`, `autumn_crops` e `winter_crops` (o que é de ano todo entra nas quatro); um bloco fora delas nunca é afetado.
+  - Fora de estação (`out_of_season_crop_behavior`): 0 (padrão) cancela 5 de 6 random ticks, e a lavoura cresce ~1/6; 1 não cresce; 2 quebra a lavoura sem drop, exceto os blocos de `unbreakable_infertile_crops`.
+  - Sempre férteis: abaixo de y=48 sem ver o céu, os biomas da lista negra (oceanos, rio, praia, cavernas...) e as dimensões fora da whitelist (por padrão só o overworld tem estações). Biomas tropicais (deserto, savanas, selvas, badlands, mangue...) deixam o que é de verão fértil o ano todo; biomas frios (temperatura < 0,15) só deixam as de inverno.
+  - Farinha de osso do jogador numa lavoura fora de estação: o SS gasta o osso mesmo sem crescer (no modo 0 deixa passar 1 em 6). Dispensers e aldeões não passam pelo SS.
+  - Calendário: um mundo novo começa no início da primavera; cada sub-estação tem 8 dias, e o ano, 96.
+  - Antes desta mudança o Cultivo não estava em nenhuma tag do SS e ignorava as estações (em single player e em servidor), ao contrário do trigo.
+- **Regra adotada: paridade com o trigo.**
+  - No SS 26.1.2.0.7 o trigo, bloco e semente, só está em `summer_crops` e `autumn_crops`. As 40 lavouras e as 40 sementes do Cultivo entram nas mesmas tags: `data/sereneseasons/tags/block/{summer,autumn}_crops.json` e `data/sereneseasons/tags/item/{summer,autumn}_crops.json`, com `replace: false`.
+  - Cada entrada é `{"id": ..., "required": false}`: uma entrada que não resolva é pulada, sem invalidar a tag inteira do SS (e com ela o trigo).
+  - As estações vêm de `compat.serene_seasons.seasons` no manifesto (`ContentIds.SERENE_SEASONS_CROP_SEASONS` no Java).
+  - A planta silvestre fica de fora: ela não tem random tick.
+  - Nada em `spring_crops`, `winter_crops` ou `unbreakable_infertile_crops`, e a `greenhouse_glass` do SS fica como está (mudá-la mudaria o vanilla).
+  - **Por quê:** a regra do projeto é "comportamento próximo à lavoura de trigo" (CLAUDE.md), e o dono pediu que o plantio outdoor se comporte como o do trigo (seção "Pedidos e confirmações do dono"). Com o SS instalado, uma lavoura do mod que ignorasse as estações ao lado de um trigo parado na primavera fugiria dessa regra.
+  - Sem o SS instalado, ninguém lê essas tags: são inofensivas.
+- **Estufa:**
+  - A estufa do SS é qualquer bloco da tag `sereneseasons:greenhouse_glass` de 1 a 16 blocos acima, na mesma coluna, sem exigir paredes. A tag é `#c:glass_blocks` (vidro, 16 vidros tingidos e vidro fumê); vidraças (painéis) não contam. Ela só tira a penalidade de estação, sem bônus.
+  - A estufa do Cultivo com teto de bloco de vidro também vale como estufa do SS: a lavoura cresce normalmente o ano todo.
+  - Com teto de vidraça, só a regra do Cultivo vale: qualidade 4–5, mas sem proteção de estação.
+  - A qualidade da colheita não muda com o SS: continua vindo da `GreenhouseRules` e da `QualityRules`.
+- **Servidor dedicado (descoberta de 25/10/2026):**
+  - No Forge 26.3 (66.0.2 e 66.0.13), `ForgeEventFactory.onTagsUpdated` só é chamado pelo `ClientPacketListener`: o servidor nunca dispara o `TagsUpdatedEvent` ao carregar os dados. O SS só monta as listas de lavouras (`ModFertility.populate`, via GlitchCore) nesse evento.
+  - Consequência: num servidor dedicado o SS não afeta nenhuma lavoura, nem o trigo. Em single player e LAN o cliente do anfitrião dispara o evento na mesma JVM, e as estações funcionam.
+  - Evidência: servidor oficial 66.0.2 + SS + GlitchCore, `out_of_season_crop_behavior = 1`, `season set early_spring` e bioma plains: os trigos ao ar livre chegaram à idade 7 na primavera. O mixin estava aplicado (log de `-Dmixin.debug.export=true`).
+  - O Cultivo não contorna isso: no servidor dedicado ele segue o trigo, e os dois ignoram as estações.
+- **Testes:** `CompatibilityTest` (JUnit) trava as tags, o manifesto, o `mods.toml` e o padrão do `build.gradle`. O GameTest `serene_seasons_compat` sempre confere as tags; com o SS carregado, simula a sincronização de tags do single player e confere que o Cultivo e o trigo não crescem no início da primavera e crescem sob um bloco de vidro e no meio do verão. O servidor de produção é testado com `tools/compat/forge-server-compat.sh` e as sondas de console de `tools/compat/probes/`, porque os GameTests não rodam em produção.
+- **O que o dono pode mudar:**
+  - a config do SS (`config/sereneseasons/fertility.toml`, por exemplo `out_of_season_crop_behavior`), que vale para o trigo e o Cultivo juntos;
+  - outra regra de estações por datapack: um arquivo com o mesmo caminho de tag do SS e `"remove"` (extensão de tags do Forge) tira lavouras do Cultivo de uma estação, e um arquivo em `spring_crops` ou `winter_crops` as acrescenta. Nenhum desses datapacks foi testado;
+  - para mudar a regra no próprio mod, trocar `compat.serene_seasons.seasons` no manifesto e `ContentIds.SERENE_SEASONS_CROP_SEASONS`, e atualizar `CompatibilityTest` e o GameTest, que travam verão e outono.
+
 ## Em aberto
 - **Checagem visual no cliente:** feita pelo teste visual automático em 25/10/2026 (47 cenas, TODO.md). Faltam a mão esquerda, os artigos de todos os lados, ouvir os sons e o multiplayer do começo ao fim (o de 25/10 parou por falta de memória). Checklist: GUIA_INICIANTE.md, seção 6.
-- **Ambiente do dono:**
-  - o launcher usa Forge 26.3-66.0.2, e o `mods.toml` aceita `[66,)`, então o jar tenta carregar nessa versão não testada;
-  - os outros mods dele incluem o Serene Seasons, que mexe no crescimento das plantações e tem a própria ideia de estufa;
-  - falta testar o Cultivo com ele e decidir: exigir `[66.0.13,)` ou testar no 66.0.2, e definir o comportamento com as estações.
+- **Serene Seasons** (seção "Compatibilidade: Serene Seasons e versões do Forge"). O dono decide:
+  - manter a paridade com o trigo (verão e outono) ou adotar outra regra de estações;
+  - se usar `out_of_season_crop_behavior = 2` (quebra fora de estação), pôr as lavouras do Cultivo em `unbreakable_infertile_crops`, para não perder sementes raras;
+  - se vidraças (painéis) devem contar como estufa do SS, o que mudaria também o vanilla;
+  - onde jogar: num servidor dedicado com Forge 26.3 o SS não age em lavoura nenhuma (o `TagsUpdatedEvent` só dispara no cliente), então as estações não afetam nenhuma plantação, nem o trigo; em single player e LAN, afetam.
+  - além disso, falta ver no cliente, em single player com o SS: o tooltip "Estações férteis: Verão, Outono" nas sementes, a lavoura lenta na primavera e normal sob bloco de vidro.
 - **Catálogo:** pode estar incompleto (37 de cerca de 58 produtos).
 - **Balanceamento:** ajuste fino depois de jogar (pesos, raridade da planta silvestre, velocidades, preços do mascate).
 - **Limites conhecidos:**
@@ -380,4 +419,4 @@ O dono pediu: "deixe tudo no mod em português, também crie as animações".
   - a subida do braço em degraus na 3ª pessoa;
   - sem chama no item isqueiro enquanto se fuma;
   - bong e narguilé ficam parcialmente atrás dos braços em alguns ângulos da 3ª pessoa.
-- **Amigos:** confirmar se todos usam Forge 26.3-66.0.13 (a recomendação continua sendo o Forge).
+- **Amigos:** confirmar que todos (e o servidor, se houver) usam o mesmo Forge 26.3, 66.0.2 ou mais novo; o recomendado é o 66.0.13, contra o qual o projeto compila (a recomendação continua sendo o Forge).
