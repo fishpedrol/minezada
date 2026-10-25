@@ -198,6 +198,20 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 - [ ] Decisões do dono sobre o Serene Seasons (DECISIONS.md, "Em aberto").
 **Gate:** automático OK; falta a conferência do dono em single player.
 
+## 3f. Estufinha (pedido de 25/10/2026, plano aprovado, não implementado)
+
+- [ ] Implementar conforme [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md):
+  - bloco de 2 de altura, craftável sem vidro, com luz roxa e partículas roxas;
+  - um pé de planta dentro, sem farmland e sem água;
+  - colheita no clique direito com qualidade 4–5, e a estufinha fica vazia.
+- [ ] Remover o bônus da estufa de vidro: `GreenhouseRules`, `GreenhouseDetector`, a tag `cultivo:greenhouse_glass`, a função de loot, o GameTest `greenhouse_quality` e os docs. Ao ar livre continua 2–3.
+- [ ] Testes:
+  - JUnit com valores literais;
+  - GameTests: plantar, crescer, farinha de osso, colher 4–5, vazia depois da colheita, quebrar as duas metades, salvar/carregar;
+  - um teste negativo;
+  - uma cena no visual-probe.
+- [ ] Atualizar DECISIONS, GUIA_INICIANTE (seção da estufa e checklist), NEXT_SESSION e este TODO, só com evidências.
+
 ## 4. Conteúdo de release
 - [x] Licença escolhida (MIT para código e assets do Cultivo) e registrada em `mods.toml` e `LICENSE`.
 - [x] Jar inspecionado: assets incluídos, nenhum arquivo do Minecraft (última inspeção registrada: código `2f6ae47`, 25/10/2026).
