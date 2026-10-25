@@ -22,10 +22,17 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 // Include generated resources
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+// Versão do Forge: a da matriz fixada em docs/TECHNICAL_RESEARCH.md. Só para checar compatibilidade com outra
+// versão, troque na linha de comando: ./gradlew build -Pcultivo_forge_version=26.3-66.0.2
+def forgeVersion = providers.gradleProperty('cultivo_forge_version').getOrElse('26.3-66.0.13')
+// Pasta de trabalho dos runs (padrão run/). Um teste com outros mods usa uma pasta própria com o seu mods/,
+// por exemplo: ./gradlew runGameTestServer -Pcultivo_run_dir=run-compat (veja tools/compat/)
+def runDir = providers.gradleProperty('cultivo_run_dir').getOrElse('run')
+
 minecraft {
     runs {
         configureEach {
-            workingDir = layout.projectDirectory.dir('run')
+            workingDir = layout.projectDirectory.dir(runDir)
 
             systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
             systemProperty 'forge.enabledGameTestNamespaces', 'cultivo'
@@ -55,7 +62,7 @@ repositories {
 }
 
 dependencies {
-    implementation minecraft.dependency('net.minecraftforge:forge:26.3-66.0.13')
+    implementation minecraft.dependency("net.minecraftforge:forge:${forgeVersion}")
     annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.6'
 
     // Pure rule and asset/data completeness tests (no Minecraft bootstrap needed)
