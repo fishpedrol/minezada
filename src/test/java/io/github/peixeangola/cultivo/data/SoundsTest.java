@@ -43,7 +43,7 @@ class SoundsTest {
 
     @Test
     void registryManifestAndSoundsJsonListTheSameEvents() throws IOException {
-        assertEquals(15, ContentIds.SOUNDS.size());
+        assertEquals(16, ContentIds.SOUNDS.size());
         assertEquals(ContentIds.SOUNDS, registeredIds(), "ModSounds registra exatamente ContentIds.SOUNDS, na ordem");
         List<String> manifest = new ArrayList<>();
         Resources.json(StrainColumns.MANIFEST).getAsJsonArray("sounds")
@@ -81,6 +81,9 @@ class SoundsTest {
         }
         assertEquals("Isqueiro acende", pt.get("subtitles.cultivo.lighter.click").getAsString());
         assertEquals("Fumaça soprada", pt.get("subtitles.cultivo.smoke.exhale").getAsString());
+        // O narguilé tem o próprio borbulhar: a legenda nomeia o aparelho que está sendo usado, não o bong
+        assertEquals("Bong borbulha", pt.get("subtitles.cultivo.bong.bubble").getAsString());
+        assertEquals("Narguilé borbulha", pt.get("subtitles.cultivo.hookah.bubble").getAsString());
         assertEquals("minecraft:block.grindstone.use",
             soundsJson().getAsJsonObject("grinder.grind").getAsJsonArray("sounds").get(0).getAsJsonObject().get("name").getAsString());
     }

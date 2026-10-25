@@ -91,8 +91,28 @@ class SmokeAnimationAssetsTest {
     }
 
     /**
+     * Ponto do modelo na mão (1/16) levado ao modelo do jogador (px) na 3ª pessoa, cabeça reta, com o braço na pose de
+     * fumar do Java. Na mão esquerda o braço espelha (pivô (5, 2, 0) e yRot negado, como SmokingItemClient#pose) e a
+     * camada da mão anda -1 px em x; a exibição é aplicada como o ItemTransform#apply do 26.3 (com a correção da mão
+     * esquerda: translação x, rotação Y e Z negadas).
+     */
+    private static double[] mouthpieceAt(SmokeDevice device, boolean left) {
+        JsonObject pose = smokeAnimation().getAsJsonObject("poses").getAsJsonObject(id(device));
+        JsonArray point = pose.getAsJsonArray("mouth_point");
+        SmokeAnimation.Arm arm = SmokeAnimation.pose(device).raised();
+        double side = left ? -1 : 1;
+        JsonObject lit = display(id(device) + "_in_hand_lit", left ? "thirdperson_lefthand" : "thirdperson_righthand");
+        double[] hand = M.chain(M.translate(-5 * PX * side, 2 * PX, 0), M.rotY(arm.y() * side), M.rotX(arm.x()),
+            M.rotX(Math.toRadians(-90)), M.rotY(Math.toRadians(180)), M.translate(PX * side, 2 * PX, -10 * PX),
+            gameDisplayMatrix(lit, left));
+        double[] at = M.apply(hand, point.get(0).getAsDouble() / 16, point.get(1).getAsDouble() / 16, point.get(2).getAsDouble() / 16);
+        return new double[] {at[0] / PX, at[1] / PX, at[2] / PX};
+    }
+
+    /**
      * Na 3ª pessoa, com o braço na pose da boca do Java (cabeça reta), o ponto de boca do aparelho cai no alvo do
-     * manifesto (a boca, ou na frente do rosto para bong e narguilé), a menos de 0,05 px.
+     * manifesto (a boca, ou na frente do rosto para bong e narguilé), a menos de 0,05 px, nas duas mãos. Regressão: na
+     * mão esquerda o baseado ficava 5,4 px e o cachimbo 4,2 px fora da boca (a translação era a da direita).
      */
     @Test
     void litModelsPutTheMouthpieceAtTheMouth() {
@@ -101,16 +121,19 @@ class SmokeAnimationAssetsTest {
         for (SmokeDevice device : SmokeDevice.values()) {
             JsonObject pose = anim.getAsJsonObject("poses").getAsJsonObject(id(device));
             JsonArray target = pose.has("target") ? pose.getAsJsonArray("target") : mouth;
-            JsonArray point = pose.getAsJsonArray("mouth_point");
-            SmokeAnimation.Arm arm = SmokeAnimation.pose(device).raised();
-            JsonObject lit = display(id(device) + "_in_hand_lit", "thirdperson_righthand");
-            double[] hand = M.chain(M.translate(-5 * PX, 2 * PX, 0), M.rotY(arm.y()), M.rotX(arm.x()), M.rotX(Math.toRadians(-90)),
-                M.rotY(Math.toRadians(180)), M.translate(PX, 2 * PX, -10 * PX), displayMatrix(lit));
-            double[] at = M.apply(hand, point.get(0).getAsDouble() / 16, point.get(1).getAsDouble() / 16, point.get(2).getAsDouble() / 16);
-            for (int k = 0; k < 3; k++) {
-                assertEquals(target.get(k).getAsDouble(), at[k] / PX, 0.05D, id(device) + " eixo " + k);
+            for (boolean left : new boolean[] {false, true}) {
+                double[] at = mouthpieceAt(device, left);
+                for (int k = 0; k < 3; k++) {
+                    assertEquals(target.get(k).getAsDouble(), at[k], 0.05D,
+                        id(device) + (left ? " mão esquerda" : " mão direita") + " eixo " + k);
+                }
             }
         }
+        // Os números que a revisão calculou para a mão esquerda (o JSON guarda x negado: o jogo nega de novo)
+        assertEquals(List.of(-4.54D, 3.92D, 2.62D),
+            list(vec(display("joint_in_hand_lit", "thirdperson_lefthand"), "translation")));
+        assertEquals(List.of(-3.96D, 5.72D, 1.23D),
+            list(vec(display("pipe_in_hand_lit", "thirdperson_lefthand"), "translation")));
     }
 
     /**
@@ -122,16 +145,19 @@ class SmokeAnimationAssetsTest {
         int k = SmokeAnimation.KEYFRAMES;
         for (SmokeDevice device : SmokeDevice.values()) {
             String base = id(device) + "_in_hand";
-            JsonObject idle = display(base, "thirdperson_righthand");
-            JsonObject lit = display(base + "_lit", "thirdperson_righthand");
-            for (int i = 0; i < k; i++) {
-                JsonObject frame = display(base + "_lit_k" + i, "thirdperson_righthand");
-                for (String key : List.of("rotation", "translation", "scale")) {
-                    double[] a = vec(idle, key);
-                    double[] b = vec(lit, key);
-                    double[] f = vec(frame, key);
-                    for (int c = 0; c < 3; c++) {
-                        assertEquals(a[c] + (b[c] - a[c]) * i / k, f[c], 0.002D, base + "_lit_k" + i + " " + key);
+            // Cada mão interpola entre o próprio jeito de segurar e a própria pose na boca
+            for (String context : List.of("thirdperson_righthand", "thirdperson_lefthand")) {
+                JsonObject idle = display(base, context);
+                JsonObject lit = display(base + "_lit", context);
+                for (int i = 0; i < k; i++) {
+                    JsonObject frame = display(base + "_lit_k" + i, context);
+                    for (String key : List.of("rotation", "translation", "scale")) {
+                        double[] a = vec(idle, key);
+                        double[] b = vec(lit, key);
+                        double[] f = vec(frame, key);
+                        for (int c = 0; c < 3; c++) {
+                            assertEquals(a[c] + (b[c] - a[c]) * i / k, f[c], 0.002D, base + "_lit_k" + i + " " + context + " " + key);
+                        }
                     }
                 }
             }
@@ -244,7 +270,8 @@ class SmokeAnimationAssetsTest {
             String applied = p.getAsJsonObject("apply").get("model").getAsString();
             String contents = p.getAsJsonObject("when").has("contents") ? p.getAsJsonObject("when").get("contents").getAsString() : "";
             if (applied.equals("cultivo:block/press_platen_up")) {
-                assertEquals("empty|done", contents);
+                // A placa fica parada em cima sempre que a prensa não está apertando (vazia, carregada ou pronta)
+                assertEquals("empty|loaded|done", contents);
             }
             if (contents.contains("working")) {
                 assertEquals("cultivo:block/press_squeeze", applied);
@@ -307,6 +334,20 @@ class SmokeAnimationAssetsTest {
         double[] s = vec(display, "scale");
         return M.chain(M.translate((left ? -1 : 1) * t[0] / 16, t[1] / 16, t[2] / 16), M.rotX(Math.toRadians(r[0])),
             M.rotY(Math.toRadians(r[1])), M.rotZ(Math.toRadians(r[2])), M.scale(s[0], s[1], s[2]),
+            M.translate(-0.5, -0.5, -0.5));
+    }
+
+    /**
+     * ItemTransform#apply do 26.3 lendo o JSON de um contexto: com a correção da mão esquerda, a translação x e as
+     * rotações Y e Z são negadas antes de aplicar (translação, rotação XYZ, escala, -0,5).
+     */
+    private static double[] gameDisplayMatrix(JsonObject display, boolean leftHandFix) {
+        double[] r = vec(display, "rotation");
+        double[] t = vec(display, "translation");
+        double[] s = vec(display, "scale");
+        double sign = leftHandFix ? -1 : 1;
+        return M.chain(M.translate(sign * t[0] / 16, t[1] / 16, t[2] / 16), M.rotX(Math.toRadians(r[0])),
+            M.rotY(Math.toRadians(sign * r[1])), M.rotZ(Math.toRadians(sign * r[2])), M.scale(s[0], s[1], s[2]),
             M.translate(-0.5, -0.5, -0.5));
     }
 

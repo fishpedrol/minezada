@@ -66,6 +66,7 @@ public final class ContentIds {
         "smoke.inhale",
         "smoke.exhale",
         "bong.bubble",
+        "hookah.bubble",
         "lighter.click",
         "drying_rack.rustle",
         "sieve.sift",
@@ -149,7 +150,19 @@ public final class ContentIds {
         "placeable_articles_drop_self",
         "sound_events_registered",
         "smoke_use_effects_run",
-        "station_effects_run");
+        "station_effects_run",
+        "station_stalled_visual",
+        "station_hold_click_keeps_input",
+        "tray_rolls_from_off_hand",
+        "interactions_swing_once",
+        "full_inventory_drops_handouts",
+        "creative_keeps_held_stacks",
+        "jar_reload_resumes",
+        "client_prediction_matches_server",
+        "sieve_grinder_shape",
+        "ashtray_search_edges",
+        "block_states_match_ids",
+        "tooltips_show_profile_and_marks");
 
     private ContentIds() {}
 
@@ -169,14 +182,21 @@ public final class ContentIds {
         return Stream.of(cropBlocks(), blocksWithItems(), PLACEABLE_ARTICLES).flatMap(List::stream).toList();
     }
 
+    /** Idades da lavoura no blockstate (CropBlock.AGE, 0–7, como o trigo). */
+    public static final List<String> CROP_AGES = IntStream.rangeClosed(0, 7).mapToObj(String::valueOf).toList();
+
     /**
-     * Propriedades do blockstate de cada estação e artigo colocável, com os valores como aparecem no JSON (espelho
-     * dos blocos Java): estações facing e contents, a peneira também grinder; bandeja facing; pote filled; cinzeiro
-     * ash de 0 a {@link AshtrayRules#MAX_ASH}. Vazio para os outros blocos. Os testes dos modelos conferem que todo
-     * "when" e toda variante usam só estas propriedades e valores.
+     * Propriedades do blockstate de cada bloco do mod, com os valores como aparecem no JSON (espelho dos blocos Java):
+     * lavouras age de 0 a 7; estações facing e contents, a peneira também grinder; bandeja facing; pote filled; cinzeiro
+     * ash de 0 a {@link AshtrayRules#MAX_ASH}; a planta silvestre não tem nenhuma. Os testes dos modelos conferem que
+     * todo "when" e toda variante usam só estas propriedades e valores, e o GameTest block_states_match_ids confere o
+     * espelho contra a StateDefinition registrada de cada bloco.
      */
     public static Map<String, List<String>> stateProperties(String blockId) {
         Map<String, List<String>> out = new LinkedHashMap<>();
+        if (cropBlocks().contains(blockId)) {
+            out.put("age", CROP_AGES);
+        }
         if (STATIONS.contains(blockId)) {
             out.put("facing", HORIZONTAL_FACINGS);
             out.put("contents", STATION_STATE_PROPERTIES.get("contents"));

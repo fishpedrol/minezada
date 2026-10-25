@@ -50,4 +50,18 @@ public final class RollingRules {
         }
         return Refusal.NONE;
     }
+
+    /**
+     * O clique da mão principal passa para a mão secundária: a principal não tem flores bastantes e a secundária segura
+     * flores secas. Então a principal devolve PASS (cliente e servidor decidem igual, com o que os dois sabem) e a
+     * secundária enrola ou dá o próprio aviso; o aviso só aparece quando nenhuma das mãos consegue enrolar. Faltando
+     * folhas de seda a outra mão não ajuda (as folhas são as mesmas), então o aviso sai já na principal.
+     *
+     * @param mainHand o clique é da mão principal (o vanilla tenta a principal e depois a secundária)
+     * @param refusal o resultado de {@link #check} para a pilha da mão que clicou
+     * @param offHandHoldsDriedFlowers a mão secundária segura flores secas
+     */
+    public static boolean defersToOffHand(boolean mainHand, Refusal refusal, boolean offHandHoldsDriedFlowers) {
+        return mainHand && refusal == Refusal.NEEDS_FLOWERS && offHandHoldsDriedFlowers;
+    }
 }

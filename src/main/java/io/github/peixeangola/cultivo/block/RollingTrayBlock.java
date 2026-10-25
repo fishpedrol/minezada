@@ -12,7 +12,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Inventory;
@@ -38,9 +37,14 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * secas iguais na mão (pelo menos {@link RollingRules#FLOWERS_PER_ROLL} na mesma pilha) e
  * {@link RollingRules#PAPERS_PER_ROLL} folhas de seda no inventário: gasta as flores e as folhas e entrega
  * {@link RollingRules#JOINTS_PER_ROLL} baseados. Os baseados levam os componentes da flor (qualidade, cura), como o
- * transmute da bancada, e a variedade em cultivo:strain, então servem para qualquer uma das variedades. Sem o
- * bastante, avisa acima da barra de itens e não gasta nada; no criativo não gasta nada. Outros itens seguem o vanilla
- * (PASS). Tudo é decidido no servidor; o cliente só prevê pelo item na mão.
+ * transmute da bancada, e a variedade em cultivo:strain, então servem para qualquer uma das variedades. Os baseados vão
+ * para o inventário, e o que não couber cai aos pés do jogador (também no criativo). Sem o bastante, avisa acima da
+ * barra de itens e não gasta nada; no criativo não gasta nada. Outros itens seguem o vanilla (PASS).
+ *
+ * <p>A mão principal sem flores bastantes deixa a mão secundária tentar quando ela segura flores secas
+ * ({@link RollingRules#defersToOffHand}): o aviso só sai quando nenhuma das mãos consegue enrolar. Tudo é decidido no
+ * servidor; o cliente prevê com a mesma regra ({@link #predict}), pelas pilhas das mãos e as folhas do inventário, que
+ * ele conhece.
  */
 public class RollingTrayBlock extends Block {
     public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
@@ -78,17 +82,48 @@ public class RollingTrayBlock extends Block {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
-    @Override
-    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
-                                          InteractionHand hand, BlockHitResult hit) {
+    /** O que o clique de uma mão com flores secas faz na bandeja, pela regra pura (igual no cliente e no servidor). */
+    static RollingRules.Refusal refusal(Player player, ItemStack stack) {
+        return RollingRules.check(stack.getCount(), countPapers(player));
+    }
+
+    /** A mão principal sem flores bastantes passa o clique para a secundária, que segura flores secas. */
+    static boolean defers(Player player, InteractionHand hand, RollingRules.Refusal refusal) {
+        return RollingRules.defersToOffHand(hand == InteractionHand.MAIN_HAND, refusal,
+            player.getOffhandItem().is(ModTags.DRIED_FLOWERS));
+    }
+
+    /**
+     * Previsão do cliente (é o que o ramo do cliente de {@link #useItemOn} devolve) para o clique de uma mão: PASS se a
+     * mão não segura flores secas ou se o clique passa para a outra mão; SUCCESS se enrola; CONSUME se o servidor vai
+     * recusar e avisar (sem balançar o braço, como o servidor). Pública para os GameTests compararem com o servidor.
+     */
+    public static InteractionResult predict(Player player, InteractionHand hand, ItemStack stack) {
         if (!stack.is(ModTags.DRIED_FLOWERS)) {
             return InteractionResult.PASS;
         }
-        if (!(level instanceof ServerLevel)) {
-            // Enrolar ou avisar: as duas coisas acontecem no servidor
-            return InteractionResult.SUCCESS;
+        RollingRules.Refusal refusal = refusal(player, stack);
+        if (defers(player, hand, refusal)) {
+            return InteractionResult.PASS;
         }
-        RollingRules.Refusal refusal = RollingRules.check(stack.getCount(), countPapers(player));
+        return refusal == RollingRules.Refusal.NONE ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+    }
+
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
+                                          InteractionHand hand, BlockHitResult hit) {
+        if (!(level instanceof ServerLevel)) {
+            // Enrolar ou avisar acontecem no servidor; o cliente só decide se trata o clique ou deixa a outra mão tentar
+            return predict(player, hand, stack);
+        }
+        if (!stack.is(ModTags.DRIED_FLOWERS)) {
+            return InteractionResult.PASS;
+        }
+        RollingRules.Refusal refusal = refusal(player, stack);
+        if (defers(player, hand, refusal)) {
+            // A mão secundária enrola ou dá o próprio aviso
+            return InteractionResult.PASS;
+        }
         if (refusal != RollingRules.Refusal.NONE) {
             player.sendOverlayMessage(Component.translatable(refusal.messageKey()));
             // O clique foi tratado (com o aviso): a outra mão não tenta de novo
@@ -99,11 +134,9 @@ public class RollingTrayBlock extends Block {
             stack.shrink(RollingRules.FLOWERS_PER_ROLL);
             removePapers(player, RollingRules.PAPERS_PER_ROLL);
         }
-        if (!player.getInventory().add(joints)) {
-            player.drop(joints, false, Prediction.SERVER_ONLY);
-        }
+        Handouts.give(player, joints);
         level.playSound(null, pos, ModSounds.TRAY_ROLL.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
-        return InteractionResult.SUCCESS_SERVER;
+        return InteractionResult.SUCCESS;
     }
 
     /**

@@ -123,7 +123,6 @@ public class SmokingItem extends Item {
         if (stack.has(ModComponents.FILTERED.get())) {
             tooltip.accept(Component.translatable("tooltip.cultivo.filtered").withStyle(ChatFormatting.YELLOW));
         }
-        tooltip.accept(Component.translatable(device.needsFuel()
-            ? "tooltip.cultivo.smoke.device" : "tooltip.cultivo.smoke.joint").withStyle(ChatFormatting.DARK_GRAY));
+        TooltipItem.addHint(tooltip, device.needsFuel() ? "tooltip.cultivo.smoke.device" : "tooltip.cultivo.smoke.joint");
     }
 }

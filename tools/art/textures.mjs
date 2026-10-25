@@ -189,12 +189,33 @@ const FAMILY_PALETTES = {
   },
 };
 
-/** Paleta seca de uma família do catálogo, derivada da fresca. */
+/**
+ * Paleta seca de uma família do catálogo, derivada da fresca. O botão seca sem perder o tom da família (roxo continua
+ * roxo, azul continua azulado): com tudo puxado para o oliva, flores secas de famílias diferentes saíam iguais.
+ */
 function driedOf(plant) {
   return {
     L: dry(plant.L), D: dry(plant.D, { light: 0.78 }), S: '#6b5a3a',
-    B: dry(plant.B, { light: 0.8 }), b: dry(plant.b, { light: 0.72 }),
+    B: dry(plant.B, { hueMix: 0.15, sat: 0.8, light: 0.82 }), b: dry(plant.b, { hueMix: 0.15, sat: 0.8, light: 0.74 }),
     P: dry(plant.P, { hueMix: 0.15, sat: 0.75, light: 0.76 }), F: dry(plant.F, { hueMix: 0.3, sat: 0.6, light: 0.92 }),
+  };
+}
+
+/** Mistura linear de duas cores '#rrggbb' (t = 0 dá a primeira, 1 a segunda). */
+function mix(a, b, t) {
+  const ca = parseColor(a);
+  const cb = parseColor(b);
+  return toHex([0, 1, 2].map((k) => Math.round(ca[k] + (cb[k] - ca[k]) * t)));
+}
+
+/**
+ * Sementes de uma variedade do catálogo: a casca puxa o tom do botão da variedade (contorno e listra do botão escuro,
+ * corpo e brilho do botão), então cada família tem sementes de cor própria em vez de todas marrons.
+ */
+function seedOf(plant) {
+  return {
+    o: mix(plant.b, '#2a1e14', 0.2), O: mix(plant.B, '#9a7a56', 0.25),
+    h: mix(plant.B, '#fbf3e4', 0.55), b: mix(plant.b, '#3a2a1c', 0.15),
   };
 }
 
@@ -211,18 +232,18 @@ const ACCENTS = [
 ];
 
 function withAccent(family, a) {
-  if (!a) return { plant: family.plant, dried: family.dried ?? driedOf(family.plant), seed: family.seed };
+  if (!a) {
+    // Nativas: paletas secas e de semente escritas à mão; a 1ª variedade de cada família do catálogo deriva as suas
+    return family.dried
+      ? { plant: family.plant, dried: family.dried, seed: family.seed }
+      : { plant: family.plant, dried: driedOf(family.plant), seed: seedOf(family.plant) };
+  }
   const p = family.plant;
   const plant = {
     L: shift(p.L, a.hue * 0.25, a.light), D: shift(p.D, a.hue * 0.25, a.light), S: shift(p.S, a.hue * 0.25, a.light),
     B: shift(p.B, a.hue, a.light * 0.5), b: shift(p.b, a.hue, a.light * 0.5), P: a.pistil, F: shift(p.F, a.hue * 0.5, 0),
   };
-  const s = family.seed;
-  const seed = {
-    o: shift(s.o, a.hue * 0.5, a.light), O: shift(s.O, a.hue * 0.5, a.light),
-    h: shift(s.h, a.hue * 0.5, a.light), b: shift(s.b, a.hue * 0.5, a.light),
-  };
-  return { plant, dried: driedOf(plant), seed };
+  return { plant, dried: driedOf(plant), seed: seedOf(plant) };
 }
 
 function familyBase(family) {
@@ -234,7 +255,22 @@ export function artFamilies(strains) {
   return [...new Set(strains.map((s) => s.family))];
 }
 
-/** Paleta de cada variedade, na ordem dada: id → {plant, dried, seed}. */
+/**
+ * Deslocamento do formato de cada família do catálogo: a variedade na posição i da família usa o formato
+ * (i + deslocamento) mod 6. Famílias de cores parecidas (verde e verde escuro, limão e dourado, gelo e creme) ficam com
+ * formatos diferentes nas mesmas posições, para os ícones não dependerem só de um tom de diferença.
+ */
+const FAMILY_VARIANT_OFFSET = { verde: 0, verde_escuro: 3, limao: 1, dourado: 4, roxo: 0, azul: 4, rosa: 0, gelo: 3, creme: 5 };
+
+/** Formato dos itens (0–5) da variedade na posição {@code index} da família; null para as nativas (desenhos originais). */
+export function variantFor(family, index) {
+  if (NATIVE_PALETTES[family]) return null;
+  const offset = FAMILY_VARIANT_OFFSET[family];
+  if (offset === undefined) throw new Error(`família sem deslocamento de formato: ${family}`);
+  return (index + offset) % ACCENTS.length;
+}
+
+/** Paleta e formato de cada variedade, na ordem dada: id → {plant, dried, seed, variant}. */
 export function strainPalettes(strains) {
   const seen = {};
   const palettes = {};
@@ -243,13 +279,13 @@ export function strainPalettes(strains) {
     seen[strain.family] = index + 1;
     if (NATIVE_PALETTES[strain.family]) {
       if (index > 0) throw new Error(`família nativa compartilhada: ${strain.family}`);
-      palettes[strain.id] = withAccent(NATIVE_PALETTES[strain.family], null);
+      palettes[strain.id] = { ...withAccent(NATIVE_PALETTES[strain.family], null), variant: null };
       continue;
     }
     const base = FAMILY_PALETTES[strain.family];
     if (!base) throw new Error(`família de arte desconhecida: ${strain.family} (${strain.id})`);
     if (index >= ACCENTS.length) throw new Error(`família ${strain.family} passou de ${ACCENTS.length} variedades`);
-    palettes[strain.id] = withAccent(base, ACCENTS[index]);
+    palettes[strain.id] = { ...withAccent(base, ACCENTS[index]), variant: variantFor(strain.family, index) };
   }
   return palettes;
 }
@@ -429,6 +465,131 @@ const DRIED_BUD = [E, E, E,
   '.......bB.......',
   '.......S........',
   E, E, E,
+];
+
+// ---------------------------------------------------------------- formatos por variedade (itens)
+// As nativas ficam com os desenhos acima. Cada variedade do catálogo ganha um formato próprio dentro da família
+// (variantFor): as sementes em outra arrumação, a flor fresca espelhada ou com outro desenho, a flor seca com outra
+// silhueta. Junto com as cores (as sementes e as flores secas puxam o tom do botão da família), dois ícones de
+// variedades diferentes sempre diferem em pelo menos 12 pixels bem visíveis (AssetCompletenessTest confere).
+const mirror = (grid) => grid.map((row) => [...row].reverse().join(''));
+const swapSymbols = (grid, pairs) => grid.map((row) => [...row].map((ch) => pairs[ch] ?? ch).join(''));
+
+// Uma semente em pé (4x5) e deitada (5x4), com o mesmo contorno, corpo, brilho e listra das nativas
+const SEED_V = ['.oo.', 'obOo', 'oOho', 'oObo', '.oo.'];
+const SEED_H = ['.ooo.', 'oOObo', 'obhOo', '.ooo.'];
+
+/** Grade 16x16 com três sementes: cada item é [V|H, coluna, linha] do canto de cima à esquerda. */
+function seedGrid(placements) {
+  const rows = Array.from({ length: 16 }, () => [...E]);
+  for (const [glyph, x, y] of placements) {
+    (glyph === 'V' ? SEED_V : SEED_H).forEach((row, dy) => [...row].forEach((ch, dx) => {
+      if (ch === '.') return;
+      if (rows[y + dy][x + dx] !== '.') throw new Error(`sementes sobrepostas em ${x + dx},${y + dy}`);
+      rows[y + dy][x + dx] = ch;
+    }));
+  }
+  return rows.map((r) => r.join(''));
+}
+
+const SEED_LAYOUTS = [
+  [['V', 2, 2], ['V', 6, 6], ['V', 10, 10]], // em diagonal
+  [['H', 1, 3], ['H', 10, 3], ['V', 6, 9]], // duas deitadas em cima, uma em pé embaixo
+  [['V', 6, 1], ['V', 2, 8], ['V', 10, 8]], // triângulo
+  [['H', 5, 2], ['H', 1, 7], ['H', 9, 12]], // zigue-zague deitado
+  [['H', 5, 1], ['H', 5, 6], ['H', 5, 11]], // pilha deitada
+  [['V', 1, 6], ['V', 6, 6], ['V', 11, 6]], // fileira em pé
+].map(seedGrid);
+
+// Flor fresca com duas colas no topo (as variantes 4 e 5)
+const FRESH_TWIN_BUD = [
+  '......P...P.....',
+  '.....bBb.bBb....',
+  '.....BPBbBPB....',
+  '....LbFBBbFBL...',
+  '...LLBBbPBBbLL..',
+  '.....bBPBFbB....',
+  '.....BFBbBPB....',
+  '....LLbBBPBbL...',
+  '...LL.BPbBFBLL..',
+  '......bBBbBb....',
+  '.....LBFPBbBL...',
+  '....LL.bBBb.....',
+  '........S.......',
+  '.......SL.......',
+  '......S.........',
+  '................',
+];
+// Flor fresca com pistilos e geada trocados de lugar e o sombreado do botão invertido (as variantes 2 e 3)
+const FRESH_SWAPPED = swapSymbols(FRESH_BUD, { P: 'F', F: 'P', B: 'b', b: 'B' });
+const FRESH_VARIANTS = [FRESH_BUD, mirror(FRESH_BUD), FRESH_SWAPPED, mirror(FRESH_SWAPPED), FRESH_TWIN_BUD, mirror(FRESH_TWIN_BUD)];
+
+// Flores secas do catálogo: seis silhuetas (redonda, lança, dois lobos, gota para cada lado e oval deitada)
+const DRIED_LEAN = [E, E, E,
+  '....bB..........',
+  '....BPb.........',
+  '....bBFb........',
+  '.....BbPBb......',
+  '.....bBBFBb.....',
+  '......BPbBBb....',
+  '......bBBPbB....',
+  '.......bBBb.....',
+  '........bS......',
+  '.........S......',
+  E, E, E,
+];
+const DRIED_VARIANTS = [
+  [E, E, E,
+    '.......bB.......',
+    '......bBPBb.....',
+    '.....bBFBbBb....',
+    '.....BPbBPbB....',
+    '.....bBBFBBb....',
+    '.....BbPbBPB....',
+    '......bBBbB.....',
+    '.......bBb......',
+    '........S.......',
+    E, E, E, E],
+  [E,
+    '.......B........',
+    '......bPb.......',
+    '......BFB.......',
+    '......bBP.......',
+    '.....bPBBb......',
+    '.....BBFbB......',
+    '.....bBPBb......',
+    '......BbBB......',
+    '......bPBb......',
+    '......BBFB......',
+    '.......bB.......',
+    '.......S........',
+    '.......S........',
+    E, E],
+  [E, E, E, E, E,
+    '....bB....Bb....',
+    '...bBPBb.bPBBb..',
+    '...BFbBBbBbFB...',
+    '...bBPbBBPBbB...',
+    '....BbBFbBBb....',
+    '.....bBBbBb.....',
+    '.......bB.......',
+    '.......S........',
+    E, E, E],
+  DRIED_LEAN,
+  mirror(DRIED_LEAN),
+  [E, E, E,
+    '..........bB....',
+    '.........bBPb...',
+    '........bBFBBb..',
+    '.......bBPbBFb..',
+    '......bBBbPBb...',
+    '.....bBFBBbB....',
+    '....bBPbBBb.....',
+    '....bBBFb.......',
+    '.....bBb........',
+    '....S...........',
+    '...S............',
+    E, E],
 ];
 
 // ---------------------------------------------------------------- itens genéricos e artigos
@@ -800,6 +961,8 @@ const BUNDLE = [E, E,
   '.......Bb.......',
   E, E, E, E, E, E,
 ];
+/** Maço fresco (suporte trabalhando ou carregado). */
+const BUNDLE_FRESH_PALETTE = { s: '#e6dcb4', S: '#5f8a34', L: '#6aae3e', B: '#a8cc6a', b: '#5e8a3a', P: '#f0a640' };
 
 // Flores secas espalhadas na tela da peneira (cutout): moitas verdes com pontos roxos e laranja
 const SIEVE_FLOWERS = [
@@ -828,7 +991,11 @@ const BLOCKS = {
     grid: BUNDLE,
     palette: { s: '#e6dcb4', S: '#6b5a3a', L: '#7f7a3a', B: '#a8a05a', b: '#6a6232', P: '#b0702c' },
   },
+  // Maço fresco parado: o suporte carregado mas sem o ciclo andando (a versão animada é drying_bundle_fresh)
+  drying_bundle_fresh_still: { grid: BUNDLE, palette: BUNDLE_FRESH_PALETTE },
   sieve_wood: { grid: WOOD_GRID, palette: { W: '#8a5c33', w: '#6e4727', l: '#a87344' } },
+  // Flores paradas na tela: a peneira carregada mas sem o ciclo andando (a versão animada é sieve_flowers)
+  sieve_flowers_still: { grid: SIEVE_FLOWERS, palette: SIEVE_FLOWERS_PALETTE },
   // Tela: arame de 1 px com vãos de 2 px (cutout)
   sieve_mesh: {
     grid: Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
@@ -1073,7 +1240,6 @@ const coalFrames = ['#a8300c', '#c83a10', '#e85418', '#ff7a28', '#e85418', '#c83
 }));
 
 /** Maço fresco no suporte trabalhando: a ponta de baixo balança de leve para os lados (só a janela UV [6,2,10,10]). */
-const BUNDLE_FRESH_PALETTE = { s: '#e6dcb4', S: '#5f8a34', L: '#6aae3e', B: '#a8cc6a', b: '#5e8a3a', P: '#f0a640' };
 const bundleSwayFrames = [0, 1, 0, -1].map((dx) => ({
   grid: BUNDLE.map((row, y) => (y >= 8 ? shiftRow(row, dx) : row)),
   palette: BUNDLE_FRESH_PALETTE,
@@ -1146,9 +1312,10 @@ export function generateAll(strains) {
   }
   // Sementes e flores: por variedade (paleta da família com o destaque da variedade)
   for (const [id, c] of Object.entries(strainPalettes(strains))) {
-    written.push(render(`item/${id}_seeds`, SEEDS, c.seed));
-    written.push(render(`item/${id}_fresh_flower`, FRESH_BUD, c.plant));
-    written.push(render(`item/${id}_dried_flower`, DRIED_BUD, c.dried));
+    const native = c.variant === null;
+    written.push(render(`item/${id}_seeds`, native ? SEEDS : SEED_LAYOUTS[c.variant], c.seed));
+    written.push(render(`item/${id}_fresh_flower`, native ? FRESH_BUD : FRESH_VARIANTS[c.variant], c.plant));
+    written.push(render(`item/${id}_dried_flower`, native ? DRIED_BUD : DRIED_VARIANTS[c.variant], c.dried));
   }
   written.push(render('block/wild_plant', WILD_PLANT, WILD));
   written.push(render('item/hash', HASH, { ...HASH_PALETTE, s: HASH_NEUTRAL_STAMP }));

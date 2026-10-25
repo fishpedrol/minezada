@@ -578,17 +578,43 @@ class DataConsistencyTest {
             withTip.addAll(ContentIds.UPGRADE_ARTICLES);
             withTip.addAll(ContentIds.PLACEABLE_ARTICLES);
             for (String article : withTip) {
-                JsonElement tip = t.get("tooltip.cultivo." + article);
-                assertTrue(tip != null && !tip.getAsString().isBlank(), lang + " sem dica de " + article);
+                // Dica em linhas curtas: tooltip.cultivo.<id>.1, .2, ...
+                for (String line : io.github.peixeangola.cultivo.core.TooltipHints.lineKeys("tooltip.cultivo." + article)) {
+                    JsonElement tip = t.get(line);
+                    assertTrue(tip != null && !tip.getAsString().isBlank(), lang + " sem " + line);
+                }
             }
         }
         JsonObject pt = Resources.json(Resources.assets("lang/pt_br.json"));
-        assertEquals("Enrole com flor seca para fazer um baseado · 3 folhas na bandeja enrolam 3 baseados",
-            pt.get("tooltip.cultivo.rolling_paper").getAsString());
+        assertEquals("Junte com flor seca na bancada", pt.get("tooltip.cultivo.rolling_paper.1").getAsString());
+        assertEquals("Na bandeja, 3 folhas enrolam 3 baseados", pt.get("tooltip.cultivo.rolling_paper.3").getAsString());
         // O inglês continua como fonte no manifesto (o en_us.json sai em português com portuguese_everywhere)
         JsonObject en = Resources.json(StrainColumns.MANIFEST).getAsJsonObject("lang").getAsJsonObject("en_us");
-        assertEquals("Add to a joint: lasts longer, less nausea", en.get("tooltip.cultivo.filter_tip").getAsString());
-        assertEquals("Stores one stack · cures dried flowers: +1 quality, once", en.get("tooltip.cultivo.jar").getAsString());
+        assertEquals("Craft it with a joint", en.getAsJsonArray("tooltip.cultivo.filter_tip").get(0).getAsString());
+        assertEquals("Cures dried flowers once: +1 quality", en.getAsJsonArray("tooltip.cultivo.jar").get(3).getAsString());
+    }
+
+    /**
+     * A ferramenta certa acelera a quebra: as estações de madeira (cópia das tábuas, dureza 2) no machado, como as tábuas
+     * e a composteira vanilla; a bandeja de metal e o cinzeiro de terracota na picareta. O pote de vidro fica sem tag,
+     * como o vidro vanilla, e nenhuma tag de ferramenta ganha lavoura ou planta silvestre (quebram na hora).
+     */
+    @Test
+    void woodenStationsMineFasterWithAnAxe() {
+        Set<String> axe = values(Resources.GENERATED.resolve("data/minecraft/tags/block/mineable/axe.json"));
+        Set<String> pickaxe = values(Resources.GENERATED.resolve("data/minecraft/tags/block/mineable/pickaxe.json"));
+        assertEquals(Set.of("cultivo:drying_rack", "cultivo:sieve", "cultivo:press"), axe);
+        assertEquals(Set.of("cultivo:rolling_tray", "cultivo:ashtray"), pickaxe);
+        for (String station : ContentIds.STATIONS) {
+            assertTrue(axe.contains("cultivo:" + station), station + " fora do machado");
+        }
+        assertFalse(axe.contains("cultivo:jar") || pickaxe.contains("cultivo:jar"), "o pote é vidro");
+        for (String crop : ContentIds.cropBlocks()) {
+            assertFalse(axe.contains("cultivo:" + crop) || pickaxe.contains("cultivo:" + crop), crop);
+        }
+        // O formato das tags vanilla: replace false soma à tag do jogo em vez de trocar
+        assertFalse(Resources.json(Resources.GENERATED.resolve("data/minecraft/tags/block/mineable/axe.json"))
+            .get("replace").getAsBoolean());
     }
 
     /** O manifesto marca como colocáveis exatamente os artigos de ContentIds.PLACEABLE_ARTICLES. */

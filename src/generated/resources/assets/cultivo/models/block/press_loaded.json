@@ -1,0 +1,68 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cultivo:block/press_resin",
+    "resin": "cultivo:block/press_resin"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        3,
+        5
+      ],
+      "to": [
+        11,
+        4,
+        11
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#resin"
+        },
+        "north": {
+          "uv": [
+            5,
+            12,
+            11,
+            13
+          ],
+          "texture": "#resin"
+        },
+        "south": {
+          "uv": [
+            5,
+            12,
+            11,
+            13
+          ],
+          "texture": "#resin"
+        },
+        "west": {
+          "uv": [
+            5,
+            12,
+            11,
+            13
+          ],
+          "texture": "#resin"
+        },
+        "east": {
+          "uv": [
+            5,
+            12,
+            11,
+            13
+          ],
+          "texture": "#resin"
+        }
+      }
+    }
+  ]
+}

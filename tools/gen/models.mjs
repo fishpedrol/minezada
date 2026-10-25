@@ -75,7 +75,7 @@ export function box(from, to, texture, { grain = null, faces = ALL_FACES, uv = {
  */
 export const STATION_PROPERTIES = {
   facing: ['north', 'east', 'south', 'west'],
-  contents: ['empty', 'working', 'done'],
+  contents: ['empty', 'loaded', 'working', 'done'],
 };
 const FACING_Y = { north: 0, east: 90, south: 180, west: 270 };
 
@@ -83,7 +83,10 @@ const blockParent = (textures, elements, extra = {}) => ({ parent: 'minecraft:bl
 
 /**
  * Modelos de cada estação: base (sempre) e partes ligadas a propriedades do blockstate. Cada parte diz em que valores
- * aparece (`when: {contents: [...]}`); o dichavador da peneira é a parte com `when: {grinder: ['true']}`.
+ * aparece (`when: {contents: [...]}`); o dichavador da peneira é a parte com `when: {grinder: ['true']}`. Carregada
+ * (loaded: a entrada está lá mas o ciclo não anda) mostra a entrada com texturas paradas; trabalhando (working), as
+ * animadas. `itemParts` são as partes que o ícone do item mostra junto com a base (a estação vazia como ela fica
+ * colocada).
  */
 export function stationModels() {
   const rackWood = '#wood';
@@ -120,9 +123,11 @@ export function stationModels() {
         drying_rack_bundles: { parent: 'minecraft:block/block', ambientocclusion: false, textures: { particle: '#bundle' }, elements: bundles },
       },
       parts: {
+        loaded: { when: { contents: ['loaded'] }, model: { parent: id('block/drying_rack_bundles'), textures: { bundle: id('block/drying_bundle_fresh_still') } } },
         working: { when: { contents: ['working'] }, model: { parent: id('block/drying_rack_bundles'), textures: { bundle: id('block/drying_bundle_fresh') } } },
         done: { when: { contents: ['done'] }, model: { parent: id('block/drying_rack_bundles'), textures: { bundle: id('block/drying_bundle_dried') } } },
       },
+      itemParts: [],
     },
     sieve: {
       base: blockParent({ particle: id('block/sieve_wood'), wood: id('block/sieve_wood'), mesh: id('block/sieve_mesh') }, [
@@ -139,15 +144,8 @@ export function stationModels() {
       ]),
       templates: {},
       parts: {
-        working: {
-          when: { contents: ['working'] },
-          model: blockParent({ particle: id('block/sieve_flowers'), flowers: id('block/sieve_flowers') }, [
-            box([3, 11, 3], [13, 12, 13], '#flowers', {
-              faces: ['up', 'north', 'south', 'west', 'east'],
-              uv: { up: [3, 3, 13, 13], north: [3, 0, 13, 1], south: [3, 0, 13, 1], west: [3, 0, 13, 1], east: [3, 0, 13, 1] },
-            }),
-          ]),
-        },
+        loaded: { when: { contents: ['loaded'] }, model: sieveFlowers('block/sieve_flowers_still') },
+        working: { when: { contents: ['working'] }, model: sieveFlowers('block/sieve_flowers') },
         done: {
           when: { contents: ['done'] },
           model: blockParent({ particle: id('block/sieve_resin'), resin: id('block/sieve_resin') }, [
@@ -155,7 +153,8 @@ export function stationModels() {
             box([6, 4, 6], [10, 5, 10], '#resin', { faces: ['up', 'north', 'south', 'west', 'east'] }),
           ]),
         },
-        // Dichavador instalado: cilindro de metal 4x4x2 apoiado no canto da moldura (tampa serrilhada em cima, UV 1:1)
+        // Dichavador instalado: cilindro de metal 4x4x2 apoiado no canto da moldura (tampa serrilhada em cima, UV 1:1).
+        // A caixa de seleção da peneira cresce junto (SieveBlock.GRINDER_BOX, as mesmas medidas)
         grinder: {
           when: { grinder: ['true'] },
           model: blockParent({ particle: id('block/grinder_block'), grinder: id('block/grinder_block') }, [
@@ -165,6 +164,7 @@ export function stationModels() {
           ]),
         },
       },
+      itemParts: [],
     },
     press: {
       base: blockParent({ particle: id('block/press_wood'), wood: id('block/press_wood'), iron: id('block/press_iron') }, [
@@ -176,13 +176,20 @@ export function stationModels() {
       ]),
       templates: {},
       parts: {
-        // Placa parada em cima (vazia ou pronta). Trabalhando, só a resina fica no modelo do bloco: a placa que sobe e
-        // desce é desenhada pelo cliente (PressPlatenRenderer, modelo press_platen_moving)
+        // Placa parada em cima (vazia, carregada ou pronta). Trabalhando, só a resina fica no modelo do bloco: a placa
+        // que sobe e desce é desenhada pelo cliente (PressPlatenRenderer, modelo press_platen_moving)
         platen_up: {
-          when: { contents: ['empty', 'done'] },
+          when: { contents: ['empty', 'loaded', 'done'] },
           model: blockParent({ particle: id('block/press_iron'), iron: id('block/press_iron') }, [
             box([7.5, 8.5, 7.5], [8.5, 12, 8.5], '#iron', { grain: 'y', faces: ['north', 'south', 'west', 'east'] }),
             box([4, 7, 4], [12, 8.5, 12], '#iron', { grain: 'x' }),
+          ]),
+        },
+        // Carregada: um montinho de resina parado na base, debaixo da placa erguida (ainda não dá para prensar)
+        loaded: {
+          when: { contents: ['loaded'] },
+          model: blockParent({ particle: id('block/press_resin'), resin: id('block/press_resin') }, [
+            box([5, 3, 5], [11, 4, 11], '#resin', { faces: ['up', 'north', 'south', 'west', 'east'] }),
           ]),
         },
         squeeze: {
@@ -201,8 +208,20 @@ export function stationModels() {
           ]),
         },
       },
+      // A prensa vazia colocada tem a placa e o parafuso (platen_up); o ícone mostra o mesmo, não só a armação
+      itemParts: ['platen_up'],
     },
   };
+}
+
+/** Camada de flores na tela da peneira (carregada: textura parada; trabalhando: a que treme). */
+function sieveFlowers(texture) {
+  return blockParent({ particle: id(texture), flowers: id(texture) }, [
+    box([3, 11, 3], [13, 12, 13], '#flowers', {
+      faces: ['up', 'north', 'south', 'west', 'east'],
+      uv: { up: [3, 3, 13, 13], north: [3, 0, 13, 1], south: [3, 0, 13, 1], west: [3, 0, 13, 1], east: [3, 0, 13, 1] },
+    }),
+  ]);
 }
 
 /** Condição multipart de uma parte: {propriedade: [valores]} vira {propriedade: "a|b"}. */
@@ -481,13 +500,19 @@ const round3 = (v) => Math.round(v * 1000) / 1000;
 
 /**
  * Translação de exibição (em 1/16 de bloco) que leva o ponto `point` do modelo na mão (1/16) até `target` (px do
- * modelo do jogador, cabeça reta) com o braço direito em [xRot, yRot] (radianos) e a exibição com `rotation`/`scale`.
- * É a cadeia do 26.3: ModelPart do braço (pivô (-5, 2, 0) px, rotação Z·Y·X), ItemInHandLayer (X -90°, Y 180° e
- * (1, 2, -10) px) e ItemTransform (translação, rotação XYZ, escala, -0,5).
+ * modelo do jogador, cabeça reta) com o braço em [xRot, yRot] (radianos, a pose do braço direito) e a exibição com
+ * `rotation`/`scale` aplicadas de fato. É a cadeia do 26.3: ModelPart do braço (pivô (-5, 2, 0) px, rotação Z·Y·X),
+ * ItemInHandLayer (X -90°, Y 180° e (1, 2, -10) px) e ItemTransform (translação, rotação XYZ, escala, -0,5).
+ *
+ * <p>Com `side = 'left'` resolve o braço esquerdo: pivô (5, 2, 0), yRot negado (SmokeAnimation.armAngles espelha) e
+ * (-1, 2, -10) px na camada da mão. A rotação aplicada é a da direita (o ItemTransform#apply do 26.3 nega Y e Z de
+ * novo na mão esquerda, então o JSON da esquerda guarda a rotação espelhada); o resultado é a translação aplicada, que
+ * o JSON da esquerda guarda com o x negado ({@link leftHandJson}), porque o jogo nega o x outra vez.
  */
-export function solveHandTranslation(arm, rotation, scale, point, target) {
-  const A = mat.chain(mat.T(-5 * PX, 2 * PX, 0), mat.RY(arm[1]), mat.RX(arm[0]), mat.RX(-90 * DEG), mat.RY(180 * DEG),
-    mat.T(PX, 2 * PX, -10 * PX));
+export function solveHandTranslation(arm, rotation, scale, point, target, side = 'right') {
+  const sx = side === 'left' ? -1 : 1;
+  const A = mat.chain(mat.T(-5 * PX * sx, 2 * PX, 0), mat.RY(arm[1] * sx), mat.RX(arm[0]), mat.RX(-90 * DEG), mat.RY(180 * DEG),
+    mat.T(PX * sx, 2 * PX, -10 * PX));
   const RS = mat.chain(mat.RX(rotation[0] * DEG), mat.RY(rotation[1] * DEG), mat.RZ(rotation[2] * DEG), mat.S(scale));
   const local = mat.apply(RS, point.map((v) => v / 16 - 0.5));
   const d = target.map((v, k) => v * PX - A[k * 4 + 3]);
@@ -496,32 +521,55 @@ export function solveHandTranslation(arm, rotation, scale, point, target) {
   return back.map((v, k) => Math.round((v - local[k]) * 1600) / 100);
 }
 
+/** A translação aplicada na mão esquerda escrita no JSON: o ItemTransform#apply do 26.3 nega o x de novo. */
+export function leftHandJson(translation) {
+  return [round3(-translation[0]), translation[1], translation[2]];
+}
+
 /**
  * Exibições da animação de fumar (seção smoke_animation do manifesto): `lit` é o modelo aceso com o aparelho na boca na
  * 3ª pessoa e a exibição de quem segura na 1ª (o cliente anima a subida, SmokeAnimation.firstPersonMatrix); `keyframes`
  * são os quadros k0..k(K-1) da 3ª pessoa, interpolados (rotação XYZ, translação e escala) entre segurar (k0) e a boca,
- * um por tick, no mesmo ritmo do braço (SmokeAnimation.thirdPersonRaise).
+ * um por tick, no mesmo ritmo do braço (SmokeAnimation.thirdPersonRaise). Cada mão da 3ª pessoa é resolvida com o
+ * próprio braço: copiar a translação da direita deixava o baseado e o cachimbo uns 4–5 px fora da boca na mão
+ * esquerda (o pivô do braço esquerdo fica do outro lado e o yRot é espelhado).
  */
 export function smokeDisplays(animation, hand) {
   const K = animation.keyframes;
   const out = {};
   for (const [device, pose] of Object.entries(animation.poses)) {
     if (!hand[device]) throw new Error(`pose de fumar sem modelo na mão: ${device}`);
-    const idleTP = hand[device].display.thirdperson_righthand;
-    const idleFP = hand[device].display.firstperson_righthand;
+    const idle = hand[device].display;
     const s = [pose.scale, pose.scale, pose.scale];
-    const mouthTP = {
-      rotation: pose.rotation,
-      translation: solveHandTranslation(pose.arm, pose.rotation, pose.scale, pose.mouth_point, pose.target ?? animation.mouth),
-      scale: s,
+    const target = pose.target ?? animation.mouth;
+    const solve = (side) => solveHandTranslation(pose.arm, pose.rotation, pose.scale, pose.mouth_point, target, side);
+    const mouth = {
+      thirdperson_righthand: { rotation: pose.rotation, translation: solve('right'), scale: s },
+      thirdperson_lefthand: {
+        rotation: [pose.rotation[0], -pose.rotation[1], -pose.rotation[2]],
+        translation: leftHandJson(solve('left')),
+        scale: s,
+      },
     };
     const lerp3 = (a, b, f) => a.map((v, k) => round3(v + (b[k] - v) * f));
-    const at = (f) => ({
-      rotation: lerp3(idleTP.rotation, mouthTP.rotation, f),
-      translation: lerp3(idleTP.translation, mouthTP.translation, f),
-      scale: lerp3(idleTP.scale, mouthTP.scale, f),
+    const lerpDisplay = (a, b, f) => ({
+      rotation: lerp3(a.rotation, b.rotation, f),
+      translation: lerp3(a.translation, b.translation, f),
+      scale: lerp3(a.scale, b.scale, f),
     });
-    out[device] = { lit: HAND(mouthTP, idleFP), keyframes: Array.from({ length: K }, (_, i) => HAND(at(i / K), idleFP)) };
+    // Mesma ordem de contextos de HAND: 3ª pessoa direita e esquerda, depois a 1ª pessoa (a exibição de quem segura)
+    const display = (thirdRight, thirdLeft) => ({
+      thirdperson_righthand: thirdRight,
+      thirdperson_lefthand: thirdLeft,
+      firstperson_righthand: idle.firstperson_righthand,
+      firstperson_lefthand: idle.firstperson_lefthand,
+    });
+    const at = (f) => display(lerpDisplay(idle.thirdperson_righthand, mouth.thirdperson_righthand, f),
+      lerpDisplay(idle.thirdperson_lefthand, mouth.thirdperson_lefthand, f));
+    out[device] = {
+      lit: display(mouth.thirdperson_righthand, mouth.thirdperson_lefthand),
+      keyframes: Array.from({ length: K }, (_, i) => at(i / K)),
+    };
   }
   return out;
 }

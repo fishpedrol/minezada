@@ -58,11 +58,22 @@ class PortugueseEverywhereTest {
         return out;
     }
 
+    /** Texto ou lista de linhas (dica de uso em linhas curtas) de uma entrada lang do manifesto. */
+    private static List<String> lines(JsonElement value) {
+        List<String> out = new ArrayList<>();
+        if (value.isJsonArray()) {
+            value.getAsJsonArray().forEach(line -> out.add(line.getAsString()));
+        } else {
+            out.add(value.getAsString());
+        }
+        return out;
+    }
+
     /** Todas as fontes em inglês do manifesto: textos fixos, nomes, padrões de nome e legendas. */
     private static List<String> englishSources() {
         JsonObject m = manifest();
         List<String> out = new ArrayList<>();
-        m.getAsJsonObject("lang").getAsJsonObject("en_us").entrySet().forEach(e -> out.add(e.getValue().getAsString()));
+        m.getAsJsonObject("lang").getAsJsonObject("en_us").entrySet().forEach(e -> out.addAll(lines(e.getValue())));
         for (String section : List.of("strains", "generic_items", "articles", "stations", "effects", "sounds")) {
             m.getAsJsonArray(section).forEach(row -> out.add(row.getAsJsonObject().get("en").getAsString()));
         }
@@ -163,6 +174,7 @@ class PortugueseEverywhereTest {
         assertEquals("Chapado", pt.get("effect.cultivo.high"));
         assertEquals("Cultivo: Genéticas", pt.get("itemGroup.cultivo.strains"));
         assertEquals("Bong borbulha", pt.get("subtitles.cultivo.bong.bubble"));
+        assertEquals("Narguilé borbulha", pt.get("subtitles.cultivo.hookah.bubble"));
         assertEquals("Dichavador mói", pt.get("subtitles.cultivo.grinder.grind"));
         assertEquals("Você precisa de 3 folhas de seda no inventário", pt.get("message.cultivo.tray_need_papers"));
     }

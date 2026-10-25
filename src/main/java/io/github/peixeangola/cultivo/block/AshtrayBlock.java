@@ -53,25 +53,17 @@ public class AshtrayBlock extends Block {
     /**
      * Uma sessão de fumo terminou com o jogador em {@code center}: o cinzeiro mais próximo que ainda não está cheio,
      * até {@link AshtrayRules#RADIUS_XZ} blocos na horizontal e {@link AshtrayRules#RADIUS_Y} na vertical, ganha 1 de
-     * cinza. Usa UPDATE_ALL para o comparador acompanhar. Retorna onde a cinza caiu, se caiu.
+     * cinza. A busca percorre {@link AshtrayRules#SEARCH_OFFSETS} (do mais perto para o mais longe, a regra pura testada)
+     * e para no primeiro que serve. Usa UPDATE_ALL para o comparador acompanhar. Retorna onde a cinza caiu, se caiu.
      */
     public static Optional<BlockPos> catchAsh(ServerLevel level, BlockPos center) {
         BlockPos nearest = null;
-        double nearestDistance = Double.MAX_VALUE;
-        for (BlockPos pos : BlockPos.betweenClosed(
-            center.offset(-AshtrayRules.RADIUS_XZ, -AshtrayRules.RADIUS_Y, -AshtrayRules.RADIUS_XZ),
-            center.offset(AshtrayRules.RADIUS_XZ, AshtrayRules.RADIUS_Y, AshtrayRules.RADIUS_XZ))) {
-            if (!AshtrayRules.inRange(pos.getX() - center.getX(), pos.getY() - center.getY(), pos.getZ() - center.getZ())) {
-                continue;
-            }
+        for (int[] offset : AshtrayRules.SEARCH_OFFSETS) {
+            BlockPos pos = center.offset(offset[0], offset[1], offset[2]);
             BlockState state = level.getBlockState(pos);
-            if (!(state.getBlock() instanceof AshtrayBlock) || AshtrayRules.isFull(state.getValue(ASH))) {
-                continue;
-            }
-            double distance = pos.distSqr(center);
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearest = pos.immutable();
+            if (state.getBlock() instanceof AshtrayBlock && !AshtrayRules.isFull(state.getValue(ASH))) {
+                nearest = pos;
+                break;
             }
         }
         if (nearest == null) {

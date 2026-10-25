@@ -139,6 +139,17 @@ const flatOrHand = (flat, inHand) => ({
 const usingItem = (onTrue, onFalse) => ({ type: 'minecraft:condition', property: 'minecraft:using_item', on_true: onTrue, on_false: onFalse });
 const itemDefinitions = {};
 for (const item of [...flatItems, ...blockItems]) itemDefinitions[item] = model(`item/${item}`);
+// Estação cujo visual vazio tem partes do multipart (a placa e o parafuso da prensa): o ícone junta a base e essas partes
+// (minecraft:composite, como a cama vanilla); todas herdam as transformações de minecraft:block/block
+for (const s of stations) {
+  const parts = stationDefs[s.id].itemParts ?? [];
+  if (parts.length) {
+    itemDefinitions[s.id] = {
+      type: 'minecraft:composite',
+      models: [model(`item/${s.id}`), ...parts.map((part) => model(`block/${s.id}_${part}`))],
+    };
+  }
+}
 // Haxixe: carimbo com a cor da família da variedade gravada em cultivo:strain (sem variedade, carimbo neutro)
 itemDefinitions.hash = {
   type: 'minecraft:select', property: 'minecraft:component', component: id('strain'),
@@ -201,9 +212,15 @@ for (const [item, def] of Object.entries(itemDefinitions)) write(`assets/${NS}/i
 
 // ------------------------------------------------------------------ assets: lang
 // As duas tabelas saem do manifesto: textos fixos (lang.<idioma>), nomes gerados por variedade (name_patterns), itens,
-// blocos, efeito e legendas de som. Toda chave precisa existir nas duas línguas, senão o gerador para.
+// blocos, efeito e legendas de som. Toda chave precisa existir nas duas línguas, senão o gerador para. Uma dica de uso
+// escrita como lista vira uma chave por linha (<chave>.1, <chave>.2, ...; espelho de core/TooltipHints.java): linhas
+// curtas, como as dicas vanilla, em vez de uma frase que passa da largura da tela.
 function langTable(lang) {
-  const t = { ...M.lang[lang === 'en' ? 'en_us' : 'pt_br'] };
+  const t = {};
+  for (const [key, value] of Object.entries(M.lang[lang === 'en' ? 'en_us' : 'pt_br'])) {
+    if (Array.isArray(value)) value.forEach((line, i) => { t[`${key}.${i + 1}`] = line; });
+    else t[key] = value;
+  }
   const named = (kind, name) => M.name_patterns[kind][lang].replace('%s', () => name);
   for (const v of strains) {
     const name = v[lang];
@@ -461,6 +478,13 @@ for (const s of stations) {
 }
 for (const tag of ['crops', 'maintains_farmland', 'bee_growables']) {
   write(`data/minecraft/tags/block/${tag}.json`, { replace: false, values: crops });
+}
+// Ferramenta certa acelera a quebra (como tábuas e composteira no machado, terracota e lanterna na picareta): as
+// estações de madeira no machado, a bandeja de metal e o cinzeiro de terracota na picareta. O pote é vidro (sem tag,
+// como o vidro vanilla); lavouras e planta silvestre quebram na hora.
+for (const [tool, blocks] of Object.entries(M.mineable)) {
+  if (tool.startsWith('_')) continue;
+  write(`data/minecraft/tags/block/mineable/${tool}.json`, { replace: false, values: blocks.map((b) => id(b)) });
 }
 
 // ------------------------------------------------------------------ data: worldgen

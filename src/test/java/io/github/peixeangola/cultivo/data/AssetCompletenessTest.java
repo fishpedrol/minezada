@@ -9,6 +9,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.peixeangola.cultivo.core.ContentIds;
+import io.github.peixeangola.cultivo.core.TooltipHints;
 import io.github.peixeangola.cultivo.core.Variety;
 import java.io.IOException;
 import java.io.InputStream;
@@ -133,12 +134,12 @@ class AssetCompletenessTest {
                 }
             }
             if (ContentIds.STATIONS.contains(block)) {
-                // Toda estação tem parte para trabalhando e para pronta (vazia é a base sozinha, exceto na prensa)
-                assertTrue(seenContents.containsAll(List.of("working", "done")), block + " " + seenContents);
+                // Toda estação tem parte para carregada, trabalhando e pronta (vazia é a base sozinha, exceto na prensa)
+                assertTrue(seenContents.containsAll(List.of("loaded", "working", "done")), block + " " + seenContents);
             }
         }
         assertEquals(Set.of("north", "south", "west", "east"), Set.copyOf(ContentIds.STATION_STATE_PROPERTIES.get("facing")));
-        assertEquals(List.of("empty", "working", "done"), ContentIds.STATION_STATE_PROPERTIES.get("contents"));
+        assertEquals(List.of("empty", "loaded", "working", "done"), ContentIds.STATION_STATE_PROPERTIES.get("contents"));
         assertEquals(List.of("true", "false"), ContentIds.stateProperties("sieve").get("grinder"));
         assertFalse(ContentIds.stateProperties("drying_rack").containsKey("grinder"), "só a peneira tem dichavador");
         assertEquals(List.of("0", "1", "2", "3", "4"), ContentIds.stateProperties("ashtray").get("ash"));
@@ -157,6 +158,47 @@ class AssetCompletenessTest {
         JsonObject grinder = Resources.json(Resources.assets("models/block/sieve_grinder.json"));
         JsonArray from = grinder.getAsJsonArray("elements").get(0).getAsJsonObject().getAsJsonArray("from");
         assertEquals(13.0F, from.get(1).getAsFloat(), "o dichavador fica em cima da moldura (y=13)");
+    }
+
+    /**
+     * Estação parada (a receita não anda: 1 resina na prensa, saída bloqueada) aparece carregada e sem movimento: nenhuma
+     * textura animada e, na prensa, a placa parada em cima (platen_up) em vez da resina apertada. Trabalhando, o
+     * suporte e a peneira usam as texturas animadas.
+     */
+    @Test
+    void loadedStationsShowTheInputWithoutMotion() {
+        for (String station : ContentIds.STATIONS) {
+            JsonArray multipart = Resources.json(Resources.assets("blockstates/" + station + ".json")).getAsJsonArray("multipart");
+            Map<String, String> loaded = new HashMap<>(Map.of("facing", "north", "contents", "loaded"));
+            Map<String, String> working = new HashMap<>(Map.of("facing", "north", "contents", "working"));
+            if (ContentIds.stateProperties(station).containsKey("grinder")) {
+                loaded.put("grinder", "false");
+                working.put("grinder", "false");
+            }
+            List<String> loadedModels = appliedModels(multipart, loaded);
+            assertEquals(List.of("cultivo:block/" + station, "cultivo:block/" + station + "_loaded"),
+                loadedModels.stream().filter(m -> !m.endsWith("_platen_up")).toList(), station);
+            for (String model : loadedModels) {
+                assertFalse(usesAnimatedTexture(model), station + " carregada com textura animada em " + model);
+            }
+            if (!station.equals("press")) {
+                assertTrue(appliedModels(multipart, working).stream().anyMatch(AssetCompletenessTest::usesAnimatedTexture),
+                    station + " trabalhando sem animação");
+            }
+        }
+        JsonArray press = Resources.json(Resources.assets("blockstates/press.json")).getAsJsonArray("multipart");
+        List<String> pressLoaded = appliedModels(press, Map.of("facing", "north", "contents", "loaded"));
+        assertTrue(pressLoaded.contains("cultivo:block/press_platen_up"), "prensa carregada sem a placa parada: " + pressLoaded);
+        assertFalse(pressLoaded.contains("cultivo:block/press_squeeze"), "prensa carregada apertando: " + pressLoaded);
+        assertFalse(pressLoaded.contains("cultivo:block/press_hash"), "prensa carregada com haxixe: " + pressLoaded);
+    }
+
+    /** Alguma textura do modelo (pela cadeia de pais do mod) tem .mcmeta de animação. */
+    private static boolean usesAnimatedTexture(String modelId) {
+        Map<String, String> textures = new HashMap<>();
+        collectChain(modelId, textures, new ArrayList<>());
+        return textures.values().stream().filter(t -> !t.startsWith("#"))
+            .anyMatch(t -> Files.exists(Path.of(Resources.cultivoResource(t, "textures", ".png") + ".mcmeta")));
     }
 
     /** A bandeja é uma base só, girada por variante de facing (sem multipart). */
@@ -268,14 +310,31 @@ class AssetCompletenessTest {
         }
     }
 
+    /**
+     * O ícone da estação é a estação vazia como ela fica colocada: o modelo do bloco e, na prensa, também a placa com o
+     * parafuso (platen_up), que o bloco vazio desenha pelo multipart (minecraft:composite, como a cama vanilla).
+     */
     @Test
-    void stationItemsUseTheBlockModel() {
+    void stationItemsShowTheEmptyPlacedStation() {
         for (String station : ContentIds.STATIONS) {
             JsonObject def = Resources.json(Resources.assets("items/" + station + ".json")).getAsJsonObject("model");
-            assertEquals("cultivo:item/" + station, def.get("model").getAsString());
             JsonObject model = Resources.json(Resources.assets("models/item/" + station + ".json"));
             assertEquals("cultivo:block/" + station, model.get("parent").getAsString());
+            JsonArray multipart = Resources.json(Resources.assets("blockstates/" + station + ".json")).getAsJsonArray("multipart");
+            Map<String, String> empty = new HashMap<>(Map.of("facing", "north", "contents", "empty"));
+            if (ContentIds.stateProperties(station).containsKey("grinder")) {
+                empty.put("grinder", "false");
+            }
+            List<String> placed = new ArrayList<>(appliedModels(multipart, empty));
+            placed.set(0, "cultivo:item/" + station);
+            assertEquals(placed, itemModels(def), station + ": o ícone e a estação vazia colocada");
         }
+        JsonObject press = Resources.json(Resources.assets("items/press.json")).getAsJsonObject("model");
+        assertEquals("minecraft:composite", press.get("type").getAsString());
+        assertEquals(List.of("cultivo:item/press", "cultivo:block/press_platen_up"), itemModels(press));
+        assertEquals("minecraft:block/block",
+            Resources.json(Resources.assets("models/block/press_platen_up.json")).get("parent").getAsString(),
+            "a placa usa as mesmas transformações de exibição da base");
     }
 
     /** O haxixe troca o carimbo pela família da variedade: cada variedade aparece uma vez, no modelo da sua família. */
@@ -414,19 +473,55 @@ class AssetCompletenessTest {
         }
     }
 
+    /** Diferença de canal (0–255) a partir da qual dois pixels opacos contam como visivelmente diferentes. */
+    static final int VISIBLE_CHANNEL_DIFFERENCE = 24;
+    /** Pixels visivelmente diferentes que dois ícones de variedades diferentes precisam ter, no mínimo. */
+    static final int MIN_VISIBLE_PIXELS = 16;
+
     /**
-     * Sementes e flores são por variedade e nunca saem iguais; a lavoura é por família de arte, e duas famílias
-     * nunca têm o mesmo estágio igual.
+     * Pixels em que dois ícones 16x16 diferem a olho: opaco num e transparente no outro, ou opaco nos dois com algum canal
+     * a {@link #VISIBLE_CHANNEL_DIFFERENCE} ou mais de distância.
+     */
+    static int visiblyDifferentPixels(Png a, Png b) {
+        int n = 0;
+        for (int i = 0; i < a.argb().length; i++) {
+            int pa = a.argb()[i];
+            int pb = b.argb()[i];
+            boolean oa = (pa >>> 24) != 0;
+            boolean ob = (pb >>> 24) != 0;
+            if (oa != ob) {
+                n++;
+            } else if (oa) {
+                int channel = 0;
+                for (int shift = 0; shift <= 16; shift += 8) {
+                    channel = Math.max(channel, Math.abs(((pa >> shift) & 0xFF) - ((pb >> shift) & 0xFF)));
+                }
+                if (channel >= VISIBLE_CHANNEL_DIFFERENCE) {
+                    n++;
+                }
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Sementes, flores frescas e flores secas de duas variedades quaisquer se distinguem a olho no inventário: pelo menos
+     * {@link #MIN_VISIBLE_PIXELS} pixels visivelmente diferentes. Comparar bytes deixava passar ícones que diferiam em 1/255
+     * de um canal (Ultravioleta, Dó-Si-Dó e Soco Roxo eram três sementes marrons iguais). A lavoura é por família de arte,
+     * e duas famílias nunca têm o mesmo estágio igual.
      */
     @Test
     void strainAndFamilyTexturesAreDistinct() throws IOException {
         for (String kind : List.of("item/%s_seeds", "item/%s_fresh_flower", "item/%s_dried_flower")) {
-            Map<String, String> seen = new HashMap<>();
-            for (Variety v : Variety.values()) {
-                Path png = Resources.assets("textures/" + String.format(kind, v.id()) + ".png");
-                String bytes = HexFormat.of().formatHex(Files.readAllBytes(png));
-                String other = seen.putIfAbsent(bytes, v.id());
-                assertTrue(other == null, String.format(kind, v.id()) + " igual à de " + other);
+            List<Variety> strains = List.of(Variety.values());
+            List<Png> icons = strains.stream()
+                .map(v -> Png.read(Resources.assets("textures/" + String.format(kind, v.id()) + ".png"))).toList();
+            for (int i = 0; i < icons.size(); i++) {
+                for (int j = i + 1; j < icons.size(); j++) {
+                    int visible = visiblyDifferentPixels(icons.get(i), icons.get(j));
+                    assertTrue(visible >= MIN_VISIBLE_PIXELS, String.format(kind, strains.get(i).id()) + " x "
+                        + strains.get(j).id() + ": só " + visible + " pixels visivelmente diferentes");
+                }
             }
         }
         for (int stage = 0; stage < 8; stage++) {
@@ -438,6 +533,25 @@ class AssetCompletenessTest {
                 assertTrue(other == null, family + " estágio " + stage + " igual ao de " + other);
             }
         }
+    }
+
+    /** O critério a olho: um tom 1/255 diferente não conta; 16 pixels a mais na silhueta contam 16. */
+    @Test
+    void visibleDifferenceIgnoresTinyTints() {
+        int[] brown = new int[256];
+        int[] tinted = new int[256];
+        int[] bigger = new int[256];
+        for (int i = 0; i < 256; i++) {
+            boolean seed = i < 40;
+            brown[i] = seed ? 0xFF8A6A48 : 0;
+            tinted[i] = seed ? 0xFF8B6A48 : 0;
+            bigger[i] = i < 56 ? 0xFF8A6A48 : 0;
+        }
+        assertEquals(0, visiblyDifferentPixels(new Png(16, 16, brown), new Png(16, 16, tinted)));
+        assertEquals(16, visiblyDifferentPixels(new Png(16, 16, brown), new Png(16, 16, bigger)));
+        int[] purple = brown.clone();
+        purple[0] = 0xFF8A6A48 + VISIBLE_CHANNEL_DIFFERENCE;
+        assertEquals(1, visiblyDifferentPixels(new Png(16, 16, brown), new Png(16, 16, purple)));
     }
 
     // ------------------------------------------------------------------ traduções
@@ -478,6 +592,11 @@ class AssetCompletenessTest {
                         // prefixo concatenado em Java: precisa haver ao menos uma chave com ele
                         if (en.stream().noneMatch(k -> k.startsWith(key))) {
                             missing.add(key + "*");
+                        }
+                    } else if (TooltipHints.LINES.containsKey(key)) {
+                        // Dica em linhas curtas: o Java cita a chave base e o lang tem <chave>.1 … <chave>.n
+                        if (!en.containsAll(TooltipHints.lineKeys(key))) {
+                            missing.add(key + ".1…");
                         }
                     } else if (!en.contains(key)) {
                         missing.add(key);
@@ -535,9 +654,11 @@ class AssetCompletenessTest {
                 }
             }
             for (String key : List.of("message.cultivo.lighter_broke",
-                "tooltip.cultivo.smoke.joint", "tooltip.cultivo.smoke.device", "tooltip.cultivo.lighter",
                 "tooltip.cultivo.strain", "tooltip.cultivo.filtered", "tooltip.cultivo.cured")) {
                 assertTranslated(t, key, lang);
+            }
+            for (String hint : List.of("tooltip.cultivo.smoke.joint", "tooltip.cultivo.smoke.device", "tooltip.cultivo.lighter")) {
+                TooltipHints.lineKeys(hint).forEach(line -> assertTranslated(t, line, lang));
             }
             for (io.github.peixeangola.cultivo.core.RollingRules.Refusal refusal
                 : io.github.peixeangola.cultivo.core.RollingRules.Refusal.values()) {
@@ -645,6 +766,11 @@ class AssetCompletenessTest {
                 }
                 if (node.has("fallback")) {
                     out.addAll(itemModels(node.getAsJsonObject("fallback")));
+                }
+            }
+            case "minecraft:composite" -> {
+                for (JsonElement e : node.getAsJsonArray("models")) {
+                    out.addAll(itemModels(e.getAsJsonObject()));
                 }
             }
             default -> fail("tipo de modelo de item sem suporte no teste: " + node.get("type"));

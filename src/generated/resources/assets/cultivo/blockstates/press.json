@@ -11,10 +11,19 @@
     {
       "when": {
         "facing": "north",
-        "contents": "empty|done"
+        "contents": "empty|loaded|done"
       },
       "apply": {
         "model": "cultivo:block/press_platen_up"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/press_loaded"
       }
     },
     {
@@ -47,10 +56,20 @@
     {
       "when": {
         "facing": "east",
-        "contents": "empty|done"
+        "contents": "empty|loaded|done"
       },
       "apply": {
         "model": "cultivo:block/press_platen_up",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/press_loaded",
         "y": 90
       }
     },
@@ -86,10 +105,20 @@
     {
       "when": {
         "facing": "south",
-        "contents": "empty|done"
+        "contents": "empty|loaded|done"
       },
       "apply": {
         "model": "cultivo:block/press_platen_up",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/press_loaded",
         "y": 180
       }
     },
@@ -125,10 +154,20 @@
     {
       "when": {
         "facing": "west",
-        "contents": "empty|done"
+        "contents": "empty|loaded|done"
       },
       "apply": {
         "model": "cultivo:block/press_platen_up",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/press_loaded",
         "y": 270
       }
     },

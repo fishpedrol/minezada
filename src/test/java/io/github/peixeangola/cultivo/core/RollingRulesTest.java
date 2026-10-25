@@ -1,7 +1,9 @@
 package io.github.peixeangola.cultivo.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.peixeangola.cultivo.core.RollingRules.Refusal;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,34 @@ class RollingRulesTest {
     @Test
     void flowersAreCheckedFirst() {
         assertEquals(Refusal.NEEDS_FLOWERS, RollingRules.check(1, 0));
+    }
+
+    /**
+     * Regressão: 1 flor Aurora q3 na mão principal e 10 na secundária. A principal passa o clique (PASS) e a secundária
+     * enrola, em vez de avisar "precisa de 2 flores iguais na mão" com uma mão capaz de enrolar.
+     */
+    @Test
+    void mainHandWithoutFlowersLetsTheOffHandTry() {
+        assertTrue(RollingRules.defersToOffHand(true, RollingRules.check(1, 5), true));
+    }
+
+    /** Sem flores secas na mão secundária, o aviso sai na principal (nenhuma das mãos enrola). */
+    @Test
+    void mainHandRefusesWhenTheOffHandHasNoDriedFlowers() {
+        assertFalse(RollingRules.defersToOffHand(true, Refusal.NEEDS_FLOWERS, false));
+    }
+
+    /** Faltando folhas, a outra mão não ajuda (as folhas são as mesmas): o aviso das folhas sai já na principal. */
+    @Test
+    void missingPapersAreNeverDeferred() {
+        assertFalse(RollingRules.defersToOffHand(true, Refusal.NEEDS_PAPERS, true));
+    }
+
+    /** A mão secundária é a última: ela enrola ou avisa, nunca passa adiante; a principal que enrola também não passa. */
+    @Test
+    void offHandAndRollingMainHandDecideThemselves() {
+        assertFalse(RollingRules.defersToOffHand(false, Refusal.NEEDS_FLOWERS, true));
+        assertFalse(RollingRules.defersToOffHand(true, Refusal.NONE, true));
     }
 
     @Test

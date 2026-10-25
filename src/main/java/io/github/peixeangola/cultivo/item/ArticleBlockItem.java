@@ -1,7 +1,6 @@
 package io.github.peixeangola.cultivo.item;
 
 import java.util.function.Consumer;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -12,7 +11,7 @@ import net.minecraft.world.level.block.Block;
 
 /**
  * Artigo que vira bloco ao ser colocado (bandeja, pote, cinzeiro). Continua com o ícone plano no inventário, como o
- * vaso de flor vanilla, e mostra uma linha de dica com o uso.
+ * vaso de flor vanilla, e mostra a dica com o uso (em linhas curtas, {@link TooltipItem#addHint}).
  */
 public class ArticleBlockItem extends BlockItem {
     private final String tooltipKey;
@@ -30,6 +29,6 @@ public class ArticleBlockItem extends BlockItem {
     @SuppressWarnings("deprecation")
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display,
                                 Consumer<Component> tooltip, TooltipFlag flag) {
-        tooltip.accept(Component.translatable(tooltipKey).withStyle(ChatFormatting.DARK_GRAY));
+        TooltipItem.addHint(tooltip, tooltipKey);
     }
 }

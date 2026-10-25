@@ -41,10 +41,13 @@ import org.slf4j.Logger;
  * Inventário comum às três estações: slot 0 entrada, slot 1 saída e progresso em ticks (salvo em NBT).
  * A lógica roda só no servidor. Com saída cheia ou de outra qualidade o progresso para, sem perda nem
  * duplicação; ao quebrar o bloco, os itens caem no chão. Os dois slots (sem o progresso) são sincronizados com o
- * cliente a cada mudança de conteúdo, para o bloco prever o clique sem esperar o servidor. A propriedade contents do
- * bloco acompanha os slots (a cada mudança e a cada tick, o que também acerta mundos salvos antes dela) com
- * setBlock(UPDATE_CLIENTS) só quando o valor muda, como o LIT da fornalha: o bloco é o mesmo, então esta BlockEntity
- * continua no lugar.
+ * cliente a cada mudança de conteúdo, para o bloco prever o clique sem esperar o servidor.
+ *
+ * <p>A propriedade contents do bloco ({@link StationVisualRules}) segue o que o ciclo faz de verdade: trabalhando só
+ * enquanto a receita casa (com a quantidade mínima) e a saída aceita o resultado; parada, a estação mostra a saída
+ * pronta ou, sem saída, a entrada sem movimento. É gravada a cada mudança de conteúdo e a cada tick (o que também acerta
+ * mundos salvos antes dela) com setBlock(UPDATE_CLIENTS) só quando o valor muda, como o LIT da fornalha: o bloco é o
+ * mesmo, então esta BlockEntity continua no lugar.
  *
  * <p>Enfeites do servidor, para todos por perto: enquanto o progresso anda, o som de trabalho de cada estação no ritmo
  * de {@link StationAnimation} (o aperto da prensa bate quando a placa animada chega embaixo); no fim do ciclo, um sopro
@@ -85,31 +88,54 @@ public class ProcessingStationBlockEntity extends BlockEntity {
     /** Marca para salvar e manda os slots ao cliente (o progresso não vai, para não gerar um pacote por tick). */
     private void contentsChanged() {
         setChanged();
-        if (level != null && !level.isClientSide()) {
-            syncVisualState();
+        if (level instanceof ServerLevel serverLevel) {
+            syncVisualState(canProgress(serverLevel));
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
         }
     }
 
     /**
-     * Grava contents (vazia, trabalhando, pronta) no blockstate se mudou. Só a BlockEntity viva no mundo mexe no
-     * bloco: uma cópia carregada à parte (ou já removida) nunca recoloca a estação.
+     * Grava contents (vazia, carregada, trabalhando, pronta) no blockstate se mudou. Só a BlockEntity viva no mundo mexe
+     * no bloco: uma cópia carregada à parte (ou já removida) nunca recoloca a estação.
+     *
+     * @param progressing o ciclo anda: receita para a entrada e saída que aceita o resultado
      */
-    private void syncVisualState() {
+    private void syncVisualState(boolean progressing) {
         BlockState current = level.getBlockState(worldPosition);
         if (level.getBlockEntity(worldPosition) != this || !current.hasProperty(ProcessingStationBlock.CONTENTS)) {
             return;
         }
         BlockState wanted = ProcessingStationBlock.withContents(current,
-            StationVisualRules.contents(items.get(INPUT).isEmpty(), items.get(OUTPUT).isEmpty()));
+            StationVisualRules.contents(items.get(INPUT).isEmpty(), items.get(OUTPUT).isEmpty(), progressing));
         if (wanted != current) {
             level.setBlock(worldPosition, wanted, Block.UPDATE_CLIENTS);
         }
     }
 
-    /** Há algo para retirar com a mão vazia (saída ou entrada). Vale no cliente, com os slots sincronizados. */
-    public boolean hasContents() {
-        return !items.get(OUTPUT).isEmpty() || !items.get(INPUT).isEmpty();
+    /**
+     * O ciclo anda com o conteúdo atual: há receita para a entrada (com a quantidade mínima, como no serverTick) e a
+     * saída aceita o resultado inteiro. É a mesma conta do tick, para o blockstate nunca mostrar trabalho parado.
+     */
+    public boolean canProgress(ServerLevel level) {
+        ItemStack input = items.get(INPUT);
+        return findRecipe(level, input).map(holder -> outputAccepts(resultFor(holder.value(), input))).orElse(false);
+    }
+
+    /** A saída recebe o resultado inteiro: vazia, ou o mesmo item com os mesmos componentes e espaço na pilha. */
+    private boolean outputAccepts(ItemStack result) {
+        ItemStack output = items.get(OUTPUT);
+        return ProcessingRules.outputAccepts(output.isEmpty(), ItemStack.isSameItemSameComponents(output, result),
+            output.getCount(), result.getCount(), result.getMaxStackSize());
+    }
+
+    /** Há saída pronta para a mão vazia tirar. Vale no cliente, com os slots sincronizados. */
+    public boolean hasOutput() {
+        return !items.get(OUTPUT).isEmpty();
+    }
+
+    /** Há entrada para devolver (agachado, de mãos vazias). Vale no cliente, com os slots sincronizados. */
+    public boolean hasInput() {
+        return !items.get(INPUT).isEmpty();
     }
 
     /**
@@ -167,22 +193,31 @@ public class ProcessingStationBlockEntity extends BlockEntity {
     }
 
     /**
-     * Retira a saída inteira; se não houver, retira a entrada e zera o progresso. O bloco só chama isto com a mão
-     * principal vazia: segurar qualquer item nunca retira nada.
+     * Retira a saída inteira (vazia se não havia). É o clique de mão vazia: nunca toca na entrada, então segurar o botão,
+     * ou o clique de outro jogador logo depois, não puxa o que ainda está processando nem zera o progresso.
      */
-    public ItemStack extract() {
+    public ItemStack takeOutput() {
         ItemStack output = items.get(OUTPUT);
-        if (!output.isEmpty()) {
-            items.set(OUTPUT, ItemStack.EMPTY);
-            contentsChanged();
-            return output;
+        if (output.isEmpty()) {
+            return ItemStack.EMPTY;
         }
+        items.set(OUTPUT, ItemStack.EMPTY);
+        contentsChanged();
+        return output;
+    }
+
+    /**
+     * Devolve a entrada inteira e zera o progresso (vazia se não havia). Só o gesto de propósito chega aqui: agachado e
+     * de mãos vazias.
+     */
+    public ItemStack takeInput() {
         ItemStack input = items.get(INPUT);
-        if (!input.isEmpty()) {
-            items.set(INPUT, ItemStack.EMPTY);
-            progress = 0;
-            contentsChanged();
+        if (input.isEmpty()) {
+            return ItemStack.EMPTY;
         }
+        items.set(INPUT, ItemStack.EMPTY);
+        progress = 0;
+        contentsChanged();
         return input;
     }
 
@@ -215,28 +250,29 @@ public class ProcessingStationBlockEntity extends BlockEntity {
         ItemStack input = items.get(INPUT);
         Optional<RecipeHolder<ProcessingRecipe>> holder = findRecipe(level, input);
         int previous = progress;
+        boolean progressing = false;
         if (holder.isEmpty()) {
             progress = 0;
         } else {
             ProcessingRecipe recipe = holder.get().value();
             ItemStack result = resultFor(recipe, input);
-            ItemStack output = items.get(OUTPUT);
-            boolean accepts = ProcessingRules.outputAccepts(output.isEmpty(),
-                ItemStack.isSameItemSameComponents(output, result), output.getCount(), result.getCount(),
-                result.getMaxStackSize());
+            boolean accepts = outputAccepts(result);
             ProcessingRules.Tick tick = ProcessingRules.advance(progress, recipe.processingTime(), true, accepts);
             progress = tick.progress();
             if (tick.completed()) {
                 input.shrink(recipe.inputCount());
+                ItemStack output = items.get(OUTPUT);
                 if (output.isEmpty()) {
                     items.set(OUTPUT, result);
                 } else {
                     output.grow(result.getCount());
                 }
+                // Recalcula o estado com o que sobrou: 1 resina na prensa não basta, e a barra de haxixe aparece
                 contentsChanged();
                 finishEffects(level);
                 return;
             }
+            progressing = accepts;
         }
         if (progress != previous) {
             setChanged();
@@ -244,7 +280,7 @@ public class ProcessingStationBlockEntity extends BlockEntity {
                 workSounds(level);
             }
         }
-        syncVisualState();
+        syncVisualState(progressing);
     }
 
     /** Som de trabalho no ritmo da estação; a peneira com dichavador também mói. */

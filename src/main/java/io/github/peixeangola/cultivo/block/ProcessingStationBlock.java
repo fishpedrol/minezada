@@ -11,7 +11,6 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
-import net.minecraft.util.Prediction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -43,21 +42,25 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Clique direito com um ingrediente insere na entrada.</li>
  *   <li>Um item que não entra (outro item, outra qualidade, entrada cheia) devolve PASS: o vanilla segue para o uso
  *       do item ou a colocação de bloco, e nada sai da estação.</li>
- *   <li>Só a mão principal vazia retira: primeiro a saída; sem saída, devolve a entrada em andamento e zera o
- *       progresso.</li>
+ *   <li>Mão principal vazia: tira só a saída pronta; sem saída, PASS. Segurar o botão (o vanilla repete o clique a cada
+ *       4 ticks) ou o clique de outro jogador logo depois nunca puxa a entrada em andamento.</li>
+ *   <li>Agachado e de mãos vazias (o gesto de propósito): devolve a entrada e zera o progresso.</li>
  * </ul>
- * No cliente o resultado é previsto com o que ele sabe: a tag cultivo:&lt;estação&gt;_inputs e os slots
- * sincronizados da BlockEntity. Assim a mão secundária e o uso do item não são engolidos por um SUCCESS falso.
+ * No cliente o resultado é previsto com o que ele sabe ({@link #predictUse}): a tag
+ * cultivo:&lt;estação&gt;_inputs, o agachar e os slots sincronizados da BlockEntity. Assim a mão secundária e o uso do
+ * item não são engolidos por um SUCCESS falso. O servidor devolve SUCCESS (balanço já previsto pelo cliente), nunca
+ * SUCCESS_SERVER, que faria o servidor repetir o balanço do braço para quem clicou.
  *
- * <p>Blockstate: {@link #FACING} (a frente olha para quem colocou) e {@link #CONTENTS} (vazia, trabalhando ou pronta,
- * calculado por {@link StationVisualRules} e gravado pela BlockEntity só quando muda). O modelo é multipart: a base
- * gira com o facing e as partes de conteúdo aparecem conforme contents. Uma subclasse soma outra propriedade
- * sobrescrevendo {@link #createBlockStateDefinition} e chamando o super, como a {@link SieveBlock} faz com o
- * dichavador: o construtor daqui não lê campos da subclasse, e a BlockEntity só troca contents, preservando as outras.
+ * <p>Blockstate: {@link #FACING} (a frente olha para quem colocou) e {@link #CONTENTS} (vazia, carregada, trabalhando
+ * ou pronta, calculado por {@link StationVisualRules} e gravado pela BlockEntity só quando muda). O modelo é
+ * multipart: a base gira com o facing e as partes de conteúdo aparecem conforme contents. Uma subclasse soma outra
+ * propriedade sobrescrevendo {@link #createBlockStateDefinition} e chamando o super, como a {@link SieveBlock} faz com
+ * o dichavador: o construtor daqui não lê campos da subclasse, e a BlockEntity só troca contents, preservando as outras.
  *
- * <p>Animação: trabalhando, o maço do suporte balança e as flores da peneira tremem (texturas animadas), a placa da
- * prensa sobe e desce (desenhada no cliente) e {@link #animateTick} solta partículas só no cliente. O som de trabalho e
- * o sopro do fim de ciclo vêm do servidor ({@link ProcessingStationBlockEntity}).
+ * <p>Animação: só com o ciclo andando (contents=working) o maço do suporte balança e as flores da peneira tremem
+ * (texturas animadas), a placa da prensa sobe e desce (desenhada no cliente) e {@link #animateTick} solta partículas só
+ * no cliente. Carregada (a receita não anda), a entrada aparece parada. O som de trabalho e o sopro do fim de ciclo vêm
+ * do servidor ({@link ProcessingStationBlockEntity}).
  */
 public class ProcessingStationBlock extends Block implements EntityBlock {
     public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
@@ -181,6 +184,26 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
             ((ProcessingStationBlockEntity) blockEntity).serverTick((ServerLevel) tickLevel);
     }
 
+    /**
+     * O que o cliente prevê para um clique (é o que os ramos do cliente de {@link #useItemOn} e {@link #useWithoutItem}
+     * devolvem), com o que ele sabe: o blockstate, os slots sincronizados da BlockEntity, a pilha na mão e o agachar.
+     * <ul>
+     *   <li>Com um item: SUCCESS se a pilha entra (tag de entradas e slots); senão PASS, para o vanilla seguir com o uso
+     *       do item, a colocação de bloco ou a mão secundária.</li>
+     *   <li>Mão vazia: agachado, SUCCESS se há entrada para devolver; sem agachar, SUCCESS se há saída pronta; senão PASS
+     *       (a mão secundária pode inserir).</li>
+     * </ul>
+     * Pública para os GameTests compararem com o resultado do servidor numa visão montada só com a tag de atualização.
+     */
+    public InteractionResult predictUse(BlockState state, ProcessingStationBlockEntity station, ItemStack held,
+                                        boolean sneaking) {
+        if (held.isEmpty()) {
+            boolean something = sneaking ? station.hasInput() : station.hasOutput();
+            return something ? InteractionResult.SUCCESS : InteractionResult.PASS;
+        }
+        return station.couldInsert(held) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+    }
+
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                           InteractionHand hand, BlockHitResult hit) {
@@ -192,7 +215,7 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
             return InteractionResult.PASS;
         }
         if (!(level instanceof ServerLevel serverLevel)) {
-            return station.couldInsert(stack) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+            return predictUse(state, station, stack, player.isSecondaryUseActive());
         }
         int moved = station.insert(serverLevel, stack);
         if (moved <= 0) {
@@ -202,7 +225,7 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
         if (!player.hasInfiniteMaterials()) {
             stack.shrink(moved);
         }
-        return InteractionResult.SUCCESS_SERVER;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
@@ -211,17 +234,16 @@ public class ProcessingStationBlock extends Block implements EntityBlock {
         if (!(level.getBlockEntity(pos) instanceof ProcessingStationBlockEntity station)) {
             return InteractionResult.PASS;
         }
+        // Agachado o vanilla só chega aqui com as duas mãos vazias (ServerPlayerGameMode#useItemOn)
+        boolean sneaking = player.isSecondaryUseActive();
         if (!(level instanceof ServerLevel)) {
-            // Estação vazia: PASS deixa a mão secundária tentar inserir
-            return station.hasContents() ? InteractionResult.SUCCESS : InteractionResult.PASS;
+            return predictUse(state, station, ItemStack.EMPTY, sneaking);
         }
-        ItemStack taken = station.extract();
+        ItemStack taken = sneaking ? station.takeInput() : station.takeOutput();
         if (taken.isEmpty()) {
             return InteractionResult.PASS;
         }
-        if (!player.getInventory().add(taken)) {
-            player.drop(taken, false, Prediction.SERVER_ONLY);
-        }
-        return InteractionResult.SUCCESS_SERVER;
+        Handouts.give(player, taken);
+        return InteractionResult.SUCCESS;
     }
 }

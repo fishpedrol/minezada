@@ -3,6 +3,7 @@ package io.github.peixeangola.cultivo.smoke;
 import io.github.peixeangola.cultivo.core.SmokeAnimation;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.registry.ModSounds;
+import java.util.Optional;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -114,18 +115,29 @@ public final class SmokeEffects {
     }
 
     /**
+     * Evento do borbulhar da água de cada aparelho: o bong e o narguilé têm eventos próprios, cada um com a sua legenda
+     * (o narguilé não aparece mais como "Bong borbulha"); os outros aparelhos não borbulham.
+     */
+    public static Optional<SoundEvent> bubbleSound(SmokeDevice device) {
+        return switch (device) {
+            case BONG -> Optional.of(ModSounds.BONG_BUBBLE.get());
+            case HOOKAH -> Optional.of(ModSounds.HOOKAH_BUBBLE.get());
+            case JOINT, PIPE, CHILLUM -> Optional.empty();
+        };
+    }
+
+    /**
      * Servidor: um tick de uso. A tragada toca quando o aparelho chega à boca; bong e narguilé borbulham a cada
-     * {@link #BUBBLE_SOUND_TICKS} ticks depois disso (o narguilé mais grave).
+     * {@link #BUBBLE_SOUND_TICKS} ticks depois disso (o narguilé mais grave, pelo tom do próprio evento).
      */
     public static void useTickSounds(ServerLevel level, LivingEntity user, SmokeDevice device, int elapsed) {
         if (elapsed == SmokeAnimation.KEYFRAMES) {
             play(level, user, ModSounds.SMOKE_INHALE.get(), 1.0F, 0.9F + user.getRandom().nextFloat() * 0.2F);
         }
-        boolean bubbles = device == SmokeDevice.BONG || device == SmokeDevice.HOOKAH;
-        if (bubbles && elapsed > SmokeAnimation.KEYFRAMES
+        if (elapsed > SmokeAnimation.KEYFRAMES
             && (elapsed - SmokeAnimation.KEYFRAMES) % BUBBLE_SOUND_TICKS == 2
             && SmokeAnimation.thirdPersonRaise(elapsed, device.useTicks()) >= 1.0F) {
-            play(level, user, ModSounds.BONG_BUBBLE.get(), 1.0F, device == SmokeDevice.HOOKAH ? 0.75F : 1.0F);
+            bubbleSound(device).ifPresent(sound -> play(level, user, sound, 1.0F, 1.0F));
         }
     }
 

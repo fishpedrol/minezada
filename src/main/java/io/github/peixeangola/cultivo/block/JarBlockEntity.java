@@ -37,7 +37,9 @@ import org.slf4j.Logger;
  *       curadas.</li>
  *   <li>A pilha vai para o cliente a cada mudança (para o bloco prever o clique); o contador não.</li>
  *   <li>A propriedade filled do bloco acompanha a pilha, gravada com setBlock(UPDATE_CLIENTS) só quando muda; o bloco é
- *       o mesmo, então esta BlockEntity continua no lugar.</li>
+ *       o mesmo, então esta BlockEntity continua no lugar. Além das mudanças pelo jogo, o tick confere o valor, como
+ *       as estações: um pote carregado de dados (pick-block com Ctrl, /setblock, /data) fica certo no primeiro
+ *       tick.</li>
  *   <li>Quando a cura termina, brilho e som saem do servidor, para todos por perto.</li>
  * </ul>
  */
@@ -152,6 +154,7 @@ public class JarBlockEntity extends BlockEntity {
     }
 
     public void serverTick(ServerLevel level) {
+        syncVisualState();
         CuringRules.Tick tick = CuringRules.advance(cureProgress, curable());
         if (tick.completed()) {
             ItemStack stored = getItem();

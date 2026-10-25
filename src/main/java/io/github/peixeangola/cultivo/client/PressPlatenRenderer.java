@@ -7,6 +7,7 @@ import io.github.peixeangola.cultivo.block.ProcessingStationBlockEntity;
 import io.github.peixeangola.cultivo.block.StationContents;
 import io.github.peixeangola.cultivo.core.StationAnimation;
 import io.github.peixeangola.cultivo.core.StationKind;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.BlockModelRenderState;
 import net.minecraft.client.renderer.block.BlockModelResolver;
@@ -36,8 +37,8 @@ import org.jspecify.annotations.Nullable;
  * <p>O modelo da placa (models/block/press_platen_moving.json) é carregado como o estado sintético
  * {@code cultivo:press_platen} (só facing), do mesmo jeito que o vanilla carrega a moldura de item: o Forge deixa
  * registrar a StateDefinition em {@code ModelEvent.RegisterModelStateDefinitions} e o blockstates/press_platen.json gera
- * um modelo por facing. Com a prensa vazia ou pronta, a placa parada continua no modelo do bloco (platen_up); trabalhando,
- * o modelo do bloco só tem a resina e a placa vem daqui.
+ * um modelo por facing. Com a prensa vazia, carregada ou pronta, a placa parada continua no modelo do bloco
+ * (platen_up); trabalhando, o modelo do bloco só tem a resina e a placa vem daqui.
  */
 public final class PressPlatenRenderer implements BlockEntityRenderer<ProcessingStationBlockEntity, PressPlatenRenderer.State> {
     /** Nome do estado sintético (blockstates/press_platen.json). */
@@ -69,6 +70,16 @@ public final class PressPlatenRenderer implements BlockEntityRenderer<Processing
     @Override
     public State createRenderState() {
         return new State();
+    }
+
+    /**
+     * Até onde o cliente desenha a placa: a distância de renderização dele, como o farol vanilla. Com os 64 blocos padrão
+     * de BlockEntityRenderer, uma prensa trabalhando mais longe aparecia sem placa (o modelo do bloco trabalhando não a
+     * tem), com um vão onde ela deveria estar.
+     */
+    @Override
+    public int getViewDistance() {
+        return Minecraft.getInstance().options.getEffectiveRenderDistance() * 16;
     }
 
     @Override

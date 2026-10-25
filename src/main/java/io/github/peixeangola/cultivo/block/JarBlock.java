@@ -6,7 +6,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Prediction;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -33,10 +32,14 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  *   <li>Clique direito com um item da tag põe o quanto couber, só no mesmo item com os mesmos componentes. Um item
  *       que não entra devolve PASS: o vanilla segue (usar o item, colocar bloco) e o pote não muda.</li>
- *   <li>Mão vazia retira a pilha inteira.</li>
+ *   <li>Mão vazia retira a pilha inteira (o que não couber no inventário cai aos pés do jogador, também no
+ *       criativo).</li>
  *   <li>Comparador: ⌈15 × quantidade / pilha máxima⌉. Quebrar o pote derruba o conteúdo.</li>
  * </ul>
- * {@link #FILLED} só escolhe o modelo (com ou sem conteúdo atrás do vidro) e é gravado pela BlockEntity quando muda.
+ * {@link #FILLED} só escolhe o modelo (com ou sem conteúdo atrás do vidro) e é gravado pela BlockEntity quando muda;
+ * como no LIT da fornalha, o tick também acerta o valor de um pote cujo conteúdo veio de dados (pick-block com Ctrl,
+ * /setblock, /data). O cliente prevê o clique ({@link #predictInsert}, {@link #predictTake}) e o servidor devolve
+ * SUCCESS, sem repetir o balanço do braço de quem clicou.
  */
 public class JarBlock extends Block implements EntityBlock {
     public static final BooleanProperty FILLED = BooleanProperty.create("filled");
@@ -63,14 +66,30 @@ public class JarBlock extends Block implements EntityBlock {
         return new JarBlockEntity(pos, state);
     }
 
-    /** Só no servidor e só com algo dentro: um pote vazio não tem o que curar. */
+    /**
+     * Só no servidor, com ou sem conteúdo: o tick acerta {@link #FILLED} (barato: só compara o estado) e cura. Sem
+     * ticker num pote marcado como vazio, um pote cujo conteúdo veio de dados nunca curaria nem mostraria as flores.
+     */
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state,
                                                                             BlockEntityType<T> type) {
-        if (level.isClientSide() || type != ModBlockEntities.JAR.get() || !state.getValue(FILLED)) {
+        if (level.isClientSide() || type != ModBlockEntities.JAR.get()) {
             return null;
         }
         return (tickLevel, pos, tickState, blockEntity) -> ((JarBlockEntity) blockEntity).serverTick((ServerLevel) tickLevel);
+    }
+
+    /**
+     * Previsão do cliente para o clique com um item (o que o ramo do cliente de {@link #useItemOn} devolve), pelo
+     * conteúdo sincronizado: SUCCESS se a pilha entra; senão PASS, e a mão secundária e o uso do item não são engolidos.
+     */
+    public static InteractionResult predictInsert(JarBlockEntity jar, ItemStack stack) {
+        return jar.couldInsert(stack) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+    }
+
+    /** Previsão do cliente para a mão vazia: SUCCESS se há algo para retirar; senão PASS. */
+    public static InteractionResult predictTake(JarBlockEntity jar) {
+        return jar.getItem().isEmpty() ? InteractionResult.PASS : InteractionResult.SUCCESS;
     }
 
     @Override
@@ -83,8 +102,7 @@ public class JarBlock extends Block implements EntityBlock {
             return InteractionResult.PASS;
         }
         if (!(level instanceof ServerLevel)) {
-            // Previsão com o conteúdo sincronizado: a mão secundária e o uso do item não são engolidos
-            return jar.couldInsert(stack) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+            return predictInsert(jar, stack);
         }
         int moved = jar.insert(stack);
         if (moved <= 0) {
@@ -96,7 +114,7 @@ public class JarBlock extends Block implements EntityBlock {
         float fill = (float) jar.getItem().getCount() / jar.getItem().getMaxStackSize();
         // Fecha a tampa; quanto mais cheio, mais agudo
         level.playSound(null, pos, ModSounds.JAR_CLOSE.get(), SoundSource.BLOCKS, 1.0F, 0.9F + 0.3F * fill);
-        return InteractionResult.SUCCESS_SERVER;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
@@ -106,17 +124,15 @@ public class JarBlock extends Block implements EntityBlock {
             return InteractionResult.PASS;
         }
         if (!(level instanceof ServerLevel)) {
-            return jar.getItem().isEmpty() ? InteractionResult.PASS : InteractionResult.SUCCESS;
+            return predictTake(jar);
         }
         ItemStack taken = jar.extract();
         if (taken.isEmpty()) {
             return InteractionResult.PASS;
         }
-        if (!player.getInventory().add(taken)) {
-            player.drop(taken, false, Prediction.SERVER_ONLY);
-        }
+        Handouts.give(player, taken);
         level.playSound(null, pos, ModSounds.JAR_OPEN.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
-        return InteractionResult.SUCCESS_SERVER;
+        return InteractionResult.SUCCESS;
     }
 
     @Override

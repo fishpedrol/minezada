@@ -28,6 +28,7 @@ import io.github.peixeangola.cultivo.registry.ModComponents;
 import io.github.peixeangola.cultivo.registry.ModCreativeTabs;
 import io.github.peixeangola.cultivo.registry.ModEffects;
 import io.github.peixeangola.cultivo.registry.ModItems;
+import io.github.peixeangola.cultivo.registry.ModSounds;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -44,11 +45,14 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.Unit;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -64,6 +68,8 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -75,13 +81,18 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.FarmlandBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.BooleanOp;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.registries.DeferredRegister;
 
 /**
@@ -142,6 +153,18 @@ public final class CultivoGameTests {
         TESTS.register("sound_events_registered", () -> CultivoGameTests::soundEventsRegistered);
         TESTS.register("smoke_use_effects_run", () -> CultivoGameTests::smokeUseEffectsRun);
         TESTS.register("station_effects_run", () -> CultivoGameTests::stationEffectsRun);
+        TESTS.register("station_stalled_visual", () -> CultivoGameTests::stationStalledVisual);
+        TESTS.register("station_hold_click_keeps_input", () -> CultivoGameTests::stationHoldClickKeepsInput);
+        TESTS.register("tray_rolls_from_off_hand", () -> CultivoGameTests::trayRollsFromOffHand);
+        TESTS.register("interactions_swing_once", () -> CultivoGameTests::interactionsSwingOnce);
+        TESTS.register("full_inventory_drops_handouts", () -> CultivoGameTests::fullInventoryDropsHandouts);
+        TESTS.register("creative_keeps_held_stacks", () -> CultivoGameTests::creativeKeepsHeldStacks);
+        TESTS.register("jar_reload_resumes", () -> CultivoGameTests::jarReloadResumes);
+        TESTS.register("client_prediction_matches_server", () -> CultivoGameTests::clientPredictionMatchesServer);
+        TESTS.register("sieve_grinder_shape", () -> CultivoGameTests::sieveGrinderShape);
+        TESTS.register("ashtray_search_edges", () -> CultivoGameTests::ashtraySearchEdges);
+        TESTS.register("block_states_match_ids", () -> CultivoGameTests::blockStatesMatchIds);
+        TESTS.register("tooltips_show_profile_and_marks", () -> CultivoGameTests::tooltipsShowProfileAndMarks);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -334,12 +357,12 @@ public final class CultivoGameTests {
             ProcessingStationBlockEntity station = placeStation(helper, StationKind.SIEVING);
             station.insert(helper.getLevel(), withQuality(ModItems.DRIED_FLOWERS.get(Variety.ECLIPSE).get(), 1, 4));
             tick(helper, station, StationKind.SIEVING.defaultTicks());
-            ItemStack bonus = station.extract();
+            ItemStack bonus = station.takeOutput();
             check(bonus.is(ModItems.RESIN.get()) && bonus.getCount() == 2, "qualidade 4 deveria render 2: " + bonus);
             check(Integer.valueOf(4).equals(quality(bonus)), "qualidade da resina");
             station.insert(helper.getLevel(), withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 3));
             tick(helper, station, StationKind.SIEVING.defaultTicks());
-            ItemStack plain = station.extract();
+            ItemStack plain = station.takeOutput();
             check(plain.is(ModItems.RESIN.get()) && plain.getCount() == 1, "qualidade 3 deveria render 1: " + plain);
         });
     }
@@ -376,7 +399,7 @@ public final class CultivoGameTests {
             check(station.getItem(ProcessingStationBlockEntity.OUTPUT).getCount() == 1, "misturou qualidades");
             check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 1, "entrada perdida (qualidade)");
 
-            ItemStack taken = station.extract();
+            ItemStack taken = station.takeOutput();
             check(taken.getCount() == 1 && Integer.valueOf(2).equals(quality(taken)), "retirada da saída");
             tick(helper, station, StationKind.DRYING.defaultTicks());
             ItemStack out = station.getItem(ProcessingStationBlockEntity.OUTPUT);
@@ -431,16 +454,18 @@ public final class CultivoGameTests {
     // ------------------------------------------------------------------ fontes e receitas
 
     /**
-     * As tabelas de baú das 4 aldeias cobertas geram sementes de todas as variedades, nativas e do catálogo: cerca de
-     * metade dos baús tem semente e, por variedade, as comuns rendem mais que as incomuns, que rendem mais que as raras.
-     * O sorteio usa uma semente fixa, então o resultado é sempre o mesmo e as margens (esperado: 50% dos baús; 54, 20 e
-     * 7 sementes por variedade comum, incomum e rara em 1600 baús) ficam longe dos limites.
+     * As tabelas de baú das 4 aldeias cobertas, com o pool que o jogo injeta de verdade (SeedLootInjector), geram sementes
+     * de todas as 40 variedades, nativas (Brisa, Aurora, Eclipse) e do catálogo: cerca de metade dos baús tem semente; as
+     * pilhas têm 1–3 sementes nas comuns (e o 3 aparece), 1–2 nas incomuns (e o 2 aparece) e sempre 1 nas raras; e, por
+     * variedade, a média fica a ±25% do esperado em 1600 baús: 1600 × 4/238 × 2 = 53,8 (comum), 1600 × 2/238 × 1,5 = 20,2
+     * (incomum) e 1600 × 1/238 × 1 = 6,7 (rara). O sorteio usa uma semente fixa, então o resultado é sempre o mesmo.
      */
     public static void villageChestSeeds(GameTestHelper helper) {
         run(helper, () -> {
             ServerLevel level = helper.getLevel();
             RandomSource random = RandomSource.create(20_261_024L);
             Map<Variety, Integer> totals = new EnumMap<>(Variety.class);
+            Map<Variety.Rarity, Set<Integer>> stackSizes = new EnumMap<>(Variety.Rarity.class);
             int chests = 0;
             int chestsWithSeeds = 0;
             for (String tableId : SeedSources.chestTables()) {
@@ -456,6 +481,7 @@ public final class CultivoGameTests {
                     for (ItemStack stack : table.getRandomItems(params, random)) {
                         if (stack.getItem() instanceof SeedItem seed) {
                             totals.merge(seed.variety(), stack.getCount(), Integer::sum);
+                            stackSizes.computeIfAbsent(seed.variety().rarity(), r -> new java.util.TreeSet<>()).add(stack.getCount());
                             seedStacks++;
                         }
                     }
@@ -467,16 +493,23 @@ public final class CultivoGameTests {
             }
             double share = chestsWithSeeds / (double) chests;
             check(share > 0.45 && share < 0.55, "baús com semente: " + chestsWithSeeds + "/" + chests);
-            long catalogSeen = totals.keySet().stream().filter(v -> !v.isNative()).count();
-            check(catalogSeen >= 30, "só " + catalogSeen + " variedades do catálogo apareceram");
+            check(totals.keySet().containsAll(List.of(Variety.BRISA, Variety.AURORA, Variety.ECLIPSE)),
+                "as nativas sumiram dos baús: " + totals.keySet());
+            check(totals.size() == 40, "só " + totals.size() + " das 40 variedades apareceram: " + totals.keySet());
+            // Quantidades por pilha: comum 1–3, incomum 1–2, rara 1
+            check(Set.of(1, 2, 3).equals(stackSizes.get(Variety.Rarity.COMMON)), "pilhas comuns: " + stackSizes);
+            check(Set.of(1, 2).equals(stackSizes.get(Variety.Rarity.UNCOMMON)), "pilhas incomuns: " + stackSizes);
+            check(Set.of(1).equals(stackSizes.get(Variety.Rarity.RARE)), "pilhas raras: " + stackSizes);
             Map<Variety.Rarity, Integer> byRarity = new EnumMap<>(Variety.Rarity.class);
             totals.forEach((variety, n) -> byRarity.merge(variety.rarity(), n, Integer::sum));
             // Média por variedade: 25 comuns, 4 incomuns e 11 raras
             double common = byRarity.getOrDefault(Variety.Rarity.COMMON, 0) / 25.0;
             double uncommon = byRarity.getOrDefault(Variety.Rarity.UNCOMMON, 0) / 4.0;
             double rare = byRarity.getOrDefault(Variety.Rarity.RARE, 0) / 11.0;
-            check(common > uncommon && uncommon > rare && rare > 0,
-                "sementes por variedade: comum " + common + ", incomum " + uncommon + ", rara " + rare);
+            String averages = "sementes por variedade: comum " + common + ", incomum " + uncommon + ", rara " + rare;
+            check(common >= 53.8 * 0.75 && common <= 53.8 * 1.25, averages);
+            check(uncommon >= 20.2 * 0.75 && uncommon <= 20.2 * 1.25, averages);
+            check(rare >= 6.7 * 0.75 && rare <= 6.7 * 1.25, averages);
         });
     }
 
@@ -932,13 +965,13 @@ public final class CultivoGameTests {
             ProcessingStationBlockEntity sieve = placeStation(helper, StationKind.SIEVING);
             sieve.insert(helper.getLevel(), withQuality(ModItems.DRIED_FLOWERS.get(Variety.ECLIPSE).get(), 1, 4));
             tick(helper, sieve, StationKind.SIEVING.defaultTicks());
-            ItemStack resin = sieve.extract();
+            ItemStack resin = sieve.takeOutput();
             check(resin.getCount() == 2 && resin.get(ModComponents.STRAIN.get()) == Variety.ECLIPSE, "resina " + resin);
 
             ProcessingStationBlockEntity press = placeStation(helper, StationKind.PRESSING);
             press.insert(helper.getLevel(), resin);
             tick(helper, press, StationKind.PRESSING.defaultTicks());
-            ItemStack hash = press.extract();
+            ItemStack hash = press.takeOutput();
             check(hash.is(ModItems.HASH.get()) && hash.get(ModComponents.STRAIN.get()) == Variety.ECLIPSE
                 && Integer.valueOf(4).equals(quality(hash)), "haxixe " + hash);
 
@@ -1048,8 +1081,8 @@ public final class CultivoGameTests {
 
     /**
      * Regressões do clique: item que não entra (terra, cachimbo, flor de outra qualidade) nunca retira nem zera o
-     * progresso, e a terra é colocada ao lado como no vanilla; só a mão principal vazia retira (saída primeiro);
-     * com a estação vazia a mão secundária insere.
+     * progresso, e a terra é colocada ao lado como no vanilla; a mão principal vazia tira só a saída; agachado e de mãos
+     * vazias a entrada volta; com a estação vazia a mão secundária insere.
      */
     public static void stationBlockInteraction(GameTestHelper helper) {
         run(helper, () -> {
@@ -1097,8 +1130,14 @@ public final class CultivoGameTests {
             check(countInInventory(player, dried) == 1, "a saída não veio para o inventário");
             check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 16 && station.progress() == 590,
                 "retirar a saída mexeu na entrada");
-            // Sem saída, a mão vazia devolve a entrada em andamento (comportamento documentado) e zera o progresso
-            check(rightClick(helper, player, SOIL).consumesAction(), "mão vazia não devolveu a entrada");
+            // Sem saída, a mão vazia não faz nada: a entrada em andamento fica e o progresso também
+            check(!rightClick(helper, player, SOIL).consumesAction(), "mão vazia sem saída tratou o clique");
+            check(station.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 16 && station.progress() == 590,
+                "mão vazia sem saída puxou a entrada ou zerou o progresso");
+            // Agachado e de mãos vazias (o gesto de propósito): a entrada volta e o progresso zera
+            player.setShiftKeyDown(true);
+            check(rightClick(helper, player, SOIL).consumesAction(), "agachado não devolveu a entrada");
+            player.setShiftKeyDown(false);
             check(countInInventory(player, fresh) == 16, "entrada não voltou: " + countInInventory(player, fresh));
             check(station.getItem(ProcessingStationBlockEntity.INPUT).isEmpty() && station.progress() == 0,
                 "a estação deveria ficar vazia");
@@ -1112,8 +1151,28 @@ public final class CultivoGameTests {
     }
 
     /**
+     * Anota em {@code firstSeen[i]} o primeiro tick do teste em que a saída da estação i aparece. Roda a cada tick: o
+     * sucesso do teste não pode pular a conferência de "nada sai antes da hora" (depois do succeed, o vanilla para de rodar
+     * os eventos agendados, então um runAfterDelay posterior ao fim nunca rodaria).
+     */
+    private static long[] recordFirstOutputs(GameTestHelper helper, ProcessingStationBlockEntity... stations) {
+        long[] firstSeen = new long[stations.length];
+        java.util.Arrays.fill(firstSeen, -1L);
+        helper.onEachTick(() -> {
+            for (int i = 0; i < stations.length; i++) {
+                if (firstSeen[i] < 0 && !stations[i].getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty()) {
+                    firstSeen[i] = helper.getTick();
+                }
+            }
+        });
+        return firstSeen;
+    }
+
+    /**
      * As três estações processam só com os ticks do mundo (o ticker real da BlockEntity), sem chamar serverTick:
-     * secagem 600, peneira 200 e prensa 300 ticks. Nada sai antes da hora.
+     * secagem 600, peneira 200 e prensa 300 ticks. Nada sai antes da hora: o tick em que cada saída aparece é anotado e
+     * conferido no sucesso (margem de 2 ticks para a ordem entre o tick do mundo e o do teste), então um ciclo mais
+     * curto falha mesmo que todos terminem cedo.
      */
     public static void stationRealTicker(GameTestHelper helper) {
         ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
@@ -1133,17 +1192,16 @@ public final class CultivoGameTests {
             && !sieve.getItem(ProcessingStationBlockEntity.INPUT).isEmpty()
             && press.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 2, "inserção pelo clique falhou");
 
-        helper.runAfterDelay(150, () -> helper.assertTrue(sieve.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
-            "peneira terminou antes de 200 ticks"));
-        helper.runAfterDelay(250, () -> helper.assertTrue(press.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
-            "prensa terminou antes de 300 ticks"));
-        helper.runAfterDelay(550, () -> helper.assertTrue(drying.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
-            "secagem terminou antes de 600 ticks"));
+        long[] firstSeen = recordFirstOutputs(helper, drying, sieve, press);
         helper.succeedWhen(() -> {
             helper.assertTrue(drying.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.DRIED_FLOWERS.get(Variety.AURORA).get()),
                 "ainda secando");
             helper.assertTrue(sieve.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.RESIN.get()), "ainda peneirando");
             helper.assertTrue(press.getItem(ProcessingStationBlockEntity.OUTPUT).is(ModItems.HASH.get()), "ainda prensando");
+            helper.assertTrue(firstSeen[0] >= 0 && firstSeen[1] >= 0 && firstSeen[2] >= 0, "saídas ainda não anotadas");
+            helper.assertTrue(firstSeen[0] >= 598, "secagem terminou antes de 600 ticks: " + firstSeen[0]);
+            helper.assertTrue(firstSeen[1] >= 198, "peneira terminou antes de 200 ticks: " + firstSeen[1]);
+            helper.assertTrue(firstSeen[2] >= 298, "prensa terminou antes de 300 ticks: " + firstSeen[2]);
         });
     }
 
@@ -1325,7 +1383,7 @@ public final class CultivoGameTests {
             ProcessingStationBlockEntity drying = placeStation(helper, StationKind.DRYING);
             check(drying.insert(level, withQuality(ModItems.FRESH_FLOWERS.get(strain).get(), 2, 4)) == 2, "secagem recusou");
             tick(helper, drying, StationKind.DRYING.defaultTicks());
-            ItemStack dried = drying.extract();
+            ItemStack dried = drying.takeOutput();
             check(dried.is(ModItems.DRIED_FLOWERS.get(strain).get()) && dried.getCount() == 1, "secou em " + dried);
             check(Integer.valueOf(4).equals(quality(dried)), "a secagem mudou a qualidade: " + quality(dried));
 
@@ -1341,7 +1399,7 @@ public final class CultivoGameTests {
             ProcessingStationBlockEntity sieve = placeStationAt(helper, StationKind.SIEVING, SOIL.east(2));
             sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(strain).get(), 1, 3));
             tick(helper, sieve, StationKind.SIEVING.defaultTicks());
-            ItemStack resin = sieve.extract();
+            ItemStack resin = sieve.takeOutput();
             check(resin.is(ModItems.RESIN.get()) && resin.get(ModComponents.STRAIN.get()) == strain, "resina " + resin);
 
             ItemStack sativaJoint = craftJoint(helper, withQuality(ModItems.DRIED_FLOWERS.get(Variety.AMNESIA_NEBLINA).get(), 1, 5));
@@ -1459,7 +1517,7 @@ public final class CultivoGameTests {
     }
 
     /**
-     * O blockstate mostra o conteúdo: entrada → working, só saída → done, nada → empty; a BlockEntity é a mesma o
+     * O blockstate mostra o conteúdo: ciclo andando → working, só saída → done, nada → empty; a BlockEntity é a mesma o
      * tempo todo (a troca de estado não derruba nem recria os itens). A frente da estação olha para quem a colocou.
      */
     public static void stationVisualState(GameTestHelper helper) {
@@ -1483,18 +1541,23 @@ public final class CultivoGameTests {
             check(level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(2.0D)).isEmpty(),
                 "a troca de estado derrubou itens");
 
-            ItemStack taken = station.extract();
+            ItemStack taken = station.takeOutput();
             check(taken.getCount() == 1, "retirada da saída: " + taken);
             check(contentsAt(helper, SOIL) == StationContents.EMPTY, "depois de retirar deveria estar vazia");
 
-            // Entrada e saída juntas: a entrada manda (working); retirar a saída mantém working
+            // Entrada e saída juntas: com a saída aceitando o resultado (mesma resina) o ciclo anda (working); com a saída
+            // de outra qualidade ele para e a estação mostra o pronto (done); sem a saída volta a trabalhar
             ProcessingStationBlockEntity sieve = placeStationAt(helper, StationKind.SIEVING, SOIL.east(2));
-            sieve.setItem(ProcessingStationBlockEntity.OUTPUT, withQuality(ModItems.RESIN.get(), 1, 3));
+            ItemStack auroraResin = withQuality(ModItems.RESIN.get(), 1, 3);
+            auroraResin.set(ModComponents.STRAIN.get(), Variety.AURORA);
+            sieve.setItem(ProcessingStationBlockEntity.OUTPUT, auroraResin);
             check(contentsAt(helper, SOIL.east(2)) == StationContents.DONE, "peneira com saída deveria estar pronta");
             sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(Variety.AURORA).get(), 2, 3));
-            check(contentsAt(helper, SOIL.east(2)) == StationContents.WORKING, "entrada + saída deveria estar trabalhando");
-            sieve.extract();
-            check(contentsAt(helper, SOIL.east(2)) == StationContents.WORKING, "sem a saída, a entrada segue trabalhando");
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.WORKING, "entrada + saída que empilha: trabalhando");
+            sieve.setItem(ProcessingStationBlockEntity.OUTPUT, withQuality(ModItems.RESIN.get(), 1, 4));
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.DONE, "saída de outra qualidade bloqueia: pronta");
+            sieve.takeOutput();
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.WORKING, "sem a saída, a entrada volta a trabalhar");
 
             // Colocação real: olhando para o sul (yRot 0) a frente fica para o norte; olhando para o oeste, para o leste
             BlockPos north = placeStationFacing(helper, StationKind.PRESSING, new BlockPos(1, 1, 7), 0.0F);
@@ -1634,7 +1697,7 @@ public final class CultivoGameTests {
             sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(Variety.MANGA_GELADA).get(), 1, 4));
             sieve.setProgress(StationKind.SIEVING.defaultTicks() - 1);
             sieve.serverTick(level);
-            ItemStack bonus = sieve.extract();
+            ItemStack bonus = sieve.takeOutput();
             check(bonus.getCount() == 3 && bonus.get(ModComponents.STRAIN.get()) == Variety.MANGA_GELADA,
                 "qualidade 4 com dichavador deveria render 3: " + bonus);
 
@@ -1648,7 +1711,7 @@ public final class CultivoGameTests {
             sieve.insert(level, withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 2));
             sieve.setProgress(StationKind.SIEVING.defaultTicks() - 1);
             sieve.serverTick(level);
-            check(sieve.extract().getCount() == 1, "sem dichavador a qualidade 2 rende 1");
+            check(sieve.takeOutput().getCount() == 1, "sem dichavador a qualidade 2 rende 1");
 
             player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.GRINDER.get()));
             rightClick(helper, player, SOIL);
@@ -1807,7 +1870,8 @@ public final class CultivoGameTests {
             BlockPos pos = helper.absolutePos(SOIL);
             Item brisa = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
             check(!jarFilled(helper, SOIL) && comparator(helper, SOIL) == 0, "pote novo deveria estar vazio");
-            check(level.getBlockState(pos).getTicker(level, ModBlockEntities.JAR.get()) == null, "pote vazio não precisa de ticker");
+            // O ticker existe com ou sem conteúdo: é ele que acerta filled de um pote carregado de dados (jar_reload_resumes)
+            check(level.getBlockState(pos).getTicker(level, ModBlockEntities.JAR.get()) != null, "pote vazio sem ticker");
 
             player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(brisa, 10, 2));
             check(rightClick(helper, player, SOIL).consumesAction(), "o pote não guardou as flores");
@@ -1996,12 +2060,20 @@ public final class CultivoGameTests {
     // ------------------------------------------------------------------ sons, partículas e animação (estágio 4)
 
     /**
-     * Os 15 eventos de som do mod estão registrados no servidor, e cada evento vanilla que o sounds.json gerado
-     * reaproveita existe no registro (um nome errado tocaria silêncio no cliente sem erro nenhum).
+     * Os 16 eventos de som do mod estão registrados no servidor, e cada evento vanilla que o sounds.json gerado
+     * reaproveita existe no registro (um nome errado tocaria silêncio no cliente sem erro nenhum). O borbulhar usa o evento
+     * do próprio aparelho: o narguilé tem o seu (legenda "Narguilé borbulha"), não o do bong.
      */
     public static void soundEventsRegistered(GameTestHelper helper) {
         run(helper, () -> {
-            check(ContentIds.SOUNDS.size() == 15, "sons: " + ContentIds.SOUNDS.size());
+            check(ContentIds.SOUNDS.size() == 16, "sons: " + ContentIds.SOUNDS.size());
+            check(io.github.peixeangola.cultivo.smoke.SmokeEffects.bubbleSound(SmokeDevice.HOOKAH)
+                .equals(Optional.of(ModSounds.HOOKAH_BUBBLE.get())), "o narguilé borbulha com o evento do bong");
+            check(io.github.peixeangola.cultivo.smoke.SmokeEffects.bubbleSound(SmokeDevice.BONG)
+                .equals(Optional.of(ModSounds.BONG_BUBBLE.get())), "o bong perdeu o borbulhar");
+            for (SmokeDevice dry : List.of(SmokeDevice.JOINT, SmokeDevice.PIPE, SmokeDevice.CHILLUM)) {
+                check(io.github.peixeangola.cultivo.smoke.SmokeEffects.bubbleSound(dry).isEmpty(), dry + " borbulha");
+            }
             for (String id : ContentIds.SOUNDS) {
                 check(BuiltInRegistries.SOUND_EVENT.containsKey(Cultivo.id(id)), "som não registrado: " + id);
             }
@@ -2078,15 +2150,751 @@ public final class CultivoGameTests {
         sieve.setProgress(StationKind.SIEVING.defaultTicks() - 35);
         helper.assertTrue(level.getBlockState(helper.absolutePos(pressRel)).getValue(ProcessingStationBlock.CONTENTS)
             == StationContents.WORKING, "prensa deveria estar trabalhando");
-        helper.runAfterDelay(20, () -> helper.assertTrue(press.getItem(ProcessingStationBlockEntity.OUTPUT).isEmpty(),
-            "prensa terminou antes da hora"));
+        long[] firstSeen = recordFirstOutputs(helper, press, sieve);
         helper.succeedWhen(() -> {
             ItemStack hash = press.getItem(ProcessingStationBlockEntity.OUTPUT);
             helper.assertTrue(hash.is(ModItems.HASH.get()) && hash.getCount() == 1, "ainda prensando: " + hash);
+            helper.assertTrue(firstSeen[0] >= 0 && firstSeen[1] >= 0, "saídas ainda não anotadas");
+            // Faltavam 45 ticks na prensa e 35 na peneira (margem de 2 ticks)
+            helper.assertTrue(firstSeen[0] >= 43, "prensa terminou antes da hora: " + firstSeen[0]);
+            helper.assertTrue(firstSeen[1] >= 33, "peneira terminou antes da hora: " + firstSeen[1]);
             helper.assertTrue(level.getBlockState(helper.absolutePos(pressRel)).getValue(ProcessingStationBlock.CONTENTS)
                 == StationContents.DONE, "prensa pronta deveria mostrar o haxixe");
             ItemStack resin = sieve.getItem(ProcessingStationBlockEntity.OUTPUT);
             helper.assertTrue(resin.is(ModItems.RESIN.get()) && resin.getCount() == 2, "peneira com dichavador: " + resin);
+        });
+    }
+
+    // ------------------------------------------------------------------ revisão: estado das estações e cliques
+
+    /**
+     * Regressão: o blockstate segue o ciclo de verdade, não só a entrada. 3 resinas na prensa: depois de um ciclo sobra 1
+     * (precisa de 2) e a prensa mostra o haxixe pronto (done, o modelo press_hash), não a placa apertando para sempre;
+     * parada, o progresso não anda. Tirado o haxixe, a resina parada aparece carregada (loaded); com a 2ª resina volta a
+     * trabalhar. O suporte com a saída de outra qualidade fica pronto (done), parado, até a saída sair.
+     */
+    public static void stationStalledVisual(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            ProcessingStationBlockEntity press = placeStation(helper, StationKind.PRESSING);
+            check(press.insert(level, withQuality(ModItems.RESIN.get(), 3, 3)) == 3, "a prensa recusou 3 resinas");
+            check(contentsAt(helper, SOIL) == StationContents.WORKING, "3 resinas deveriam trabalhar");
+            press.setProgress(StationKind.PRESSING.defaultTicks() - 1);
+            press.serverTick(level);
+            ItemStack hash = press.getItem(ProcessingStationBlockEntity.OUTPUT);
+            check(hash.is(ModItems.HASH.get()) && hash.getCount() == 1, "o ciclo não terminou: " + hash);
+            check(press.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 1, "deveria sobrar 1 resina");
+            check(!press.canProgress(level), "1 resina não deveria andar");
+            check(contentsAt(helper, SOIL) == StationContents.DONE,
+                "com 1 resina parada e o haxixe pronto deveria mostrar o haxixe: " + contentsAt(helper, SOIL));
+            tick(helper, press, 60);
+            check(press.progress() == 0 && contentsAt(helper, SOIL) == StationContents.DONE,
+                "parada: progresso " + press.progress() + ", estado " + contentsAt(helper, SOIL));
+
+            check(press.takeOutput().is(ModItems.HASH.get()), "a mão vazia deveria tirar o haxixe");
+            check(contentsAt(helper, SOIL) == StationContents.LOADED, "1 resina sem saída: " + contentsAt(helper, SOIL));
+            tick(helper, press, 5);
+            check(contentsAt(helper, SOIL) == StationContents.LOADED && press.progress() == 0, "a resina parada andou");
+            check(press.insert(level, withQuality(ModItems.RESIN.get(), 1, 3)) == 1, "não aceitou a 2ª resina");
+            check(contentsAt(helper, SOIL) == StationContents.WORKING, "com 2 resinas deveria voltar a trabalhar");
+
+            // Só 1 resina desde o começo: carregada, nunca trabalhando
+            ProcessingStationBlockEntity single = placeStationAt(helper, StationKind.PRESSING, SOIL.west(2));
+            check(single.insert(level, withQuality(ModItems.RESIN.get(), 1, 2)) == 1, "a prensa recusou 1 resina");
+            tick(helper, single, 20);
+            check(contentsAt(helper, SOIL.west(2)) == StationContents.LOADED && single.progress() == 0,
+                "1 resina: " + contentsAt(helper, SOIL.west(2)) + " progresso " + single.progress());
+
+            // Suporte com a saída de outra qualidade: parado e pronto (o jogador vê as flores secas e sabe que deve tirar)
+            ProcessingStationBlockEntity rack = placeStationAt(helper, StationKind.DRYING, SOIL.east(2));
+            rack.setItem(ProcessingStationBlockEntity.OUTPUT, withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 2));
+            check(rack.insert(level, withQuality(ModItems.FRESH_FLOWERS.get(Variety.BRISA).get(), 1, 3)) == 1, "não aceitou a flor");
+            tick(helper, rack, 10);
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.DONE && rack.progress() == 0,
+                "saída bloqueada: " + contentsAt(helper, SOIL.east(2)) + " progresso " + rack.progress());
+            rack.takeOutput();
+            check(contentsAt(helper, SOIL.east(2)) == StationContents.WORKING, "sem a saída bloqueando deveria trabalhar");
+            tick(helper, rack, 3);
+            check(rack.progress() == 3, "o ciclo não andou depois de liberar a saída: " + rack.progress());
+        });
+    }
+
+    /**
+     * Regressão: segurar o botão com a mão vazia (o vanilla repete o clique a cada 4 ticks) tira a saída pronta e para: os
+     * cliques seguintes, e o clique de outro jogador logo depois, não puxam a entrada em andamento nem zeram o progresso.
+     * Só agachado e de mãos vazias a entrada volta. Na peneira com dichavador, segurar agachado devolve primeiro as flores
+     * e só depois o dichavador, então tirar o dichavador nunca puxa uma entrada em andamento.
+     */
+    public static void stationHoldClickKeepsInput(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            player.getInventory().setSelectedSlot(8);
+            Item fresh = ModItems.FRESH_FLOWERS.get(Variety.BRISA).get();
+            Item dried = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
+            ProcessingStationBlockEntity rack = placeStation(helper, StationKind.DRYING);
+            check(rack.insert(level, withQuality(fresh, 8, 2)) == 8, "preparo: entrada");
+            rack.setProgress(550);
+            rack.setItem(ProcessingStationBlockEntity.OUTPUT, withQuality(dried, 3, 2));
+
+            check(rightClick(helper, player, SOIL).consumesAction(), "a mão vazia não tirou a saída");
+            check(countInInventory(player, dried) == 3, "a saída não veio: " + countInInventory(player, dried));
+            for (int repeat = 1; repeat <= 5; repeat++) {
+                check(!rightClick(helper, player, SOIL).consumesAction(), "o clique repetido " + repeat + " tratou o clique");
+            }
+            check(rack.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 8 && rack.progress() == 550,
+                "segurar o botão puxou a entrada ou zerou o progresso: " + rack.getItem(ProcessingStationBlockEntity.INPUT)
+                    + ", progresso " + rack.progress());
+            check(countInInventory(player, fresh) == 0, "segurar o botão devolveu flores frescas");
+
+            ServerPlayer other = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            other.getInventory().setSelectedSlot(8);
+            check(!rightClick(helper, other, SOIL).consumesAction(), "o clique do outro jogador tratou o clique");
+            check(rack.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 8 && rack.progress() == 550
+                && countInInventory(other, fresh) == 0, "o outro jogador puxou a entrada em andamento");
+
+            player.setShiftKeyDown(true);
+            check(rightClick(helper, player, SOIL).consumesAction(), "agachado não devolveu a entrada");
+            check(countInInventory(player, fresh) == 8 && rack.getItem(ProcessingStationBlockEntity.INPUT).isEmpty()
+                && rack.progress() == 0, "agachado: a entrada deveria voltar inteira e o progresso zerar");
+            check(!rightClick(helper, player, SOIL).consumesAction(), "agachado com a estação vazia tratou o clique");
+
+            // Peneira com dichavador trabalhando: agachado, o 1º clique devolve as flores e só o 2º tira o dichavador
+            BlockPos sieveRel = SOIL.east(2);
+            ProcessingStationBlockEntity sieve = placeStationAt(helper, StationKind.SIEVING, sieveRel);
+            BlockPos sievePos = helper.absolutePos(sieveRel);
+            level.setBlock(sievePos, level.getBlockState(sievePos).setValue(SieveBlock.GRINDER, true), Block.UPDATE_ALL);
+            Item aurora = ModItems.DRIED_FLOWERS.get(Variety.AURORA).get();
+            check(sieve.insert(level, withQuality(aurora, 2, 3)) == 2, "preparo: flores na peneira");
+            sieve.setProgress(150);
+            check(rightClick(helper, player, sieveRel).consumesAction(), "agachado não tratou a peneira");
+            check(countInInventory(player, aurora) == 2 && grinderAt(helper, sieveRel),
+                "o 1º clique agachado deveria devolver as flores e manter o dichavador");
+            check(rightClick(helper, player, sieveRel).consumesAction(), "o 2º clique agachado não tirou o dichavador");
+            check(!grinderAt(helper, sieveRel) && countInInventory(player, ModItems.GRINDER.get()) == 1, "o dichavador não voltou");
+            player.setShiftKeyDown(false);
+        });
+    }
+
+    /**
+     * Regressão: 1 flor Aurora q3 na mão principal, 10 na secundária e 5 folhas: a principal passa o clique e a
+     * secundária enrola (gasta 2 flores dela e 3 folhas), sem aviso. Com folhas de menos, o aviso das folhas sai da mão
+     * secundária, uma vez só, e nada é gasto. O cliente prevê o mesmo para cada mão (RollingTrayBlock#predict).
+     */
+    public static void trayRollsFromOffHand(GameTestHelper helper) {
+        run(helper, () -> {
+            helper.setBlock(SOIL, ModBlocks.ROLLING_TRAY.get().defaultBlockState());
+            Item aurora = ModItems.DRIED_FLOWERS.get(Variety.AURORA).get();
+            Item paper = ModItems.ROLLING_PAPER.get();
+            Item joint = ModItems.JOINT.get();
+            List<String> keys = new ArrayList<>();
+            ServerPlayer player = capturingServerPlayer(helper, GameType.SURVIVAL, keys);
+            player.getInventory().setSelectedSlot(8);
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(aurora, 1, 3));
+            player.setItemInHand(InteractionHand.OFF_HAND, withQuality(aurora, 10, 3));
+            player.getInventory().add(new ItemStack(paper, 5));
+            check(RollingTrayBlock.predict(player, InteractionHand.MAIN_HAND, player.getMainHandItem()) == InteractionResult.PASS,
+                "o cliente deveria passar o clique da mão principal");
+            check(RollingTrayBlock.predict(player, InteractionHand.OFF_HAND, player.getOffhandItem()) == InteractionResult.SUCCESS,
+                "o cliente deveria prever a mão secundária enrolando");
+
+            check(rightClick(helper, player, SOIL).consumesAction(), "a mão secundária não enrolou");
+            check(keys.isEmpty(), "aviso com uma mão capaz de enrolar: " + keys);
+            check(player.getMainHandItem().getCount() == 1 && player.getOffhandItem().getCount() == 8,
+                "flores: principal " + player.getMainHandItem() + ", secundária " + player.getOffhandItem());
+            check(countInInventory(player, paper) == 2 && countInInventory(player, joint) == 3,
+                "folhas " + countInInventory(player, paper) + ", baseados " + countInInventory(player, joint));
+            ItemStack rolled = firstStack(player, joint);
+            check(rolled.get(ModComponents.STRAIN.get()) == Variety.AURORA && Integer.valueOf(3).equals(quality(rolled)),
+                "baseado da mão secundária: " + rolled);
+
+            // Folhas de menos (2): a principal passa e a secundária avisa das folhas, uma vez só, sem gastar nada
+            keys.clear();
+            check(rightClick(helper, player, SOIL).consumesAction(), "a recusa deveria tratar o clique");
+            check(keys.equals(List.of("message.cultivo.tray_need_papers")), "aviso: " + keys);
+            check(player.getMainHandItem().getCount() == 1 && player.getOffhandItem().getCount() == 8
+                && countInInventory(player, paper) == 2 && countInInventory(player, joint) == 3, "a recusa gastou algo");
+        });
+    }
+
+    /** O servidor devolve SUCCESS (balanço já previsto pelo cliente), nunca SUCCESS_SERVER (balanço repetido). */
+    private static void checkPredictedSwing(InteractionResult result, String what) {
+        check(result instanceof InteractionResult.Success success
+            && success.swingSource() == InteractionResult.SwingSource.PREDICTED, what + ": " + result);
+    }
+
+    /**
+     * Regressão: cada interação que dá certo nas estações, na peneira (dichavador), no pote e na bandeja devolve, no
+     * servidor, SUCCESS com o balanço previsto pelo cliente. Com SUCCESS_SERVER o servidor mandava um segundo balanço do
+     * braço para quem clicou (balanço duplo com ping). A recusa da bandeja não balança (CONSUME), nos dois lados.
+     */
+    public static void interactionsSwingOnce(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            // A recusa da bandeja manda uma mensagem: o jogador de teste precisa guardá-la (o mock comum não tem conexão)
+            ServerPlayer player = capturingServerPlayer(helper, GameType.SURVIVAL, new ArrayList<>());
+            player.getInventory().setSelectedSlot(8);
+            Item brisa = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
+            ProcessingStationBlockEntity sieve = placeStation(helper, StationKind.SIEVING);
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(brisa, 1, 2));
+            checkPredictedSwing(rightClick(helper, player, SOIL), "inserir na peneira");
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.GRINDER.get()));
+            checkPredictedSwing(rightClick(helper, player, SOIL), "instalar o dichavador");
+            sieve.setProgress(StationKind.SIEVING.defaultTicks() - 1);
+            sieve.serverTick(level);
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            checkPredictedSwing(rightClick(helper, player, SOIL), "tirar a saída");
+            sieve.insert(level, withQuality(brisa, 1, 2));
+            player.setShiftKeyDown(true);
+            checkPredictedSwing(rightClick(helper, player, SOIL), "devolver a entrada agachado");
+            checkPredictedSwing(rightClick(helper, player, SOIL), "tirar o dichavador");
+            player.setShiftKeyDown(false);
+
+            placeJar(helper, SOIL.east(2));
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(brisa, 4, 2));
+            checkPredictedSwing(rightClick(helper, player, SOIL.east(2)), "guardar no pote");
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            checkPredictedSwing(rightClick(helper, player, SOIL.east(2)), "tirar do pote");
+
+            helper.setBlock(SOIL.west(2), ModBlocks.ROLLING_TRAY.get().defaultBlockState());
+            Item aurora = ModItems.DRIED_FLOWERS.get(Variety.AURORA).get();
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(aurora, 2, 3));
+            player.getInventory().add(new ItemStack(ModItems.ROLLING_PAPER.get(), 3));
+            checkPredictedSwing(rightClick(helper, player, SOIL.west(2)), "enrolar na bandeja");
+            player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(aurora, 1, 3));
+            InteractionResult refused = rightClick(helper, player, SOIL.west(2));
+            check(refused instanceof InteractionResult.Success success
+                && success.swingSource() == InteractionResult.SwingSource.NONE, "a recusa da bandeja balançou: " + refused);
+            check(RollingTrayBlock.predict(player, InteractionHand.MAIN_HAND, player.getMainHandItem()) == InteractionResult.CONSUME,
+                "o cliente deveria prever a recusa sem balançar");
+        });
+    }
+
+    // ------------------------------------------------------------------ revisão: inventário cheio e criativo
+
+    /** Enche os 36 slots do inventário com pilhas cheias de terra, menos os slots indicados. */
+    private static void fillInventory(Player player, Set<Integer> keep) {
+        for (int slot = 0; slot < 36; slot++) {
+            if (!keep.contains(slot)) {
+                player.getInventory().setItem(slot, new ItemStack(Items.DIRT, 64));
+            }
+        }
+    }
+
+    /** Jogador de teste parado num canto da área (os itens derrubados nascem aos pés dele). */
+    private static ServerPlayer placedPlayer(GameTestHelper helper, GameType type, BlockPos rel) {
+        ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(type);
+        player.setPos(Vec3.atBottomCenterOf(helper.absolutePos(rel)));
+        player.getInventory().setSelectedSlot(8);
+        return player;
+    }
+
+    private static List<ItemEntity> dropsAround(GameTestHelper helper, Player player) {
+        return helper.getLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(3.0D));
+    }
+
+    /**
+     * Regressão: com o inventário cheio, o que o bloco entrega cai aos pés do jogador em vez de sumir, também no criativo
+     * (o Inventory#add do criativo zerava a pilha e dizia que tinha guardado). A bandeja (a mão segura as flores) derruba
+     * os 3 baseados com variedade e qualidade. A mão vazia sempre tem lugar, então a pilha do pote (64 flores curadas), a
+     * saída da estação e o dichavador vão inteiros para a mão, sem perder nada nem componentes.
+     */
+    public static void fullInventoryDropsHandouts(GameTestHelper helper) {
+        run(helper, () -> {
+            Item aurora = ModItems.DRIED_FLOWERS.get(Variety.AURORA).get();
+            Item paper = ModItems.ROLLING_PAPER.get();
+            helper.setBlock(SOIL, ModBlocks.ROLLING_TRAY.get().defaultBlockState());
+            for (GameType type : List.of(GameType.SURVIVAL, GameType.CREATIVE)) {
+                ServerPlayer player = placedPlayer(helper, type, new BlockPos(4, 1, 1));
+                fillInventory(player, Set.of(0, 8));
+                player.getInventory().setItem(0, new ItemStack(paper, 4));
+                player.setItemInHand(InteractionHand.MAIN_HAND, withQuality(aurora, 3, 3));
+                dropsAround(helper, player).forEach(ItemEntity::discard);
+                check(rightClick(helper, player, SOIL).consumesAction(), type + ": a bandeja não enrolou");
+                List<ItemEntity> drops = dropsAround(helper, player);
+                int joints = 0;
+                for (ItemEntity entity : drops) {
+                    ItemStack stack = entity.getItem();
+                    check(stack.is(ModItems.JOINT.get()) && stack.get(ModComponents.STRAIN.get()) == Variety.AURORA
+                        && Integer.valueOf(3).equals(quality(stack)), type + ": derrubou " + stack);
+                    joints += stack.getCount();
+                }
+                check(joints == 3, type + ": baseados derrubados " + joints);
+                check(countInInventory(player, ModItems.JOINT.get()) == 0, type + ": baseado dentro do inventário cheio");
+                drops.forEach(ItemEntity::discard);
+            }
+
+            for (GameType type : List.of(GameType.SURVIVAL, GameType.CREATIVE)) {
+                ServerPlayer player = placedPlayer(helper, type, new BlockPos(4, 1, 1));
+                fillInventory(player, Set.of(8));
+                dropsAround(helper, player).forEach(ItemEntity::discard);
+
+                JarBlockEntity jar = placeJar(helper, SOIL.east(2));
+                ItemStack cured = withQuality(aurora, 64, 4);
+                cured.set(ModComponents.CURED.get(), Unit.INSTANCE);
+                jar.setItem(cured.copy());
+                check(rightClick(helper, player, SOIL.east(2)).consumesAction(), type + ": o pote não entregou");
+                check(ItemStack.matches(player.getMainHandItem(), cured), type + ": o pote deu " + player.getMainHandItem());
+                check(jar.getItem().isEmpty(), type + ": o pote deveria esvaziar");
+
+                player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                ProcessingStationBlockEntity press = placeStationAt(helper, StationKind.PRESSING, SOIL.west(2));
+                ItemStack hash = withQuality(ModItems.HASH.get(), 3, 5);
+                hash.set(ModComponents.STRAIN.get(), Variety.ECLIPSE);
+                press.setItem(ProcessingStationBlockEntity.OUTPUT, hash.copy());
+                check(rightClick(helper, player, SOIL.west(2)).consumesAction(), type + ": a prensa não entregou");
+                check(ItemStack.matches(player.getMainHandItem(), hash), type + ": a prensa deu " + player.getMainHandItem());
+
+                player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+                BlockPos sieveRel = new BlockPos(4, 1, 7);
+                placeStationAt(helper, StationKind.SIEVING, sieveRel);
+                BlockPos sievePos = helper.absolutePos(sieveRel);
+                helper.getLevel().setBlock(sievePos, helper.getLevel().getBlockState(sievePos).setValue(SieveBlock.GRINDER, true),
+                    Block.UPDATE_ALL);
+                player.setShiftKeyDown(true);
+                check(rightClick(helper, player, sieveRel).consumesAction(), type + ": não tirou o dichavador");
+                player.setShiftKeyDown(false);
+                check(player.getMainHandItem().is(ModItems.GRINDER.get()) && player.getMainHandItem().getCount() == 1,
+                    type + ": o dichavador deu " + player.getMainHandItem());
+                check(dropsAround(helper, player).isEmpty(), type + ": derrubou com a mão livre: " + dropsAround(helper, player));
+            }
+        });
+    }
+
+    /**
+     * No criativo nada que o jogador segura é gasto: instalar o dichavador, guardar no pote e inserir na estação deixam a
+     * pilha da mão igual, e o efeito acontece.
+     */
+    public static void creativeKeepsHeldStacks(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerPlayer creative = (ServerPlayer) helper.makeMockServerPlayer(GameType.CREATIVE);
+            creative.getInventory().setSelectedSlot(8);
+            check(creative.hasInfiniteMaterials(), "preparo: jogador criativo");
+            placeStation(helper, StationKind.SIEVING);
+            creative.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.GRINDER.get(), 2));
+            check(rightClick(helper, creative, SOIL).consumesAction(), "o criativo não instalou o dichavador");
+            check(grinderAt(helper, SOIL) && creative.getMainHandItem().is(ModItems.GRINDER.get())
+                && creative.getMainHandItem().getCount() == 2,
+                "instalar gastou o dichavador do criativo: " + creative.getMainHandItem());
+
+            JarBlockEntity jar = placeJar(helper, SOIL.east(2));
+            ItemStack flowers = withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 10, 2);
+            creative.setItemInHand(InteractionHand.MAIN_HAND, flowers.copy());
+            check(rightClick(helper, creative, SOIL.east(2)).consumesAction(), "o criativo não guardou no pote");
+            check(jar.getItem().getCount() == 10 && ItemStack.matches(creative.getMainHandItem(), flowers),
+                "guardar no pote gastou as flores do criativo: " + creative.getMainHandItem());
+
+            ProcessingStationBlockEntity rack = placeStationAt(helper, StationKind.DRYING, SOIL.west(2));
+            ItemStack fresh = withQuality(ModItems.FRESH_FLOWERS.get(Variety.BRISA).get(), 5, 3);
+            creative.setItemInHand(InteractionHand.MAIN_HAND, fresh.copy());
+            check(rightClick(helper, creative, SOIL.west(2)).consumesAction(), "o criativo não inseriu na estação");
+            check(rack.getItem(ProcessingStationBlockEntity.INPUT).getCount() == 5
+                && ItemStack.matches(creative.getMainHandItem(), fresh),
+                "inserir gastou as flores do criativo: " + creative.getMainHandItem());
+        });
+    }
+
+    // ------------------------------------------------------------------ revisão: pote recarregado
+
+    /**
+     * Regressão: o pote salvo e recarregado (o caminho do carregamento de chunk, e também o de um pote copiado com Ctrl +
+     * pick-block, que chega com filled=false) mantém a pilha com os componentes e o contador da cura, ganha ticker mesmo
+     * marcado como vazio, acerta filled no primeiro tick e termina a cura pelo ticker do mundo (faltavam 20 ticks; nada de
+     * curar antes). A marca cultivo:cured sobrevive a salvar (NBT/JSON) e à rede.
+     */
+    public static void jarReloadResumes(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pos = helper.absolutePos(SOIL);
+        Item brisa = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
+        JarBlockEntity jar = placeJar(helper, SOIL);
+        ItemStack flowers = withQuality(brisa, 10, 2);
+        helper.assertTrue(jar.insert(flowers.copy()) == 10, "preparo: o pote não guardou as flores");
+        jar.setCureProgress(CuringRules.CURE_TICKS - 20);
+
+        ItemStack cured = withQuality(brisa, 3, 3);
+        cured.set(ModComponents.CURED.get(), Unit.INSTANCE);
+        var ops = level.registryAccess().createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE);
+        com.google.gson.JsonElement json = ItemStack.CODEC.encodeStart(ops, cured).getOrThrow();
+        helper.assertTrue(json.getAsJsonObject().getAsJsonObject("components").has("cultivo:cured"),
+            "cultivo:cured não foi salvo: " + json);
+        helper.assertTrue(ItemStack.matches(cured, ItemStack.CODEC.parse(ops, json).getOrThrow()),
+            "a pilha curada não persistiu: " + json);
+        net.minecraft.network.RegistryFriendlyByteBuf buf = new net.minecraft.network.RegistryFriendlyByteBuf(
+            io.netty.buffer.Unpooled.buffer(), level.registryAccess());
+        ItemStack.STREAM_CODEC.encode(buf, cured);
+        helper.assertTrue(ItemStack.matches(cured, ItemStack.STREAM_CODEC.decode(buf)), "a pilha curada não sincronizou");
+
+        CompoundTag saved = jar.saveWithFullMetadata(level.registryAccess());
+        level.removeBlockEntity(pos);
+        level.setBlock(pos, ModBlocks.JAR.get().defaultBlockState(), Block.UPDATE_CLIENTS);
+        BlockEntity loaded = BlockEntity.loadStatic(pos, level.getBlockState(pos), saved, level.registryAccess());
+        helper.assertTrue(loaded instanceof JarBlockEntity, "o pote não recarregou");
+        level.setBlockEntity(loaded);
+        JarBlockEntity after = (JarBlockEntity) loaded;
+        helper.assertTrue(level.getBlockEntity(pos) == after && after != jar, "o pote recarregado não está no mundo");
+        helper.assertTrue(!level.getBlockState(pos).getValue(JarBlock.FILLED), "preparo: o estado deveria chegar com filled=false");
+        helper.assertTrue(level.getBlockState(pos).getTicker(level, ModBlockEntities.JAR.get()) != null,
+            "pote marcado como vazio sem ticker: nunca curaria");
+        helper.assertTrue(ItemStack.matches(after.getItem(), flowers), "a pilha não persistiu: " + after.getItem());
+        helper.assertTrue(after.cureProgress() == CuringRules.CURE_TICKS - 20,
+            "o contador da cura não persistiu: " + after.cureProgress());
+
+        long[] curedAt = {-1L};
+        helper.onEachTick(() -> {
+            if (curedAt[0] < 0 && level.getBlockEntity(pos) instanceof JarBlockEntity now
+                && now.getItem().has(ModComponents.CURED.get())) {
+                curedAt[0] = helper.getTick();
+            }
+        });
+        helper.succeedWhen(() -> {
+            helper.assertTrue(level.getBlockEntity(pos) == after, "o pote recarregado saiu do mundo");
+            helper.assertTrue(level.getBlockState(pos).getValue(JarBlock.FILLED), "o tick não acertou filled");
+            helper.assertTrue(curedAt[0] >= 0, "ainda curando");
+            helper.assertTrue(curedAt[0] >= 18, "curou antes da hora: tick " + curedAt[0]);
+            ItemStack stack = after.getItem();
+            helper.assertTrue(stack.getCount() == 10 && Integer.valueOf(3).equals(quality(stack))
+                && stack.has(ModComponents.CURED.get()), "cura pelo ticker do mundo: " + stack);
+        });
+    }
+
+    // ------------------------------------------------------------------ revisão: previsão do cliente
+
+    /** Visão do cliente: uma estação nova carregada só com a tag de atualização que o servidor manda (getUpdateTag). */
+    private static ProcessingStationBlockEntity stationView(GameTestHelper helper, ProcessingStationBlockEntity station) {
+        var registries = helper.getLevel().registryAccess();
+        ProcessingStationBlockEntity view = new ProcessingStationBlockEntity(station.getBlockPos(), station.getBlockState());
+        view.loadWithComponents(TagValueInput.create(
+            ProblemReporter.DISCARDING, registries, station.getUpdateTag(registries)));
+        return view;
+    }
+
+    /** Visão do cliente do pote, só com a tag de atualização. */
+    private static JarBlockEntity jarView(GameTestHelper helper, JarBlockEntity jar) {
+        var registries = helper.getLevel().registryAccess();
+        JarBlockEntity view = new JarBlockEntity(jar.getBlockPos(), jar.getBlockState());
+        view.loadWithComponents(TagValueInput.create(
+            ProblemReporter.DISCARDING, registries, jar.getUpdateTag(registries)));
+        return view;
+    }
+
+    /**
+     * O que o servidor faz com um clique no bloco, na ordem do ServerPlayerGameMode#useItemOn: o useItemOn do bloco e, com
+     * a mão principal vazia (TRY_WITH_EMPTY_HAND), o useWithoutItem. O uso do item depois disso não entra.
+     */
+    private static InteractionResult serverBlockResult(GameTestHelper helper, BlockPos rel, Player player,
+                                                       InteractionHand hand, ItemStack held) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pos = helper.absolutePos(rel);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(pos), Direction.NORTH, pos, false);
+        BlockState state = level.getBlockState(pos);
+        InteractionResult result = state.useItemOn(held, level, player, hand, hit);
+        if (result instanceof InteractionResult.TryEmptyHandInteraction && hand == InteractionHand.MAIN_HAND) {
+            result = state.useWithoutItem(level, player, hit);
+        }
+        return result;
+    }
+
+    private static ItemStack stationInput(StationKind kind, int quality) {
+        return switch (kind) {
+            case DRYING -> withQuality(ModItems.FRESH_FLOWERS.get(Variety.BRISA).get(), 1, quality);
+            case SIEVING -> withQuality(ModItems.DRIED_FLOWERS.get(Variety.AURORA).get(), 1, quality);
+            case PRESSING -> withQuality(ModItems.RESIN.get(), 1, quality);
+        };
+    }
+
+    private static ItemStack stationOutput(StationKind kind) {
+        return switch (kind) {
+            case DRYING -> withQuality(ModItems.DRIED_FLOWERS.get(Variety.BRISA).get(), 1, 3);
+            case SIEVING -> withQuality(ModItems.RESIN.get(), 1, 3);
+            case PRESSING -> withQuality(ModItems.HASH.get(), 1, 3);
+        };
+    }
+
+    /**
+     * Regressão das previsões do cliente, que nenhum teste rodava: numa visão montada só com a tag de atualização
+     * (o que o cliente recebe), a previsão que os ramos do cliente devolvem é igual ao resultado do servidor, numa matriz
+     * de estados e itens na mão. Estações (com e sem dichavador na peneira): vazia, com entrada, com a entrada cheia (64),
+     * só com saída e com as duas; na mão a entrada certa, outra qualidade, terra, cachimbo, dichavador e a mão vazia
+     * (agachado ou não). Pote: vazio, com 10, cheio (64) e com flores curadas; na mão flor seca igual e de outra
+     * qualidade, resina, flor fresca, terra, cachimbo e a mão vazia. Bandeja: cada mão em várias combinações de flores
+     * e folhas. Uma previsão SUCCESS onde o servidor dá PASS engoliria o uso da outra mão ou do item (o bug da auditoria).
+     */
+    public static void clientPredictionMatchesServer(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            // As recusas da bandeja mandam mensagens: o jogador de teste precisa guardá-las (o mock comum não tem conexão)
+            ServerPlayer player = capturingServerPlayer(helper, GameType.SURVIVAL, new ArrayList<>());
+            List<String> mismatches = new ArrayList<>();
+            int checks = 0;
+
+            for (StationKind kind : StationKind.values()) {
+                ProcessingStationBlockEntity station = placeStation(helper, kind);
+                BlockPos pos = helper.absolutePos(SOIL);
+                ItemStack valid = stationInput(kind, 3);
+                ItemStack output = stationOutput(kind);
+                List<ItemStack[]> contents = List.of(
+                    new ItemStack[] {ItemStack.EMPTY, ItemStack.EMPTY},
+                    new ItemStack[] {valid.copyWithCount(4), ItemStack.EMPTY},
+                    new ItemStack[] {valid.copyWithCount(valid.getMaxStackSize()), ItemStack.EMPTY},
+                    new ItemStack[] {ItemStack.EMPTY, output.copyWithCount(2)},
+                    new ItemStack[] {valid.copyWithCount(4), output.copyWithCount(2)});
+                List<ItemStack> helds = List.of(valid.copyWithCount(1), stationInput(kind, 4), new ItemStack(Items.DIRT),
+                    new ItemStack(ModItems.ARTICLES.get("pipe").get()), new ItemStack(ModItems.GRINDER.get()), ItemStack.EMPTY);
+                for (boolean grinder : kind == StationKind.SIEVING ? List.of(false, true) : List.of(false)) {
+                    for (ItemStack[] slots : contents) {
+                        for (ItemStack held : helds) {
+                            for (boolean sneaking : held.isEmpty() ? List.of(false, true) : List.of(false)) {
+                                if (level.getBlockState(pos).hasProperty(SieveBlock.GRINDER)) {
+                                    level.setBlock(pos, level.getBlockState(pos).setValue(SieveBlock.GRINDER, grinder),
+                                        Block.UPDATE_ALL);
+                                }
+                                station.setItem(ProcessingStationBlockEntity.INPUT, slots[0].copy());
+                                station.setItem(ProcessingStationBlockEntity.OUTPUT, slots[1].copy());
+                                BlockState state = level.getBlockState(pos);
+                                InteractionResult predicted = ((ProcessingStationBlock) state.getBlock())
+                                    .predictUse(state, stationView(helper, station), held, sneaking);
+                                player.getInventory().clearContent();
+                                player.getInventory().setSelectedSlot(8);
+                                player.setShiftKeyDown(sneaking);
+                                InteractionResult actual =
+                                    serverBlockResult(helper, SOIL, player, InteractionHand.MAIN_HAND, held.copy());
+                                checks++;
+                                if (!predicted.equals(actual)) {
+                                    mismatches.add(kind + (grinder ? " com dichavador" : "") + ", entrada " + slots[0] + ", saída "
+                                        + slots[1] + ", mão " + held + (sneaking ? " agachado" : "") + ": cliente " + predicted
+                                        + ", servidor " + actual);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            player.setShiftKeyDown(false);
+
+            Item brisa = ModItems.DRIED_FLOWERS.get(Variety.BRISA).get();
+            JarBlockEntity jar = placeJar(helper, SOIL.east(2));
+            ItemStack curedFlowers = withQuality(brisa, 10, 3);
+            curedFlowers.set(ModComponents.CURED.get(), Unit.INSTANCE);
+            List<ItemStack> stored = List.of(ItemStack.EMPTY, withQuality(brisa, 10, 2), withQuality(brisa, 64, 2), curedFlowers);
+            List<ItemStack> jarHelds = List.of(withQuality(brisa, 1, 2), withQuality(brisa, 1, 3),
+                withQuality(ModItems.RESIN.get(), 1, 2), withQuality(ModItems.FRESH_FLOWERS.get(Variety.BRISA).get(), 1, 2),
+                new ItemStack(Items.DIRT), new ItemStack(ModItems.ARTICLES.get("pipe").get()), ItemStack.EMPTY);
+            for (ItemStack inJar : stored) {
+                for (ItemStack held : jarHelds) {
+                    jar.setItem(inJar.copy());
+                    JarBlockEntity view = jarView(helper, jar);
+                    InteractionResult predicted = held.isEmpty() ? JarBlock.predictTake(view) : JarBlock.predictInsert(view, held);
+                    player.getInventory().clearContent();
+                    player.getInventory().setSelectedSlot(8);
+                    InteractionResult actual =
+                        serverBlockResult(helper, SOIL.east(2), player, InteractionHand.MAIN_HAND, held.copy());
+                    checks++;
+                    if (!predicted.equals(actual)) {
+                        mismatches.add("pote com " + inJar + ", mão " + held + ": cliente " + predicted + ", servidor " + actual);
+                    }
+                }
+            }
+
+            BlockPos trayRel = SOIL.west(2);
+            helper.setBlock(trayRel, ModBlocks.ROLLING_TRAY.get().defaultBlockState());
+            Item aurora = ModItems.DRIED_FLOWERS.get(Variety.AURORA).get();
+            record Hands(ItemStack main, ItemStack off, int papers) {}
+            List<Hands> trays = List.of(
+                new Hands(withQuality(aurora, 1, 3), withQuality(aurora, 10, 3), 5),
+                new Hands(withQuality(aurora, 1, 3), withQuality(aurora, 10, 3), 2),
+                new Hands(withQuality(aurora, 2, 3), ItemStack.EMPTY, 3),
+                new Hands(withQuality(aurora, 2, 3), ItemStack.EMPTY, 2),
+                new Hands(withQuality(aurora, 1, 3), withQuality(aurora, 1, 2), 3),
+                new Hands(withQuality(aurora, 1, 3), ItemStack.EMPTY, 5),
+                new Hands(new ItemStack(Items.DIRT), withQuality(aurora, 10, 3), 5));
+            for (Hands hands : trays) {
+                for (InteractionHand hand : InteractionHand.values()) {
+                    player.getInventory().clearContent();
+                    player.getInventory().setSelectedSlot(8);
+                    player.setItemInHand(InteractionHand.MAIN_HAND, hands.main().copy());
+                    player.setItemInHand(InteractionHand.OFF_HAND, hands.off().copy());
+                    if (hands.papers() > 0) {
+                        player.getInventory().add(new ItemStack(ModItems.ROLLING_PAPER.get(), hands.papers()));
+                    }
+                    InteractionResult predicted = RollingTrayBlock.predict(player, hand, player.getItemInHand(hand));
+                    InteractionResult actual = serverBlockResult(helper, trayRel, player, hand, player.getItemInHand(hand));
+                    checks++;
+                    if (!predicted.equals(actual)) {
+                        mismatches.add("bandeja " + hands + " mão " + hand + ": cliente " + predicted + ", servidor " + actual);
+                    }
+                }
+            }
+            check(mismatches.isEmpty(), mismatches.size() + " previsões erradas: " + mismatches);
+            // Estações: suporte, peneira sem e com dichavador e prensa × 5 conteúdos × 7 mãos; pote 4 × 7; bandeja 7 × 2
+            check(checks == 4 * 5 * 7 + 4 * 7 + 7 * 2, "combinações conferidas: " + checks);
+        });
+    }
+
+    // ------------------------------------------------------------------ revisão: forma, alcance, estados e tooltips
+
+    /**
+     * Regressão: com o dichavador instalado a caixa de seleção e de colisão da peneira cresce até o topo do dichavador
+     * (y 15, 2 px acima da moldura), na posição do modelo girada pelo facing; sem ele, a peneira vai até y 13.
+     */
+    public static void sieveGrinderShape(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockPos pos = helper.absolutePos(SOIL);
+            // A parte sieve_grinder do modelo, com a frente para o norte: [11, 13, 11] → [15, 15, 15]
+            Map<Direction, VoxelShape> grinderBoxes =
+                Shapes.rotateHorizontal(Block.box(11.0D, 13.0D, 11.0D, 15.0D, 15.0D, 15.0D));
+            for (Direction facing : Direction.Plane.HORIZONTAL) {
+                BlockState without = ModBlocks.STATIONS.get(StationKind.SIEVING).get().defaultBlockState()
+                    .setValue(ProcessingStationBlock.FACING, facing);
+                helper.setBlock(SOIL, without);
+                VoxelShape plain = level.getBlockState(pos).getShape(level, pos);
+                helper.setBlock(SOIL, without.setValue(SieveBlock.GRINDER, true));
+                BlockState with = level.getBlockState(pos);
+                VoxelShape installed = with.getShape(level, pos);
+                check(Math.abs(plain.max(Direction.Axis.Y) - 13.0D / 16.0D) < 1.0E-6,
+                    facing + ": peneira sem dichavador até " + plain.max(Direction.Axis.Y));
+                check(Math.abs(installed.max(Direction.Axis.Y) - 15.0D / 16.0D) < 1.0E-6,
+                    facing + ": a caixa não cobre o dichavador: até " + installed.max(Direction.Axis.Y));
+                check(!Shapes.joinIsNotEmpty(grinderBoxes.get(facing), installed,
+                    BooleanOp.ONLY_FIRST), facing + ": parte do dichavador fora da caixa");
+                check(!Shapes.joinIsNotEmpty(plain, installed,
+                    BooleanOp.ONLY_FIRST), facing + ": a peneira perdeu parte da caixa");
+                check(Math.abs(with.getCollisionShape(level, pos).max(Direction.Axis.Y) - 15.0D / 16.0D) < 1.0E-6,
+                    facing + ": a colisão não cobre o dichavador");
+            }
+        });
+    }
+
+    /**
+     * O alcance do cinzeiro nas bordas, pela sessão de fumo real (AshtrayBlock#catchAsh): a 4 blocos na horizontal, a 2
+     * acima e no canto (4, 2, 4) pega a cinza; a 5 blocos e a 3 acima não. Uma sessão no criativo também deixa cinza e não
+     * gasta o baseado.
+     */
+    public static void ashtraySearchEdges(GameTestHelper helper) {
+        run(helper, () -> {
+            BlockPos smokerRel = new BlockPos(3, 1, 4);
+            record Case(BlockPos rel, String where, boolean catches) {}
+            List<Case> cases = List.of(
+                new Case(new BlockPos(8, 1, 4), "5 blocos em x", false),
+                new Case(new BlockPos(7, 1, 4), "4 blocos em x", true),
+                new Case(new BlockPos(3, 1, 0), "4 blocos em z", true),
+                new Case(new BlockPos(3, 4, 4), "3 acima", false),
+                new Case(new BlockPos(3, 3, 4), "2 acima", true),
+                new Case(new BlockPos(7, 3, 8), "canto (4, 2, 4)", true));
+            for (Case c : cases) {
+                helper.setBlock(c.rel(), ModBlocks.ASHTRAY.get().defaultBlockState());
+                Player player = smoker(helper, joint(Variety.BRISA, 2), lighter());
+                player.setPos(Vec3.atBottomCenterOf(helper.absolutePos(smokerRel)));
+                check(smokeOnce(helper, player) == InteractionResult.CONSUME, c.where() + ": sessão recusada");
+                int ash = ashAt(helper, c.rel());
+                check(ash == (c.catches() ? 1 : 0), "cinzeiro a " + c.where() + ": cinza " + ash);
+                helper.setBlock(c.rel(), Blocks.AIR.defaultBlockState());
+            }
+            BlockPos near = new BlockPos(5, 1, 4);
+            helper.setBlock(near, ModBlocks.ASHTRAY.get().defaultBlockState());
+            Player creative = helper.makeMockPlayer(GameType.CREATIVE);
+            GameType.CREATIVE.updatePlayerAbilities(creative.getAbilities());
+            check(creative.hasInfiniteMaterials(), "preparo: jogador criativo");
+            creative.setItemInHand(InteractionHand.MAIN_HAND, joint(Variety.BRISA, 2));
+            creative.getInventory().add(lighter());
+            creative.setPos(Vec3.atBottomCenterOf(helper.absolutePos(smokerRel)));
+            check(smokeOnce(helper, creative) == InteractionResult.CONSUME, "sessão do criativo recusada");
+            check(ashAt(helper, near) == 1, "a sessão no criativo não deixou cinza: " + ashAt(helper, near));
+            check(creative.getMainHandItem().getCount() == 1, "o criativo gastou o baseado");
+        });
+    }
+
+    private static <T extends Comparable<T>> Set<String> valueNames(Property<T> property) {
+        Set<String> names = new java.util.TreeSet<>();
+        for (T value : property.getPossibleValues()) {
+            names.add(property.getName(value));
+        }
+        return names;
+    }
+
+    /**
+     * O espelho ContentIds.stateProperties (que os testes dos blockstates JSON usam) bate com a StateDefinition registrada
+     * de cada bloco do mod: mesmos nomes de propriedade e mesmos valores. Um nome trocado no Java (filled virar full, uma
+     * propriedade nova) deixaria o JSON apontando para um estado que não existe, com todos os testes dos modelos verdes.
+     */
+    public static void blockStatesMatchIds(GameTestHelper helper) {
+        run(helper, () -> {
+            for (String id : ContentIds.allBlocks()) {
+                Block block = BuiltInRegistries.BLOCK.getValue(Cultivo.id(id));
+                check(block != Blocks.AIR, "bloco não registrado: " + id);
+                Map<String, Set<String>> actual = new java.util.TreeMap<>();
+                for (Property<?> property : block.getStateDefinition().getProperties()) {
+                    actual.put(property.getName(), valueNames(property));
+                }
+                Map<String, Set<String>> expected = new java.util.TreeMap<>();
+                ContentIds.stateProperties(id).forEach((name, values) -> expected.put(name, new java.util.TreeSet<>(values)));
+                check(actual.equals(expected), id + ": o bloco tem " + actual + " e o espelho diz " + expected);
+            }
+        });
+    }
+
+    /** As linhas de tooltip de uma pilha, como o cliente monta (Item#appendHoverText). */
+    @SuppressWarnings("deprecation")
+    private static List<Component> tooltipOf(GameTestHelper helper, ItemStack stack) {
+        List<Component> lines = new ArrayList<>();
+        stack.getItem().appendHoverText(stack, Item.TooltipContext.of(helper.getLevel()),
+            TooltipDisplay.DEFAULT, lines::add, TooltipFlag.NORMAL);
+        return lines;
+    }
+
+    /** A chave de tradução de uma linha ou argumento ("?" se não é texto traduzido). */
+    private static String keyOf(Object component) {
+        return component instanceof Component c && c.getContents() instanceof TranslatableContents t
+            ? t.getKey() : "?";
+    }
+
+    private static List<String> keysOf(List<Component> lines) {
+        return lines.stream().map(CultivoGameTests::keyOf).toList();
+    }
+
+    private static List<String> argKeys(Component line) {
+        return line.getContents() instanceof TranslatableContents t
+            ? java.util.Arrays.stream(t.getArgs()).map(CultivoGameTests::keyOf).toList() : List.of();
+    }
+
+    /**
+     * Os tooltips pedidos, montados pelo item como no cliente: a semente do catálogo mostra o perfil "raridade · ciclo ·
+     * genética · potência" nessa ordem (Manga Gelada: comum, fotoperíodo, híbrida, ★★☆); a flor seca curada mostra o
+     * perfil, a qualidade e "Cura concluída"; o baseado com piteira mostra a variedade, a qualidade, "Com piteira" e a dica
+     * em linhas curtas; a estação, a função e a dica de uso em 4 linhas.
+     */
+    public static void tooltipsShowProfileAndMarks(GameTestHelper helper) {
+        run(helper, () -> {
+            List<Component> seed = tooltipOf(helper, new ItemStack(ModItems.SEEDS.get(Variety.MANGA_GELADA).get()));
+            check(keysOf(seed).equals(List.of("tooltip.cultivo.strain_profile")), "semente: " + keysOf(seed));
+            check(argKeys(seed.get(0)).equals(List.of("tooltip.cultivo.rarity.common", "tooltip.cultivo.cycle.photoperiod",
+                "tooltip.cultivo.lineage.hybrid", "tooltip.cultivo.potency.2")), "perfil da semente: " + argKeys(seed.get(0)));
+
+            ItemStack cured = withQuality(ModItems.DRIED_FLOWERS.get(Variety.ECLIPSE).get(), 1, 4);
+            cured.set(ModComponents.CURED.get(), Unit.INSTANCE);
+            List<Component> flower = tooltipOf(helper, cured);
+            check(keysOf(flower).equals(
+                List.of("tooltip.cultivo.strain_profile", "tooltip.cultivo.quality", "tooltip.cultivo.cured")),
+                "flor seca curada: " + keysOf(flower));
+            check(argKeys(flower.get(0)).equals(List.of("tooltip.cultivo.rarity.rare", "tooltip.cultivo.cycle.photoperiod",
+                "tooltip.cultivo.lineage.indica", "tooltip.cultivo.potency.3")), "perfil da Eclipse: " + argKeys(flower.get(0)));
+            check(argKeys(flower.get(1)).equals(List.of("tooltip.cultivo.quality.4")), "qualidade: " + argKeys(flower.get(1)));
+
+            List<Component> joint = tooltipOf(helper, craftFilter(helper, joint(Variety.AURORA, 4)));
+            check(keysOf(joint).equals(List.of("tooltip.cultivo.strain", "tooltip.cultivo.quality", "tooltip.cultivo.filtered",
+                "tooltip.cultivo.smoke.joint.1", "tooltip.cultivo.smoke.joint.2")), "baseado com piteira: " + keysOf(joint));
+            check(argKeys(joint.get(0)).equals(List.of("tooltip.cultivo.variety.aurora")), "variedade: " + argKeys(joint.get(0)));
+
+            List<Component> station = tooltipOf(helper, new ItemStack(ModItems.STATIONS.get(StationKind.SIEVING).get()));
+            check(keysOf(station).equals(List.of("tooltip.cultivo.station.sieving", "tooltip.cultivo.station.usage.1",
+                "tooltip.cultivo.station.usage.2", "tooltip.cultivo.station.usage.3", "tooltip.cultivo.station.usage.4")),
+                "peneira: " + keysOf(station));
+            List<Component> bong = tooltipOf(helper, new ItemStack(ModItems.ARTICLES.get("bong").get()));
+            check(keysOf(bong).equals(List.of("tooltip.cultivo.smoke.device.1", "tooltip.cultivo.smoke.device.2",
+                "tooltip.cultivo.smoke.device.3")), "bong: " + keysOf(bong));
+            List<Component> jarTip = tooltipOf(helper, new ItemStack(ModItems.ARTICLES.get(ContentIds.JAR).get()));
+            check(keysOf(jarTip).equals(List.of("tooltip.cultivo.jar.1", "tooltip.cultivo.jar.2", "tooltip.cultivo.jar.3",
+                "tooltip.cultivo.jar.4")), "pote: " + keysOf(jarTip));
         });
     }
 }

@@ -166,6 +166,21 @@ class ClientIsolationTest {
         return out;
     }
 
+    /**
+     * A placa da prensa trabalhando aparece até a distância de renderização do cliente (como o farol vanilla), não só
+     * até os 64 blocos padrão de BlockEntityRenderer: trabalhando, o modelo do bloco não tem placa, e de longe ficava um
+     * vão. O renderer só roda no cliente, então a regressão é conferida no bytecode: ele declara getViewDistance e lê a
+     * distância efetiva das opções.
+     */
+    @Test
+    void pressPlatenIsDrawnUpToTheRenderDistance() throws IOException {
+        List<String> constants = utf8Constants(mainClasses().resolve(CLIENT_PACKAGE + "PressPlatenRenderer.class"));
+        assertTrue(constants.contains("getViewDistance"), "PressPlatenRenderer sem getViewDistance (fica no padrão de 64)");
+        assertTrue(constants.contains("getEffectiveRenderDistance"), "a placa deveria seguir a distância de renderização");
+        String source = Files.readString(Resources.JAVA.resolve(CLIENT_PACKAGE + "PressPlatenRenderer.java"));
+        assertTrue(source.contains("options.getEffectiveRenderDistance() * 16"), "em blocos: chunks × 16");
+    }
+
     /** O leitor do pool acharia a referência se ela existisse (a ponte cita o pacote client no bytecode). */
     @Test
     void constantPoolReaderSeesClassReferences() throws IOException {

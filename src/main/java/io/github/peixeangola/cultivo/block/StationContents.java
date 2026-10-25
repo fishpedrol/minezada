@@ -9,6 +9,7 @@ import net.minecraft.util.StringRepresentable;
  */
 public enum StationContents implements StringRepresentable {
     EMPTY(StationVisualRules.Contents.EMPTY),
+    LOADED(StationVisualRules.Contents.LOADED),
     WORKING(StationVisualRules.Contents.WORKING),
     DONE(StationVisualRules.Contents.DONE);
 

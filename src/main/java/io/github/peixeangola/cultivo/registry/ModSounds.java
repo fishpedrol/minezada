@@ -19,8 +19,10 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> SMOKE_INHALE = register("smoke.inhale");
     /** Fumaça soprada, no fim de uma sessão que deu certo. */
     public static final RegistryObject<SoundEvent> SMOKE_EXHALE = register("smoke.exhale");
-    /** Água do bong borbulhando durante o uso. */
+    /** Água do bong borbulhando durante o uso (legenda "Bong borbulha"). */
     public static final RegistryObject<SoundEvent> BONG_BUBBLE = register("bong.bubble");
+    /** Água do narguilé borbulhando durante o uso, mais grave (legenda própria, "Narguilé borbulha"). */
+    public static final RegistryObject<SoundEvent> HOOKAH_BUBBLE = register("hookah.bubble");
     /** Isqueiro acendendo, no começo do uso. */
     public static final RegistryObject<SoundEvent> LIGHTER_CLICK = register("lighter.click");
     /** Maços farfalhando no suporte de secagem que está trabalhando. */

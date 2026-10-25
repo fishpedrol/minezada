@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:function",
+  "function": "cultivo:tooltips_show_profile_and_marks",
+  "environment": "minecraft:default",
+  "structure": "forge:empty9x9x9",
+  "max_ticks": 100
+}

@@ -32,6 +32,17 @@
       }
     ]
   },
+  "hookah.bubble": {
+    "subtitle": "subtitles.cultivo.hookah.bubble",
+    "sounds": [
+      {
+        "name": "minecraft:block.bubble_column.upwards_ambient",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.1
+      }
+    ]
+  },
   "lighter.click": {
     "subtitle": "subtitles.cultivo.lighter.click",
     "sounds": [

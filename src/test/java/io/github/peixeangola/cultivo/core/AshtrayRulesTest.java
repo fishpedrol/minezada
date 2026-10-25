@@ -43,10 +43,39 @@ class AshtrayRulesTest {
         assertFalse(AshtrayRules.inRange(0, 0, -5));
     }
 
-    /** 9 × 9 na horizontal e 5 de altura: 405 posições por sessão. */
+    /**
+     * A lista que o AshtrayBlock#catchAsh percorre: 9 × 9 na horizontal e 5 de altura, 405 posições, cada uma uma vez,
+     * com as bordas (4 na horizontal, 2 na vertical e os cantos) dentro e nada de fora.
+     */
     @Test
-    void searchVolumeIs405() {
-        assertEquals(405, AshtrayRules.searchVolume());
+    void searchOffsetsCoverExactlyTheRange() {
+        assertEquals(405, AshtrayRules.SEARCH_OFFSETS.size());
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int[] d : AshtrayRules.SEARCH_OFFSETS) {
+            assertTrue(AshtrayRules.inRange(d[0], d[1], d[2]), java.util.Arrays.toString(d));
+            assertTrue(seen.add(d[0] + "," + d[1] + "," + d[2]), "repetido: " + java.util.Arrays.toString(d));
+        }
+        for (String edge : java.util.List.of("4,0,0", "-4,0,0", "0,0,4", "0,0,-4", "0,2,0", "0,-2,0", "4,2,4", "-4,-2,-4", "4,-2,-4")) {
+            assertTrue(seen.contains(edge), "borda fora da busca: " + edge);
+        }
+        for (String outside : java.util.List.of("5,0,0", "0,0,5", "0,3,0", "0,-3,0", "-5,0,0", "4,3,4")) {
+            assertFalse(seen.contains(outside), "fora do alcance na busca: " + outside);
+        }
+    }
+
+    /** Do mais perto para o mais longe: o cinzeiro mais próximo que não está cheio é o que pega a cinza. */
+    @Test
+    void searchGoesFromNearestToFarthest() {
+        int[] first = AshtrayRules.SEARCH_OFFSETS.get(0);
+        assertEquals(java.util.List.of(0, 0, 0), java.util.List.of(first[0], first[1], first[2]));
+        int previous = 0;
+        for (int[] d : AshtrayRules.SEARCH_OFFSETS) {
+            int distance = AshtrayRules.distanceSquared(d);
+            assertTrue(distance >= previous, "fora de ordem: " + java.util.Arrays.toString(d));
+            previous = distance;
+        }
+        int[] last = AshtrayRules.SEARCH_OFFSETS.get(AshtrayRules.SEARCH_OFFSETS.size() - 1);
+        assertEquals(4 * 4 + 2 * 2 + 4 * 4, AshtrayRules.distanceSquared(last), "o último é um canto");
     }
 
     @Test

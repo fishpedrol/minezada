@@ -1,6 +1,15 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "cultivo:item/press"
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:model",
+        "model": "cultivo:item/press"
+      },
+      {
+        "type": "minecraft:model",
+        "model": "cultivo:block/press_platen_up"
+      }
+    ]
   }
 }
