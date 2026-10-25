@@ -45,11 +45,11 @@ mkdir -p "$HOME/jdk" && tar -xzf /tmp/jdk25.tar.gz -C "$HOME/jdk"
 export JAVA_HOME="$(ls -d "$HOME"/jdk/jdk-25* | head -1)"
 export PATH="$JAVA_HOME/bin:$PATH"
 java -version                          # precisa dizer 25 e 64-Bit
-node --version                         # o gerador precisa do Node (testado com 24.19)
+node --version                         # o gerador precisa do Node (testado com 24.19 no Windows e 22.22.0 na nuvem)
 ./gradlew build --console=plain        # o primeiro baixa o Forge e o Minecraft (mais de 1 GB)
 ```
 - **JDK:** se a API do Adoptium estiver bloqueada, baixe o Temurin 25 de Linux x64 em <https://github.com/adoptium/temurin25-binaries/releases>. Em 21/10/2026 o JDK veio por downloads de releases do GitHub.
-- **Rede:** o primeiro build precisa de `maven.minecraftforge.net`, `piston-meta.mojang.com` e `libraries.minecraft.net`, além de `services.gradle.org`, `plugins.gradle.org` e `repo1.maven.org`.
+- **Rede:** o primeiro build precisa de `maven.minecraftforge.net`, `piston-meta.mojang.com` e `libraries.minecraft.net`, além de `services.gradle.org`, `plugins.gradle.org` e `repo1.maven.org`. Para o passo 5 de "Verificar", também `api.modrinth.com` e `cdn.modrinth.com`; o `forge-server-compat.sh` usa ainda `piston-data.mojang.com` (tools/compat/README.md).
   - Se falhar com `Failed to download default tool: minecraft-mavenizer-...` ou `403` no CONNECT, peça ao dono para liberar esses domínios nas configurações de rede do ambiente.
   - Se aparecer outro host recusado no erro (por exemplo `piston-data.mojang.com`, de onde vêm os jars do jogo), libere-o também.
 - **Sem o Forge:** enquanto o build não baixar, `sh tools/test-offline.sh` roda o JUnit sem Gradle. Os dois testes de bytecode do `ClientIsolationTest` precisam das classes de um build anterior.
@@ -100,7 +100,7 @@ O primeiro jar tem as fontes completas do Minecraft e do Forge (nomes oficiais);
 1. Multiplayer completo: `run-probe.ps1 -Multiplayer` com memória livre e depois com amigos (só o dono, no Windows).
 2. O que o teste visual não cobre: mão esquerda, artigos de todos os lados, ouvir os sons (só o dono).
 3. Serene Seasons (docs/DECISIONS.md, "Em aberto"). O Forge 66.0.2 do launcher já é aceito (`mods.toml` `[66.0.2,)`), e a compatibilidade foi testada sem tela. Falta:
-   - só o dono, com tela: jogar em single player com o Serene Seasons e os outros mods do launcher e ver a dica "Estações férteis: Verão, Outono" nas sementes, a lavoura lenta na primavera e normal sob um bloco de vidro (docs/GUIA_INICIANTE.md, seção 6);
+   - só o dono, com tela: jogar em single player com o Serene Seasons e os outros mods do launcher e ver a dica "Estações férteis: Verão, Outono" nas sementes, a lavoura lenta na primavera e normal sob um bloco de vidro (docs/GUIA_INICIANTE.md, seção 6.5);
    - decisão do dono: manter a paridade com o trigo (verão e outono) ou adotar outra regra de estações;
    - decisão do dono: se usar `out_of_season_crop_behavior = 2` (quebra fora de estação), pôr as lavouras do Cultivo em `unbreakable_infertile_crops`, para não perder sementes raras;
    - decisão do dono: se vidraças (painéis) devem contar como estufa do Serene Seasons, o que mudaria também o vanilla;

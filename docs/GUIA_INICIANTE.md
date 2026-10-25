@@ -338,7 +338,7 @@ Mostra uma linha por teste. Quando algo falha, aparece assim:
 SeedSourcesTest > chestProbabilities() FAILED
     org.opentest4j.AssertionFailedError at SeedSourcesTest.java:73
 
-311 tests completed, 1 failed
+316 tests completed, 1 failed
 There were failing tests. See the report at: file:///.../build/reports/tests/test/index.html
 ```
 
@@ -478,14 +478,14 @@ powershell -ExecutionPolicy Bypass -File tools\visual-probe\run-probe.ps1 -OutDi
 
 Regra de ouro: **todo mundo** (cada jogador e o servidor) usa **a mesma versão do Forge 26.3**, que precisa ser a **66.0.2 ou mais nova**, e **o mesmo arquivo `cultivo-0.1.0.jar`**. Se você recompilar com mudanças, mande o .jar novo para todos e troque também no servidor.
 
-- **Qual versão do Forge?** O projeto compila com a **66.0.13**, que é a recomendada para quem vai instalar agora (seção 4.1). A **66.0.2**, a do perfil do dono, também foi testada e funciona. Combine com o grupo **uma** delas e todos usam a mesma.
+- **Qual versão do Forge?** Use a **66.0.13**, a versão com que o projeto compila (seção 4.1). A **66.0.2**, a do perfil do dono, também foi testada, sem tela: build, GameTests e um servidor oficial. O jogo com tela no 66.0.2 você confere na seção 6.5. Versões mais novas, como a **66.1.0**, que a página do Forge marca como *Recommended* e *Latest*, o Cultivo aceita, mas não foram testadas. Combine com o grupo **uma** delas e todos usam a mesma.
 
 - **Atenção ao nome:** enquanto a versão do mod continuar 0.1.0, **todo** build gera um arquivo com o mesmo nome, `cultivo-0.1.0.jar`, mesmo com mudanças dentro. Pelo nome não dá para saber qual é o novo. Antes de mandar um .jar com mudanças, aumente a versão (seção 7.3, passo 7): aí o nome muda junto.
 
 Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe em login nem em licença.
 
 > **No PC do dono do projeto:** o perfil "Forge 26.3" do launcher usa o Forge **26.3-66.0.2**, e a pasta `%APPDATA%\.minecraft\mods` já tem outros mods. Entre eles está o **Serene Seasons** (estações do ano), que mexe no crescimento das plantações.
-> - **Você pode continuar com esse perfil.** Desde 25/10/2026 o Cultivo aceita o Forge 66.0.2 ou mais novo. No 66.0.2, o build e os testes automáticos passaram, e um servidor oficial 66.0.2 rodou o Cultivo com as plantações crescendo. Basta pôr o `cultivo-0.1.0.jar` na pasta `mods` (seção 4.1, passo 6). Se ficar no 66.0.2, os amigos e o servidor também usam o 66.0.2 (regra de ouro).
+> - **Você pode continuar com esse perfil.** Desde 25/10/2026 o Forge 66.0.2 foi testado e é suportado (o `mods.toml` exige 66.0.2 ou mais novo). No 66.0.2, o build e os testes automáticos passaram, e um servidor oficial 66.0.2 rodou o Cultivo com as plantações crescendo. Basta pôr o `cultivo-0.1.0.jar` na pasta `mods` (seção 4.1, passo 6). Se ficar no 66.0.2, os amigos e o servidor também usam o 66.0.2 (regra de ouro).
 > - Para ver o Cultivo sozinho, sem as estações do Serene Seasons, use o `runClient` (seção 3.4) ou uma pasta de jogo separada (seção 4.1, passo 6).
 > - Para jogar com o Serene Seasons junto: todos os amigos e o servidor precisam dos mesmos mods. As plantações do Cultivo seguem as mesmas estações do ano que o trigo, **mas só em single player e LAN**: num servidor dedicado, o Serene Seasons não mexe em plantação nenhuma (veja a [seção 5.11](#511-com-o-serene-seasons-estações-do-ano)). Falta você conferir isso no jogo com tela ([seção 6.5](#65-com-o-serene-seasons-single-player-no-jogo-de-verdade)).
 
@@ -493,11 +493,11 @@ Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe
 
 1. Abra o **Minecraft Launcher oficial** e jogue o Minecraft 26.3 normal pelo menos uma vez. Isso cria a pasta `.minecraft`.
    - Se 26.3 não for a versão mais nova: aba **Instalações** → **Nova instalação** → em **Versão**, escolha **release 26.3** → **Criar** → **Jogar**.
-2. Baixe o instalador do Forge **26.3-66.0.13** (o recomendado):
+2. Baixe o instalador do Forge **26.3-66.0.13** (a versão do projeto):
    - **Já tem um perfil do Forge 26.3-66.0.2 no launcher** (como o dono) e o grupo combinou usar o 66.0.2? Pule para o passo 6.
    - **O grupo combinou o 66.0.2?** Troque `66.0.13` por `66.0.2` nos nomes deste passo e dos passos 3 e 5. O link direto fica <https://maven.minecraftforge.net/net/minecraftforge/forge/26.3-66.0.2/forge-26.3-66.0.2-installer.jar>.
    - O jeito mais seguro é o link direto do repositório oficial do Forge: <https://maven.minecraftforge.net/net/minecraftforge/forge/26.3-66.0.13/forge-26.3-66.0.13-installer.jar>
-   - Ou pela página do Forge para 26.3: <https://files.minecraftforge.net/net/minecraftforge/forge/index_26.3.html>. Procure a linha **26.3-66.0.13** e clique em *Installer*. (A página sem `index_26.3.html` no fim mostra a versão mais nova do Minecraft, não a 26.3.) Cuidado com botões de propaganda: o arquivo certo se chama `forge-26.3-66.0.13-installer.jar`.
+   - Ou pela página do Forge para 26.3: <https://files.minecraftforge.net/net/minecraftforge/forge/index_26.3.html>. Não use os botões *Download Recommended* / *Download Latest* (em 25/10/2026 eles davam a 66.1.0, não testada): clique em **Show all Versions**, procure a linha **26.3-66.0.13** e clique em *Installer*. (A página sem `index_26.3.html` no fim mostra a versão mais nova do Minecraft, não a 26.3.) Cuidado com botões de propaganda: o arquivo certo se chama `forge-26.3-66.0.13-installer.jar`.
    - O navegador ou o antivírus pode avisar que arquivos `.jar` podem ser perigosos. Aceite só se veio desses endereços.
 3. Abra o instalador com dois cliques. Normalmente ele abre com o Java que já estiver no PC.
    - Se em vez do instalador abrir o WinRAR ou o 7-Zip (mostrando uma lista de arquivos), ou se nada abrir, feche e rode pelo terminal. Primeiro vá até a pasta onde o arquivo foi salvo (em geral, Downloads) e depois rode o instalador:
@@ -579,7 +579,7 @@ Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe
    Se você fez a seção 2.3 (Java 25 no topo do Path do sistema), basta dar dois cliques no `run.bat`.
 4. Na primeira vez, o servidor para e pede a EULA. Abra o `eula.txt` da pasta, troque para `eula=true` e salve. O `run.bat` termina com "Pressione qualquer tecla para continuar…": aperte uma tecla para fechar.
 5. Crie a pasta `mods` ao lado do `run.bat` (se ela não existir) e coloque o `cultivo-0.1.0.jar` nela.
-   - Se o grupo usa outros mods (como o Serene Seasons, que precisa do GlitchCore), ponha os mesmos aqui.
+   - Se o grupo usa outros mods (como o Serene Seasons, que precisa do GlitchCore), ponha aqui os que também rodam em servidor. O Serene Seasons com o GlitchCore foi testado num servidor oficial 66.0.2; os outros mods do dono não foram testados em servidor (mods só de cliente podem impedir o servidor de abrir).
    - **Atenção:** neste servidor dedicado, o Serene Seasons **não mexe em plantação nenhuma**, nem no trigo (problema do Forge 26.3, [seção 5.11](#511-com-o-serene-seasons-estações-do-ano)). Para ter estações nas plantações, jogue em single player ou em LAN.
 6. Rode o `run.bat` de novo (do mesmo jeito do passo 3). **[console do servidor]** Para desligar, digite `stop`.
 7. **Memória do servidor:** abra o `user_jvm_args.txt` no Bloco de Notas. Procure a linha com `-Xmx` que começa com `#` (algo como `# -Xmx4G`). Apague o `#` e o espaço do começo, para ficar `-Xmx4G`, e salve. O número é a memória máxima (4G = 4 GB). Regra prática: no máximo metade da memória do PC (veja em Configurações → Sistema → Sobre → **RAM instalada**). Num PC de 8 GB, use até `-Xmx4G`.
@@ -592,7 +592,7 @@ Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe
      - **Hospedagem paga** de servidor de Minecraft que aceite Forge.
    - o Windows pode perguntar se o Java pode usar a rede: permita em redes privadas.
 
-**Jeito mais simples para uma partida rápida:** um jogador abre um mundo single player com o mod, aperta Esc → **Abrir em LAN**, e quem estiver na mesma rede Wi-Fi (ou na mesma LAN virtual) entra pela lista de Multijogador. Todos ainda precisam do mesmo Forge e do mesmo .jar. Em LAN, o Serene Seasons mexe nas plantações normalmente (seção 5.11).
+**Jeito mais simples para uma partida rápida:** um jogador abre um mundo single player com o mod, aperta Esc → **Abrir em LAN**, e quem estiver na mesma rede Wi-Fi (ou na mesma LAN virtual) entra pela lista de Multijogador. Todos ainda precisam do mesmo Forge e do mesmo .jar. Em LAN, como em single player, o Serene Seasons deve mexer nas plantações (seção 5.11; conclusão da análise e do teste automático, ainda não vista com tela).
 
 ---
 
@@ -1040,7 +1040,7 @@ O **Serene Seasons** é outro mod, de estações do ano, que o dono usa no launc
 - **Primavera e inverno:** crescem devagar, cerca de 1/6 da velocidade normal. O trigo fica igual.
   - A farinha de osso que você usa numa planta fora da estação pode ser gasta sem ela crescer (às vezes cresce).
   - Um **mundo novo começa no início da primavera**, e cada estação dura 24 dias de jogo (3 partes de 8 dias). Então as primeiras plantações são lentas.
-- **Bloco de vidro protege da estação:** um **bloco** de vidro (vidro, vidro fosco ou um dos 16 vidros tingidos) de 1 a 16 blocos acima da planta, na mesma coluna, faz ela crescer normalmente o ano todo. Não precisa de paredes. **Vidraça (o painel fino) não conta.**
+- **Bloco de vidro protege da estação:** um **bloco** de vidro (vidro, vidro fosco ou um dos 16 vidros tingidos; o vidro fosco bloqueia a luz: seção 5.5) de 1 a 16 blocos acima da planta, na mesma coluna, faz ela crescer normalmente o ano todo. Não precisa de paredes. **Vidraça (o painel fino) não conta.**
 - **A estufa do Cultivo** (seção 5.5) com teto de **bloco** de vidro também vale: a planta cresce normalmente o ano todo e a colheita sai com qualidade 4 ou 5. Com teto de vidraça, a qualidade 4 ou 5 continua, mas a planta fica lenta na primavera e no inverno.
 - **A qualidade não muda** com o Serene Seasons: a colheita segue a tabela da seção 5.5.
 - **Dica na semente:** com o jogo em português, as sementes do Cultivo ganham a linha **"Estações férteis:"** com Verão e Outono, igual à semente de trigo. Essa linha vem do Serene Seasons.
@@ -1059,7 +1059,7 @@ O **Serene Seasons** é outro mod, de estações do ano, que o dono usa no launc
 
 ## 6. O que você precisa testar à mão
 
-Os testes automáticos não abrem a tela do jogo. Estes itens só você consegue conferir. Desde o polimento de 24/10/2026, **nada do que é só visual ou sonoro foi visto num jogo aberto**: modelos 3D, animações, partículas e sons. Por isso esta checklist é a parte mais importante agora.
+Os testes automáticos não abrem a tela do jogo. Estes itens só você consegue conferir. Em 25/10/2026 o teste visual automático (seção 3.8) já viu num jogo aberto os modelos 3D, as animações, as partículas e as legendas dos sons (47 prints). Ainda ninguém viu a mão esquerda nem os artigos de todos os lados, ninguém **ouviu** os sons, e o multiplayer não foi feito do começo ao fim. Por isso esta checklist continua importante.
 
 **Onde marcar:** as caixinhas `[ ]` deste guia não dá para marcar no site do GitHub. Use uma folha de papel ou um arquivo de texto à parte: para cada item, anote "ok" ou o que deu errado. No fim, registre o resultado no `docs/TODO.md` como explica a [seção 6.4](#64-como-reportar-um-problema).
 
@@ -1226,7 +1226,7 @@ Faça isto no **Criativo**, para poder voar.
 
 ### 6.3 Multiplayer
 
-O `runClient` não usa a sua conta e não consegue entrar no `runServer` (seção 3.4). Para este teste, use o **jogo de verdade** com o Forge 26.3-66.0.13 (seção 4.1): o `runServer` usa o 66.0.13 do projeto, e o jogo e o servidor precisam da mesma versão.
+O `runClient` não usa a sua conta e não consegue entrar no `runServer` (seção 3.4). Para este teste, use o **jogo de verdade** com o Forge 26.3-66.0.13 (seção 4.1, passos 2 a 5, mesmo que você já tenha o perfil 66.0.2): o `runServer` usa o 66.0.13 do projeto, e a regra é jogo e servidor na mesma versão (seção 4).
 
 1. **[terminal]** Gere o .jar (`.\gradlew.bat build`) e instale o Forge e o .jar no seu launcher (seção 4.1).
 2. **[terminal]** Rode `.\gradlew.bat runServer` e aceite a EULA (seção 3.5).
@@ -1303,7 +1303,7 @@ Só registre com evidência: a data, o comando e o que você viu.
 O `runClient` não carrega os mods do launcher (seção 3.4), então este teste é no **jogo de verdade**: o perfil "Forge 26.3" (Forge 26.3-66.0.2) do dono, com os outros mods dele. Na nuvem, o Serene Seasons só foi testado sem tela; a dica da semente e o crescimento em single player, só você consegue ver. As regras estão na [seção 5.11](#511-com-o-serene-seasons-estações-do-ano).
 
 **Preparar:**
-1. **[terminal]** Gere o .jar (`.\gradlew.bat build`) e copie o `build\libs\cultivo-0.1.0.jar` para `%APPDATA%\.minecraft\mods` (seção 4.1, passo 6), junto com os outros mods. O Serene Seasons precisa do GlitchCore, que já deve estar nessa pasta.
+1. **[terminal]** Pegue o código com a compatibilidade: se o PR da branch `claude/forge-compat-seasons` já entrou na `main`, rode `git checkout main` e `git pull`; senão, `git fetch` e `git checkout claude/forge-compat-seasons` (seção 2.7, passo 6). Confira com `dir src\generated\resources\data\sereneseasons` (deve listar `tags`). Depois gere o .jar (`.\gradlew.bat build`) e copie o `build\libs\cultivo-0.1.0.jar` para `%APPDATA%\.minecraft\mods` (seção 4.1, passo 6), junto com os outros mods. O Serene Seasons precisa do GlitchCore, que já deve estar nessa pasta.
 2. Abra o launcher, escolha o perfil "Forge 26.3" e jogue.
 3. Crie um **mundo novo** com **Permitir comandos: Sim**, no Criativo. Se um dia quiser pôr o Cultivo num mundo que já existe, faça antes uma cópia da pasta dele (fica em `%APPDATA%\.minecraft\saves`).
 
@@ -1315,17 +1315,18 @@ O `runClient` não carrega os mods do launcher (seção 3.4), então este teste 
   /give @s cultivo:manga_gelada_seeds 16
   /give @s minecraft:wheat_seeds 16
   ```
-  Passe o mouse em cada uma. As do Cultivo mostram as linhas normais (seção 6.1, "Tooltips") e mais a linha **"Estações férteis:"** com **Verão** e **Outono**, igual à semente de trigo.
+  Passe o mouse em cada uma. As do Cultivo mostram as linhas normais (seção 6.1, "Tooltips") e mais a linha **"Estações férteis:"** com **Verão** e **Outono** (com o jogo em inglês: "Fertile Seasons:" com Summer e Autumn), igual à semente de trigo.
 - [ ] **Lenta na primavera, normal sob vidro:**
   1. `/locate biome minecraft:plains` e clique nas coordenadas verdes para ir até lá. Na planície as estações valem normalmente (em deserto, savana ou selva, e nos biomas onde neva, a regra muda: seção 5.11).
   2. Na superfície, a céu aberto, are a terra perto da água e plante uma fileira de sementes do Cultivo e, ao lado, uma fileira de trigo.
-  3. Cubra **metade** de cada fileira com **blocos de vidro**, 3 blocos acima das plantas: faça uma coluna de 3 blocos ao lado e, a partir do topo dela, coloque os vidros um encostado no outro. Use o **bloco** de vidro, não a vidraça.
-  4. `/season set early_spring` (início da primavera).
-  5. Para não esperar muito: `/gamerule random_tick_speed 300` (faz tudo crescer bem mais rápido).
-  6. Espere uns 30 segundos olhando. Esperado: **ao ar livre**, o Cultivo e o trigo crescem devagar e parecidos; **sob o vidro**, os dois crescem bem mais rápido.
-  7. (Opcional) Troque um dos vidros por uma vidraça e replante embaixo dela: ali a planta fica lenta, como ao ar livre.
+  3. Cubra **metade** de cada fileira com **blocos de vidro**, a 2 ou 3 blocos acima das plantas (qualquer altura de 1 a 16 vale): faça uma coluna de 3 blocos ao lado e, a partir do topo dela, coloque os vidros um encostado no outro. Use o **bloco** de vidro, não a vidraça.
+  4. Confira em `%APPDATA%\.minecraft\config\sereneseasons\fertility.toml`: `seasonal_crops = true` e `out_of_season_crop_behavior = 0` (o padrão). Com `1`, nada cresce ao ar livre na primavera; com `2`, as plantas quebram (seção 5.11).
+  5. `/season set early_spring` (início da primavera).
+  6. Para não esperar muito: `/gamerule random_tick_speed 300` (faz tudo crescer bem mais rápido).
+  7. Espere uns 30 segundos olhando. Esperado: **ao ar livre**, o Cultivo e o trigo crescem devagar e parecidos; **sob o vidro**, os dois crescem bem mais rápido.
+  8. (Opcional) Troque um dos vidros por uma vidraça e replante embaixo dela: ali a planta fica lenta, como ao ar livre.
 - [ ] **Normal no verão:** `/season set mid_summer`, quebre e replante a parte ao ar livre: agora o Cultivo e o trigo crescem rápido mesmo sem vidro.
-- [ ] **(Opcional) Estufa do Cultivo:** ainda na primavera (`/season set early_spring`), monte a estufa da seção 5.5 com teto de **bloco** de vidro: a planta cresce normalmente, e a colheita madura dá qualidade 4 ou 5. Ao ar livre, a qualidade continua 2 ou 3 em qualquer estação.
+- [ ] **(Opcional) Estufa do Cultivo:** ainda na primavera (`/season set early_spring`), monte a estufa da seção 5.5 com teto de **bloco** de vidro: a planta cresce normalmente. Para colher, mude para `/gamemode survival` (no Criativo, quebrar a planta não solta nada): a colheita madura dá qualidade 4 ou 5. Ao ar livre, a qualidade continua 2 ou 3 em qualquer estação.
 - [ ] **Voltar ao normal:** `/gamerule random_tick_speed 3` (3 é o valor normal do jogo).
 - [ ] **Log:** abra `%APPDATA%\.minecraft\logs\latest.log` no Bloco de Notas e procure (Ctrl+F) por `Couldn't load tag` e por `cultivo` perto de `ERROR`. No teste da nuvem, `Couldn't load tag` não apareceu nenhuma vez.
 
@@ -1340,7 +1341,7 @@ No `docs/TODO.md`, acrescente uma linha na tabela "Evidências registradas" (com
 | 26/10/2026 | Jogo de verdade, Forge 66.0.2 + Serene Seasons X + GlitchCore Y + outros mods, single player (código abc1234) | "Estações férteis: Verão, Outono" nas sementes; primavera: Cultivo lento como o trigo; sob bloco de vidro: normal; verão: normal |
 ```
 
-**Para os curiosos:** os testes automáticos de compatibilidade (o servidor oficial do Forge com sondas de console e o teste com o Serene Seasons) ficam em `tools/compat/`, explicados no `tools/compat/README.md`. O script do servidor é só para Linux e macOS. O GameTest com o Serene Seasons também pode rodar no Windows, com `.\gradlew.bat runGameTestServer -Pcultivo_forge_version=26.3-66.0.2 -Pcultivo_run_dir=run-compat-ss`, depois de criar `run-compat-ss\mods` com os jars do Serene Seasons e do GlitchCore e copiar `tools\compat\config-cant-grow\sereneseasons\fertility.toml` para `run-compat-ss\config\sereneseasons\`. Na nuvem deu `All 63 required tests passed :)`; no Windows ainda não foi rodado.
+**Para os curiosos:** os testes automáticos de compatibilidade (o servidor oficial do Forge com sondas de console e o teste com o Serene Seasons) ficam em `tools/compat/`, explicados no `tools/compat/README.md`. O script do servidor é só para Linux e macOS (rodou só no Linux). O GameTest com o Serene Seasons também pode rodar no Windows, com `.\gradlew.bat runGameTestServer "-Pcultivo_forge_version=26.3-66.0.2" "-Pcultivo_run_dir=run-compat-ss"` (com as aspas, senão o PowerShell parte o argumento no ponto), depois de criar as pastas `run-compat-ss\mods` e `run-compat-ss\config\sereneseasons` (os comandos prontos estão no `tools/compat/README.md`, parte "Windows"), pôr em `run-compat-ss\mods` os jars do Serene Seasons e do GlitchCore e copiar `tools\compat\config-cant-grow\sereneseasons\fertility.toml` para `run-compat-ss\config\sereneseasons\`. Na nuvem deu `All 63 required tests passed :)`; no Windows ainda não foi rodado.
 
 ---
 
@@ -1714,8 +1715,8 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | Item | Valor exato | Onde está escrito |
 |---|---|---|
 | Minecraft Java | 26.3. O mod aceita 26.3 e 26.3.x, mas não 26.4: é o que `[26.3,26.4)` quer dizer (o colchete `[` inclui o 26.3; o parêntese `)` deixa o 26.4 de fora) | `src/main/resources/META-INF/mods.toml`, linha 26 |
-| Forge para compilar | 26.3-66.0.13 (só para testar outra versão: `-Pcultivo_forge_version=26.3-66.0.2` no comando do Gradle) | `build.gradle`, linha 27 |
-| Forge para jogar | 66.0.2 ou mais novo (`[66.0.2,)`); testado no 66.0.2 e no 66.0.13 | `src/main/resources/META-INF/mods.toml`, linha 19 |
+| Forge para compilar | 26.3-66.0.13 (só para testar outra versão: `"-Pcultivo_forge_version=26.3-66.0.2"`, com as aspas, no comando do Gradle; um `build` com essa propriedade sobrescreve o `build\libs\cultivo-0.1.0.jar`: antes de mandar o jar para alguém, rode `.\gradlew.bat build` sem ela) | `build.gradle`, linha 27 |
+| Forge para jogar | 66.0.2 ou mais novo (`[66.0.2,)`); testado no 66.0.2 e no 66.0.13; versões mais novas (como a 66.1.0) são aceitas, mas não foram testadas | `src/main/resources/META-INF/mods.toml`, linha 19 |
 | Java para compilar | JDK 25 | `build.gradle`, linha 20 (`JavaLanguageVersion.of(25)`) |
 | Java no seu JAVA_HOME | JDK 25 de 64 bits (recomendado) | recomendação de `docs/TECHNICAL_RESEARCH.md` |
 | Gradle | 9.7.1 (vem pelo `gradlew`, não precisa instalar) | `gradle/wrapper/gradle-wrapper.properties` |
@@ -1728,20 +1729,20 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 - Windows 11, com o projeto em `C:\Users\Cliente\Documents\minezada` (fora do OneDrive).
 - JDK 25 em `C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1`, com JAVA_HOME configurado em 24/10/2026; o `java` do PATH ainda é um Java 8 de 32 bits.
 - Git e Node 24 instalados.
-- O launcher tem um perfil "Forge 26.3" com o Forge **26.3-66.0.2** e outros mods (entre eles o Serene Seasons). Desde 25/10/2026 o Cultivo aceita esse 66.0.2 (seção 4).
+- O launcher tem um perfil "Forge 26.3" com o Forge **26.3-66.0.2** e outros mods (entre eles o Serene Seasons). Desde 25/10/2026 esse 66.0.2 foi testado e é suportado (seção 4).
 
-**Situação verificada em 24/10/2026, com o código do commit `319cf0b`** (branch `claude/polish-visual-uses`, que entra na `main` por PR). Commits só de documentos vêm depois, então o seu `git log --oneline -1` pode mostrar outro código; é normal.
+**Situação verificada no PC do dono em 25/10/2026, com o código do commit `f515cb9`** (já na `main` pelo PR #4). Depois dele vieram a compatibilidade (abaixo) e commits só de documentos, então o seu `git log --oneline -1` pode mostrar outro código; é normal.
 
 - `build` passa, com 311 testes JUnit.
 - `runGameTestServer` passa 62 de 62 (61 testes do Cultivo + 1 do próprio Minecraft).
 - `node tools/gen/generate.mjs` gera 285 texturas e 786 arquivos JSON.
-- **Servidor e cliente:** o servidor dedicado (`runServer`) ligou e o `runClient` abriu sem erros de recurso, mas os dois com o código de `5bded22`, antes do polimento (genéticas do catálogo, arte nova, usos dos artigos, português, animações e sons).
-- **Falta:** testar com o jogo aberto na tela e em multiplayer o que veio no polimento. É para isso que existe a [seção 6](#6-o-que-você-precisa-testar-à-mão).
+- **Cliente:** o teste visual automático (seção 3.8) passou pelas 47 cenas sem erro de modelo, textura ou som; o `-Multiplayer` só rodou 2 cenas (parou por falta de memória).
+- **Falta:** mão esquerda, artigos de todos os lados, ouvir os sons e multiplayer do começo ao fim ([seção 6](#6-o-que-você-precisa-testar-à-mão)).
 
 **Compatibilidade, verificada na nuvem em 25/10/2026** (Linux, branch `claude/forge-compat-seasons`, commit `2f6ae47`; detalhes no `docs/TODO.md`):
 
 - `build` passa, com 316 testes JUnit; `runGameTestServer` passa 63 de 63 (62 do Cultivo + 1 do próprio Minecraft); `node tools/gen/generate.mjs` gera 285 texturas e 791 arquivos JSON.
-- Forge 66.0.2: o build e os GameTests passaram compilando contra ele, e um servidor oficial 66.0.2 rodou o jar compilado no 66.0.13, com as plantações crescendo.
+- Forge 66.0.2: antes das tags do Serene Seasons, o build (311 testes JUnit) e os GameTests (62) passaram compilando contra ele; com o código de `2f6ae47`, os 63 GameTests passaram no 66.0.2 com o Serene Seasons carregado. Um servidor oficial 66.0.2 rodou o jar compilado no 66.0.13, com as plantações crescendo.
 - Serene Seasons 26.1.2.0.7 + GlitchCore 26.3.0.0.5: os GameTests passaram com os dois carregados, no 66.0.13 e no 66.0.2 (seção 5.11).
 - **Falta:** o single player com o Serene Seasons e os outros mods do launcher, com tela ([seção 6.5](#65-com-o-serene-seasons-single-player-no-jogo-de-verdade)).
 

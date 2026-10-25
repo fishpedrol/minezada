@@ -7,13 +7,13 @@
 | Item | Valor | Onde está |
 |---|---|---|
 | Minecraft | 26.3 (mappings `26.3-20260918.230105`) | `mods.toml` (`[26.3,26.4)`) |
-| Loader | Forge `26.3-66.0.13` | `build.gradle` (`net.minecraftforge:forge:26.3-66.0.13`, padrão de `-Pcultivo_forge_version`), `mods.toml` (`[66.0.2,)`, a menor versão testada; veja "Versões testadas e compatibilidade") |
+| Loader | Forge `26.3-66.0.13` | `build.gradle` (`net.minecraftforge:forge:${forgeVersion}`; `forgeVersion` vem de `-Pcultivo_forge_version`, padrão `26.3-66.0.13`, linha 27), `mods.toml` (`[66.0.2,)`, a menor versão testada; veja "Versões testadas e compatibilidade") |
 | Plugin | `net.minecraftforge.gradle` `[7.0.17,8)` (ForgeGradle 7) | `build.gradle` |
 | Gradle | wrapper 9.7.1 | `gradle/wrapper/gradle-wrapper.properties` |
-| Java | toolchain 25. Testado na nuvem com Temurin 25.0.1+8 (21/10/2026) e no Windows 11 do dono com Temurin 25.0.4.1+1 (24/10/2026) | `build.gradle` |
+| Java | toolchain 25. Testado na nuvem com Temurin 25.0.1+8 (21 e 25/10/2026) e no Windows 11 do dono com Temurin 25.0.4.1+1 (24/10/2026) | `build.gradle` |
 | Pack format | `min_format`/`max_format` 121 (do MDK) | `pack.mcmeta` |
 | Testes | JUnit 5.12.2 (BOM) + Gson 2.13.1 | `build.gradle`, `tools/test-offline.sh` |
-| Gerador de recursos | Node.js, sem dependências npm; testado com Node 24.19 no PC do dono | `tools/gen/generate.mjs` |
+| Gerador de recursos | Node.js, sem dependências npm; testado com Node 24.19 no PC do dono e Node 22.22.0 na nuvem (25/10/2026) | `tools/gen/generate.mjs` |
 
 Essa matriz substitui a divergência entre 66.0.6 e 66.0.10 descrita abaixo, porque o MDK efetivamente baixado traz a 66.0.13.
 
@@ -23,9 +23,9 @@ O build e o jar de release continuam no Forge 26.3-66.0.13 da matriz. O `mods.to
 - **Forge 26.3-66.0.2 em desenvolvimento** (antes das tags do Serene Seasons):
   - `./gradlew build -Pcultivo_forge_version=26.3-66.0.2` deu `BUILD SUCCESSFUL`, com o log `Processing Minecraft dependency: net.minecraftforge:forge:26.3-66.0.2` e 311 testes JUnit, 0 falhas;
   - `runGameTestServer` com a mesma propriedade deu o log `Forge mod loading, version 66.0.2` e `All 62 required tests passed :)`.
-- **Forge 26.3-66.0.2 em produção:** o servidor oficial (`forge-26.3-66.0.2-installer.jar --installServer`) com o jar compilado contra o 66.0.13 sobe (`Done (0.701s)!`). A sonda de console `growth.txt` viu as lavouras do Cultivo crescerem como o trigo: idades [6, 7, 7, 7] e [7, 7, 7, 7] em 30 s, com `random_tick_speed 300`.
-- **Por que `[66.0.2,)`:** o 66.0.0 e o 66.0.1 não foram testados, e o 66.0.2 corrige "Fix players dropping items" (#10885), que o Cultivo usa para devolver sobras com `Player#drop`.
-- **Changelog 66.0.0–66.0.13** ([changelog oficial](https://maven.minecraftforge.net/net/minecraftforge/forge/26.3-66.0.13/forge-26.3-66.0.13-changelog.txt)): depois da 66.0.0 ("26.3 - Initial update"), só correções e manutenção.
+- **Forge 26.3-66.0.2 em produção:** o servidor oficial (`forge-26.3-66.0.2-installer.jar --installServer`) com o jar compilado contra o 66.0.13 sobe (`Done (0.701s)!`). A sonda de console `growth.txt` viu as lavouras do Cultivo crescerem como o trigo: idades Cultivo [6, 7, 7, 7] e trigo [7, 7, 7, 7] em 30 s, com `random_tick_speed 300`.
+- **Por que `[66.0.2,)`:** o 66.0.0 e o 66.0.1 não foram testados, e o 66.0.2 corrige "Fix players dropping items" (#10885), que o Cultivo usa para devolver sobras (`block/Handouts` → `Inventory#placeItemBackInInventory`, que chama `Player#drop` quando não há espaço).
+- **Changelog 66.0.0–66.0.13** ([changelog oficial](https://maven.minecraftforge.net/net/minecraftforge/forge/26.3-66.0.13/forge-26.3-66.0.13-changelog.txt)): depois da 66.0.0 ("26.3 - Initial update"), correções e manutenção; a 66.0.7 também publica os artefatos novos `forge-examiner` (um localizador de mods) e `forge-tests`, e um sistema para subprojetos com datagen.
   - 66.0.1: afogamento dos jogadores; 66.0.2: jogadores soltando itens;
   - 66.0.3: build-logic do ForgeGradle; 66.0.4: patch de `BlockScanUtils`; 66.0.5: entidades empurradas por fluidos; 66.0.6: pipelines OIT dos `ForgeRenderTypes`;
   - 66.0.7: testes e MDK em subprojetos; 66.0.8: tarefas `checkLicense`; 66.0.9: recursos do MDK; 66.0.10: overlay de bloco no modo espectador;
@@ -35,11 +35,11 @@ O build e o jar de release continuam no Forge 26.3-66.0.13 da matriz. O `mods.to
 - **Serene Seasons:** 26.1.2.0.7 para Forge 26.3, com o GlitchCore 26.3.0.0.5, baixados do Modrinth (`api.modrinth.com`, `cdn.modrinth.com`), com o sha512 conferido contra o da API.
   - O `mods.toml` do Serene Seasons pede forge `[66.0.2,)` e glitchcore `[26.3.0.0.3,)`; o do GlitchCore, forge `[66.0.0,)`.
   - Não é dependência do Cultivo: o mod só traz as tags `data/sereneseasons/tags/{block,item}/{summer,autumn}_crops.json`, que ninguém lê sem o Serene Seasons.
-  - Com os dois jars na pasta de mods, `runGameTestServer -Pcultivo_run_dir=run-compat-ss` deu `All 63 required tests passed :)` (62 do Cultivo + `minecraft:always_pass`), no 66.0.13 e com `-Pcultivo_forge_version=26.3-66.0.2`. O `serene_seasons_compat` confere a paridade com o trigo: os dois parados no início da primavera e crescendo sob um bloco de vidro e no meio do verão.
+  - Com os dois jars na pasta de mods e a config `tools/compat/config-cant-grow` (`out_of_season_crop_behavior = 1`, que o teste exige), `runGameTestServer -Pcultivo_run_dir=run-compat-ss` deu `All 63 required tests passed :)` (62 do Cultivo + `minecraft:always_pass`), no 66.0.13 e com `-Pcultivo_forge_version=26.3-66.0.2`. O `serene_seasons_compat` confere a paridade com o trigo: os dois parados no início da primavera e crescendo sob um bloco de vidro e no meio do verão.
 - **Servidor dedicado e `TagsUpdatedEvent`:** nas fontes do Forge 26.3 (66.0.2 e 66.0.13), `ForgeEventFactory.onTagsUpdated` só é chamado pelo `ClientPacketListener`. O servidor nunca dispara o `TagsUpdatedEvent` ao carregar os dados, e o Serene Seasons só monta as listas de lavouras nesse evento (`ModFertility.populate`, via GlitchCore).
   - Consequência: num servidor dedicado o Serene Seasons não afeta lavoura nenhuma, nem o trigo. Em single player e LAN o cliente do anfitrião dispara o evento na mesma JVM, e as estações funcionam.
   - Evidência: servidor oficial 66.0.2 + Serene Seasons + GlitchCore, `out_of_season_crop_behavior = 1`, `season set early_spring` e bioma plains: os trigos ao ar livre chegaram à idade 7 na primavera. O mixin estava aplicado (log de `-Dmixin.debug.export=true`).
-  - O GameTest dispara o evento como o cliente do single player faria, então o resultado dele vale para single player e LAN.
+  - O GameTest dispara o evento como o cliente do single player faria (`ForgeEventFactory.onTagsUpdated(registryAccess, true, true)`): simula o single player e a LAN, mas ainda não foi conferido num single player de verdade (GUIA_INICIANTE.md, seção 6.5).
 - **Como repetir:** [tools/compat/README.md](../tools/compat/README.md) tem os comandos para Linux e para o Windows do dono (GameTests com `-Pcultivo_forge_version` e `-Pcultivo_run_dir`) e o teste de produção `tools/compat/forge-server-compat.sh` com as sondas de console (só Linux/macOS). Os GameTests não rodam num servidor de produção: `ForgeGameTestHooks.isGametestEnabled()` exige `!FMLLoader.isProduction()`.
 
 ### Rede necessária para o build
@@ -60,7 +60,7 @@ A pesquisa inicial veio das notas oficiais dos snapshots; os formatos finais for
   - `sounds.json` com `"type": "event"`;
   - texturas animadas com `.png.mcmeta`.
 
-  Todos foram conferidos contra o código decompilado e os JSONs do 26.3, mas os de cliente só se confirmam de verdade num `runClient`, que ainda está pendente. Os detalhes e as armadilhas estão em NEXT_SESSION.md, seção 6.
+  Todos foram conferidos contra o código decompilado e os JSONs do 26.3, e os de cliente foram confirmados no `runClient` pelo teste visual automático em 25/10/2026 (47 cenas, código `f515cb9`; TODO.md). Os detalhes e as armadilhas estão em NEXT_SESSION.md, seção 6.
 
 ## Alvo confirmado
 
@@ -138,7 +138,7 @@ A tarefa `build` gera o JAR em `build/libs`. O teste com servidor dedicado é ne
 3. **Processamento:** estações com BlockEntity, inventário, progresso por ticks e sincronização dos slots, com receitas próprias `cultivo:drying`, `cultivo:sieving` e `cultivo:pressing` (DECISIONS.md, "Estações").
 4. **Conteúdo de cultivo:** itens, estágios, colheita, drops, rendimento e receitas documentados em DECISIONS.md.
 5. **Outdoor, aldeias e estufa:** outdoor em qualquer bioma; 4 de 5 tipos de aldeia; lavouras de planície; planta silvestre na selva e na planície; regra da estufa e bônus de qualidade (DECISIONS.md, "Fontes de sementes" e "Estufa").
-6. **Validação:** `build`, `runGameTestServer` e `runServer` rodam a cada incremento. O `runClient` abriu no Windows em 24/10/2026 (código `5bded22`); a checagem visual e a conexão de um cliente ao servidor dedicado continuam pendentes (TODO.md). O multiplayer só fica pronto depois desse teste.
+6. **Validação:** `build`, `runGameTestServer` e `runServer` rodam a cada incremento. O `runClient` abriu no Windows em 24/10/2026 (código `5bded22`); o teste visual automático conferiu o cliente em 25/10/2026 (47 cenas, `f515cb9`). O cliente entrou no servidor dedicado, mas o multiplayer do começo ao fim continua pendente (o de 25/10 parou por falta de memória; TODO.md).
 
 ## Referência de produto consultada
 
