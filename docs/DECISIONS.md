@@ -1,12 +1,12 @@
 # Decisões e questões em aberto
 
-Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As constantes ficam nas classes puras de `io.github.peixeangola.cultivo.core` (e no `tools/gen/manifest.json`, quando também viram JSON); os testes JUnit conferem um contra o outro. A tabela completa das genéticas está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md), seção 5.2.
+Atualizado em 25/10/2026, com o código da branch `claude/teto-de-vidro` (teto de vidro). As constantes ficam nas classes puras de `io.github.peixeangola.cultivo.core` (e no `tools/gen/manifest.json`, quando também viram JSON); os testes JUnit conferem um contra o outro. A tabela completa das genéticas está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md), seção 5.2.
 
 ## Pedidos e confirmações do dono
 - Mod de Minecraft Java para uso privado com um grupo de amigos; não há plano de divulgação pública.
 - Tema de cultivo ficcional inspirado em variedades de cannabis, com etapas de crafting até haxixe e artigos de fumo.
 - **Baseado e artigos:** deve ser possível craftar um baseado usando folha de seda e flor seca do mod. Bong e variedade de artigos de fumo também fazem parte do conteúdo.
-- **Duas rotas:** outdoor em biomas apropriados e indoor em estufa; ambas funcionam, com qualidade superior na estufa e um pouco inferior ao ar livre. Desde 25/10/2026 a rota indoor é a estufinha (seção "Estufinha").
+- **Duas rotas:** outdoor em biomas apropriados e indoor em estufa; ambas funcionam, com qualidade superior na estufa e um pouco inferior ao ar livre. Desde 25/10/2026 a rota indoor é a estufinha (seção "Estufinha"). No mesmo dia, a lavoura outdoor coberta por teto de bloco de vidro ganhou uma faixa intermediária (seção "Teto de vidro").
 - **Plantio e descoberta:**
   - o plantio outdoor se comporta como o do trigo e funciona em qualquer bioma/local adequado, sem restrição por bioma;
   - as sementes ficam em baús de mais da metade dos tipos de aldeia da versão escolhida e em plantações/campos de planície e selva quando existirem, ou numa fonte equivalente de campo/loot natural se um desses biomas não gerar aldeias;
@@ -18,6 +18,7 @@ Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As cons
 - **25/10/2026, estufinha:** o dono pediu trocar a estufa de vidro por uma estufinha craftável com luz roxa, que caiba um pé de planta, sem farmland e sem água, com qualidade maior. Respostas dele: a estufa de vidro sai (o vidro deixa de dar bônus; ao ar livre continua 2–3); 2 blocos de altura, como uma grow tent, com a planta no tamanho normal; colher no clique direito, que dá flores e sementes como a lavoura e deixa a estufinha vazia; qualidade 4–5. Plano aprovado ("aprovo o plano") em [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md); seção "Estufinha".
 
 - **25/10/2026, mais buds e bong no chão:** "quero que venha mais buds quando pegar o pé, tambem quero que deixe o bong como um item que possa colocar no chao". Respostas dele: de 3 a 5 flores por planta madura; o bong vai para o chão agachado com o clique direito e, no chão, é enfeite (seções "Crescimento e lavoura" e "Papéis dos artigos").
+- **25/10/2026, teto de vidro:** com um print de uma lavoura grande coberta por um teto de blocos de vidro, sem paredes, o dono pediu "analise se tem como fazer que quando a plantacao outdoor esteja tampada no teto com vidro ela fique com a qualidade parecida de quando plantada na estufinha". Das três opções que recebeu, escolheu a recomendada ("opção 1, é bloco de vidro"): sob teto de bloco de vidro, 3–4 (4–5 curada); a estufinha continua 4–5 e superior; o crescimento não muda. Seção "Teto de vidro".
 
 ## Recomendações de produto registradas
 - **Nativas:** Brisa, Aurora e Eclipse, as três variedades originais do MVP, continuam como as genéticas "nativas" do mundo, com ciclo e genética distintos (automática/fotoperíodo; sativa/índica/híbrida).
@@ -75,9 +76,18 @@ Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As cons
 - **Aldeões:** o fazendeiro que colhe uma lavoura madura do mod replanta a mesma genética na idade 0 (`village/FarmerReplant`). A flor e as sementes caem no chão, e os aldeões não as recolhem. Isso mantém a lavoura da aldeia como fonte de sementes.
 
 ### Qualidade (`QualityRules`)
-- Base 2 fora da estufinha (ao ar livre, sob vidro, em qualquer lugar) e 4 na estufinha (`QualityRules.TENT_BASE`), mais +1 se `random < chance da genética`, limitada a 1–5. Resultado: fora 2–3 e estufinha 4–5.
-- Sorteada no servidor, na colheita, pela função de loot `cultivo:set_harvest_quality`, e gravada no componente `cultivo:quality`. A função escolhe a rota pelo contexto do loot: a estufinha rola a tabela da lavoura passando a própria BlockEntity; uma lavoura no mundo não tem BlockEntity.
-- **Cura no pote:** +1 uma vez (seção "Pote de vidro e cura"). Depois dela, outdoor fica em 3–4 e estufinha em 5: a estufinha continua superior.
+- A base sai da rota (`QualityRules.Route`): 2 ao ar livre (`OUTDOOR_BASE`), 3 sob teto de vidro (`GLASS_ROOF_BASE`, desde 25/10/2026) e 4 na estufinha (`TENT_BASE`), mais +1 se `random < chance da genética`, limitada a 1–5. Resultado: ar livre 2–3, teto de vidro 3–4 e estufinha 4–5.
+- Sorteada no servidor, na colheita, pela função de loot `cultivo:set_harvest_quality`, e gravada no componente `cultivo:quality`. A função escolhe a rota pelo contexto do loot: a estufinha rola a tabela da lavoura passando a própria BlockEntity; uma lavoura no mundo não tem BlockEntity, e o teto acima da posição dela decide entre teto de vidro e ar livre (seção "Teto de vidro").
+- **Cura no pote:** +1 uma vez (seção "Pote de vidro e cura"). Depois dela, ar livre fica em 3–4, teto de vidro em 4–5 e estufinha em 5: a estufinha continua superior.
+
+### Teto de vidro (`GlassRoofRules`, `GlassRoofDetector`; desde 25/10/2026)
+- **Regra:** na colheita, subindo pela coluna da planta de 1 a 16 blocos (`GlassRoofRules.RANGE`, o alcance da estufa do Serene Seasons), o primeiro bloco com colisão é um bloco de vidro. Blocos sem colisão (ar, tocha, teia, cipó) são pulados. Não precisa de paredes, para valer no meio de uma lavoura grande.
+- **O que é vidro:** a tag `c:glass_blocks` do Forge (vidro e os 16 vidros tingidos; também o vidro de outros mods que esteja nela) menos o vidro fosco (`c:glass_blocks/tinted`), que bloqueia a luz. Vidraças (painéis) não contam, como no Serene Seasons. Um bloco sólido antes do vidro (por exemplo, madeira embaixo do teto) tira o bônus.
+- **Qualidade:** base 3, ou seja 3–4 (4–5 curada). A estufinha (4–5, 5 curada) continua superior.
+- **Crescimento:** igual ao ar livre; o vidro não acelera (antes de 25/10/2026, a estufa de vidro dava × 1,25).
+- **Servidor:** decidido na função de loot, na hora da colheita; vale para tudo que rola a tabela da lavoura no mundo (jogador, água, pistão, aldeão fazendeiro). A planta colhida de dentro de uma estufinha segue a rota da estufinha, com ou sem vidro em cima.
+- **Mundos antigos:** as lavouras que estavam na estufa de vidro antiga voltam a ter bônus, agora 3–4; flores já colhidas mantêm a qualidade.
+- **Por que 3–4 e não 4–5:** a estufinha tem um pé por bloco e um teto de vidro cobre centenas; com a mesma faixa, a estufinha perderia o motivo de existir, e a regra do projeto é a estufa com qualidade superior.
 
 ### Estufinha (`GrowTentRules`, `GrowTentBlock`, `GrowTentBlockEntity`; desde 25/10/2026)
 - **O bloco:** `cultivo:grow_tent`, "Estufinha". 2 blocos de altura, como a porta vanilla: o item coloca as duas metades (precisa de espaço livre em cima e de chão firme embaixo) e a frente aberta olha para quem colocou. Lona escura, mylar lilás por dentro, vaso de tecido, lâmpada roxa no teto. Empilha 64. Pistões não a movem.
@@ -96,7 +106,7 @@ Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As cons
 - **Genética desconhecida:** uma estufinha salva com um id que o mod não conhece (genética renomeada, mod mais antigo) carrega **inerte**: ocupada, sem crescer, sem colher, sem replantar e sem desenho; quebrar devolve só a estufinha. O id e a idade continuam no save, então voltar à versão certa do mod traz a planta de volta. O log avisa uma vez por carga.
 - **Pegar com o meio do mouse (Ctrl) e `/give` com dados:** no criativo dá para ter um item de estufinha já plantada; vale só para o criativo e operadores (a idade é cortada para 0–7 ao carregar). No sobrevivência não existe esse caminho.
 - **Receita** (sem vidro): `"WAW"/"WLW"/"WPW"` com lã roxa (W), fragmento de ametista (A, a lente roxa), tocha (L, a lâmpada) e vaso de flor (P). Tudo do Overworld.
-- **Estufa de vidro:** saiu. Uma lavoura em farmland dentro de vidro cresce e colhe como ao ar livre (2–3). A tag `cultivo:greenhouse_glass` não existe mais: um datapack de terceiros que a cite vai dar erro de tag no log. Mundos antigos: as lavouras continuam as mesmas (nenhum bloco sumiu); as que estavam sob vidro passam a dar 2–3; flores já colhidas mantêm a qualidade (inclusive 4–5 e 5 curadas).
+- **Estufa de vidro:** a antiga (teto e paredes de vidro, 4–5 e × 1,25 no crescimento) saiu. A tag `cultivo:greenhouse_glass` não existe mais: um datapack de terceiros que a cite vai dar erro de tag no log. Desde o teto de vidro (mesmo dia, seção "Teto de vidro"), uma lavoura sob bloco de vidro colhe 3–4 e cresce como ao ar livre.
 - **Aldeões e abelhas:** o fazendeiro só colhe `CropBlock` em farmland, então nunca mexe na estufinha. Ela fica fora das tags `crops`, `maintains_farmland` e `bee_growables`.
 - **Números para o dono confirmar depois de jogar:** a base 4 (`SOIL_SPEED`), o × 1,25 e a luz 12.
 
@@ -411,9 +421,9 @@ Em 25/10/2026 o Cultivo foi testado na nuvem (Linux, sem tela), na combinação 
   - Sem o SS instalado, ninguém lê essas tags: são inofensivas.
 - **Estufa:**
   - A estufa do SS é qualquer bloco da tag `sereneseasons:greenhouse_glass` de 1 a 16 blocos acima, na mesma coluna, sem exigir paredes. A tag é `#c:glass_blocks` (vidro, 16 vidros tingidos e vidro fosco; também o vidro de outros mods que esteja nela); vidraças (painéis) não contam. Ela só tira a penalidade de estação, sem bônus.
-  - Uma lavoura do Cultivo sob vidro segue essa regra do SS, como o trigo. Desde 25/10/2026 o vidro não dá mais bônus de qualidade no Cultivo.
+  - Uma lavoura do Cultivo sob vidro segue essa regra do SS, como o trigo. No Cultivo, o mesmo teto de bloco de vidro também sobe a qualidade para 3–4 (seção "Teto de vidro"), mas a regra é outra: o primeiro bloco sólido acima precisa ser o vidro, e o vidro fosco não conta.
   - **Estufinha:** não está em tag nenhuma do SS, então cresce o ano todo. Conferido no jar do SS 26.1.2.0.7 com `javap`: o SS só mexe no crescimento pelo mixin no `randomTick` (`SeasonalCropGrowthHandler.onCropGrowth`) e na farinha de osso pelo `PlayerInteractEvent$UseBlock` do GlitchCore, os dois só quando `ModFertility.isCrop` vale para o bloco tocado; não escuta o `CropGrowEvent` que a estufinha dispara.
-  - A qualidade da colheita não muda com o SS: continua vindo da `QualityRules` (estufinha 4–5, fora 2–3).
+  - A qualidade da colheita não muda com o SS: continua vindo da `QualityRules` (estufinha 4–5, teto de vidro 3–4, ar livre 2–3).
 - **Servidor dedicado (descoberta de 25/10/2026):**
   - No Forge 26.3 (66.0.2 e 66.0.13), `ForgeEventFactory.onTagsUpdated` só é chamado pelo `ClientPacketListener`: o servidor nunca dispara o `TagsUpdatedEvent` ao carregar os dados. O SS só monta as listas de lavouras (`ModFertility.populate`, via GlitchCore) nesse evento.
   - Consequência: num servidor dedicado o SS não afeta nenhuma lavoura, nem o trigo. Em single player e LAN o cliente do anfitrião dispara o evento na mesma JVM, e as estações devem funcionar: é o que as fontes do Forge indicam e o que o GameTest simula; falta ver num cliente de verdade ("Em aberto").

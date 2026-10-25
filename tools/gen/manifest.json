@@ -254,7 +254,7 @@
     { "name": "grow_tent_places_two_halves", "max_ticks": 100 },
     { "name": "grow_tent_plants_and_grows", "max_ticks": 100 },
     { "name": "grow_tent_bone_meal", "max_ticks": 100 },
-    { "name": "glass_gives_no_bonus", "max_ticks": 100 },
+    { "name": "glass_roof_quality", "max_ticks": 100 },
     { "name": "grow_tent_breaks_either_half", "max_ticks": 100 },
     { "name": "grow_tent_creative_break", "max_ticks": 100 },
     { "name": "grow_tent_persists", "max_ticks": 100 },

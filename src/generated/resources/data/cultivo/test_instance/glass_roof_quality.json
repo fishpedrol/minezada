@@ -1,6 +1,6 @@
 {
   "type": "minecraft:function",
-  "function": "cultivo:glass_gives_no_bonus",
+  "function": "cultivo:glass_roof_quality",
   "environment": "minecraft:default",
   "structure": "forge:empty9x9x9",
   "max_ticks": 100

@@ -13,7 +13,8 @@ Estas regras de conteúdo continuam valendo em toda mudança. Cultivo outdoor em
 
 Em 24/10/2026 o dono pediu as genéticas do catálogo High THC da Santa Semente BR, com o nome real ou de paródia; entraram 37 com nomes de paródia, e os nomes reais ficam só em `docs/strains-catalog.json` (veja DECISIONS.md, "Catálogo de genéticas").
 Em 24/10/2026 o dono pediu "deixe tudo no mod em português, também crie as animações"; já implementado com a flag `portuguese_everywhere` do manifesto, animações e eventos de som do mod (veja DECISIONS.md, "Português e animações").
-Em 25/10/2026 o dono pediu a estufinha no lugar da estufa de vidro (bloco craftável de 2 de altura, luz roxa, um pé de planta sem farmland nem água, colheita no clique direito com qualidade 4–5); já implementada, e o vidro não dá mais bônus (veja DECISIONS.md, "Estufinha").
+Em 25/10/2026 o dono pediu a estufinha no lugar da estufa de vidro (bloco craftável de 2 de altura, luz roxa, um pé de planta sem farmland nem água, colheita no clique direito com qualidade 4–5); já implementada, e a estufa de vidro antiga (teto e paredes) saiu (veja DECISIONS.md, "Estufinha").
 Em 25/10/2026 o dono também pediu "mais buds quando pegar o pé" e o bong que vai para o chão; já implementados (3 a 5 flores por planta madura; bong posto agachado), veja DECISIONS.md, "Crescimento e lavoura" e "Papéis dos artigos".
+Em 25/10/2026 o dono pediu que a lavoura outdoor tampada no teto com vidro tivesse qualidade parecida com a da estufinha; já implementado: sob teto de bloco de vidro, 3–4 (a estufinha continua 4–5 e superior; vidraça não conta; o crescimento não muda), veja DECISIONS.md, "Teto de vidro".
 
 Atualize TODO somente após evidência. Ao concluir, informe arquivos alterados, versão exata, comandos de build/teste executados e pendências.

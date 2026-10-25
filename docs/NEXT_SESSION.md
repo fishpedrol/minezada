@@ -8,6 +8,7 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
 
 - **40 genéticas:** 3 nativas (Brisa, Aurora, Eclipse) e 37 do catálogo do dono (`docs/strains-catalog.json`), com nomes de paródia. Lavoura com 8 estágios visuais, planta silvestre, duas abas criativas.
 - **Estufinha** (pedido de 25/10/2026, no lugar da estufa de vidro): bloco craftável de 2 de altura com luz roxa e um pé de planta dentro, sem farmland nem água; colhe no clique direito com qualidade 4–5 e fica vazia. O vidro não dá mais bônus (fora da estufinha, 2–3).
+- **Teto de vidro** (pedido de 25/10/2026): uma lavoura em farmland com bloco de vidro acima (o primeiro bloco sólido de 1 a 16 acima; sem paredes; vidraça e vidro fosco não contam) colhe com qualidade 3–4. Ar livre 2–3, estufinha 4–5; o vidro não acelera o crescimento.
 - **Fontes de sementes:** baús de casa de 4 dos 5 tipos de aldeia (todas as genéticas, peso pela raridade), lavouras de aldeia de planície e planta silvestre (só nativas) e o mascate (2 ofertas do catálogo). O fazendeiro replanta a lavoura do mod que colhe.
 - **Processamento:** suporte de secagem, peneira de bancada (com o dichavador como melhoria) e prensa manual, por ticks, com estados visuais, animações, partículas e sons.
 - **Artigos:** todos têm uso. Baseado com piteira, bandeja de enrolar, pote de vidro que cura flores, cinzeiro que vira farinha de osso, além dos artigos de fumar e do isqueiro.
@@ -20,8 +21,8 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
 | Verificação | Resultado |
 |---|---|
 | `node tools/gen/generate.mjs` | `296 texturas e 811 arquivos JSON`, sem diferença no `git status` |
-| `.\gradlew.bat build` | `BUILD SUCCESSFUL`, 318 testes JUnit, 0 falhas (com os buds e o bong no chão, branch `claude/bong-colheita`) |
-| `.\gradlew.bat runGameTestServer` | `All 73 required tests passed :)` (72 do Cultivo + `minecraft:always_pass`), também no Forge 66.0.2 com o Serene Seasons |
+| `.\gradlew.bat build` | `BUILD SUCCESSFUL`, 324 testes JUnit, 0 falhas (com o teto de vidro, branch `claude/teto-de-vidro`; 318 com os buds e o bong no chão) |
+| `.\gradlew.bat runGameTestServer` | `All 73 required tests passed :)` (72 do Cultivo + `minecraft:always_pass`), também no Forge 66.0.2 com o Serene Seasons; com o teto de vidro, 73 de 73 no Forge 66.0.13, com e sem o Serene Seasons |
 | O mesmo com `"-Pcultivo_run_dir=run-compat-ss"` (Serene Seasons 26.1.2.0.7 + GlitchCore 26.3.0.0.5 do launcher do dono), no Forge 66.0.13 e com `"-Pcultivo_forge_version=26.3-66.0.2"` | `All 70 required tests passed :)` nos dois antes do alinhamento com o plano revisado; depois dele, `All 72 required tests passed :)` no Forge 66.0.13; a estufinha cresce na primavera do SS |
 | Testes negativos | Quebrar a rota da qualidade e o drop da planta derruba `grow_tent_harvest`, `grow_tent_breaks_either_half` e `grow_tent_creative_break`; trocar o multiplicador derruba 3 testes de `GrowTentRulesTest`; tirar o portão do modo aventura, a regra `blockDrops` e o "nada cai no criativo" derruba `grow_tent_adventure_plant`, `grow_tent_harvest` e `grow_tent_creative_break` |
 | Teste visual automático (`run-probe.ps1`, `runClient`) | 50 prints, log limpo; estufinhas com a planta no vaso e o interior lilás, colher e replantar de verdade |
@@ -67,7 +68,7 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
    - Pronto quando `java -version` mostrar 25 e o primeiro `./gradlew build` terminar.
 3. **Verificar o ponto de partida.** Rode nesta ordem e nunca dois comandos do Gradle ao mesmo tempo:
    1. `node tools/gen/generate.mjs`: termina com `292 texturas e 805 arquivos JSON gerados em ...`, e `git status` não mostra mudança.
-   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (318 testes, 0 falhas com o bong no chão, no PC do dono).
+   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (324 testes, 0 falhas com o teto de vidro, no PC do dono).
    3. `./gradlew runGameTestServer --console=plain`: `All 73 required tests passed :)`.
    4. Se mexer em lavouras, sementes ou nas tags do Serene Seasons: `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` (preparo em `tools/compat/README.md`): `All 73 required tests passed :)` (com a estufinha ainda não rodado com o Serene Seasons) e, no log, `Registered synced config with path sereneseasons/fertility.toml`. Sem os jars do Serene Seasons nessa pasta, o `serene_seasons_compat` só confere as tags.
 
@@ -143,7 +144,7 @@ Depois do primeiro build, o ForgeGradle deixa no projeto:
 Pacote `src/main/java/io/github/peixeangola/cultivo/`:
 - `Cultivo` (@Mod): registra os DeferredRegister e os listeners de jogo (`LootTableLoadEvent` → `SeedLootInjector`, `VanillaGameEvent` → `FarmerReplant`, `MobSpawnEvent.FinalizeSpawn` → `WanderingTraderSeeds`).
 - `core/`, regras **puras** sem Minecraft, todas com JUnit:
-  - genéticas e cultivo: `Variety` (as 40 genéticas), `GrowthRules`, `QualityRules` (rota `tent`), `GrowTentRules` (estufinha: velocidade, clique, farinha de osso), `SeedSources`;
+  - genéticas e cultivo: `Variety` (as 40 genéticas), `GrowthRules`, `QualityRules` (rotas ar livre, teto de vidro e estufinha), `GlassRoofRules` (teto de vidro), `GrowTentRules` (estufinha: velocidade, clique, farinha de osso), `SeedSources`;
   - estações: `StationKind`, `ProcessingRules` (dichavador incluso), `StationVisualRules`, `StationAnimation`;
   - fumo: `SmokeRules` (piteira inclusa), `SmokeDevice`, `SmokeAnimation`;
   - artigos: `RollingRules`, `CuringRules`, `AshtrayRules`;
@@ -155,7 +156,7 @@ Pacote `src/main/java/io/github/peixeangola/cultivo/`:
   - `ModCreativeTabs` ("Cultivo" e "Cultivo: Genéticas");
   - `ModTags`: entradas das estações e `jar_storable` (a tag do vidro de estufa saiu em 25/10/2026).
 - `block/`:
-  - lavoura e mundo: `CannabisCropBlock`, `WildPlantBlock`;
+  - lavoura e mundo: `CannabisCropBlock`, `WildPlantBlock`, `GlassRoofDetector` (liga `GlassRoofRules` ao mundo pelas tags `c:glass_blocks` e `c:glass_blocks/tinted`);
   - estufinha: `GrowTentBlock` (2 metades como a porta, clique, farinha de osso, random tick, partículas) + `GrowTentBlockEntity` (variedade e idade só na metade de baixo; drops pela tabela da lavoura com a BlockEntity no contexto, que é o que dá 4–5; planta cai no `preRemoveSideEffects`);
   - estações: `ProcessingStationBlock` + `ProcessingStationBlockEntity` (as três estações), `SieveBlock` (dichavador), `StationContents`;
   - artigos colocáveis: `RollingTrayBlock`, `JarBlock` + `JarBlockEntity`, `AshtrayBlock`; o bong no chão, `BongBlock` (posto pelo `SmokingItem#useOn` agachado; o item não é BlockItem, então `getCloneItemStack` dá o bong);
@@ -172,11 +173,11 @@ Pacote `src/main/java/io/github/peixeangola/cultivo/`:
   - `PressPlatenRenderer`: placa da prensa;
   - `GrowTentRenderer`: a lavoura da variedade dentro da estufinha (o mesmo modelo da lavoura, subido 4 px e com 7/8 da largura);
   - `CultivoClientEvents`.
-- `gametest/CultivoGameTests`: 72 GameTests (com `serene_seasons_compat`, `bong_placed_on_ground` e os 10 da estufinha: `grow_tent_harvest`, `grow_tent_places_two_halves`, `grow_tent_plants_and_grows`, `grow_tent_bone_meal`, `glass_gives_no_bonus`, `grow_tent_breaks_either_half`, `grow_tent_creative_break`, `grow_tent_persists`, `grow_tent_adventure_plant`, `grow_tent_explosion`), com os nomes em `ContentIds.GAME_TESTS`.
+- `gametest/CultivoGameTests`: 72 GameTests (com `serene_seasons_compat`, `bong_placed_on_ground` e os 10 da estufinha: `grow_tent_harvest`, `grow_tent_places_two_halves`, `grow_tent_plants_and_grows`, `grow_tent_bone_meal`, `glass_roof_quality` (o teto de vidro dá 3–4), `grow_tent_breaks_either_half`, `grow_tent_creative_break`, `grow_tent_persists`, `grow_tent_adventure_plant`, `grow_tent_explosion`), com os nomes em `ContentIds.GAME_TESTS`.
   - `serene_seasons_compat` sempre confere as tags em jogo; com o Serene Seasons na pasta de mods (só em `-Pcultivo_run_dir=run-compat-ss`), confere também a paridade com o trigo na primavera, sob vidro e no verão. Exige `out_of_season_crop_behavior = 1` e dispara o `TagsUpdatedEvent` como o cliente do single player.
 
 Outras pastas:
-- `src/test/java/.../core` e `.../data`: 318 testes JUnit (`core/GrowTentRulesTest` trava os números da estufinha).
+- `src/test/java/.../core` e `.../data`: 324 testes JUnit (`core/GrowTentRulesTest` trava os números da estufinha).
   - `core`: regras puras.
   - `data`: completude e consistência dos recursos, nomes de paródia, português, sons, texturas animadas, isolamento do cliente, animação e dicas.
   - `data/CompatibilityTest` (5 testes): tags do Serene Seasons (as 40 lavouras e sementes, só verão e outono, sem planta silvestre), `sky_access` do test_instance, `mods.toml` forge `[66.0.2,)` e o padrão 66.0.13 do `build.gradle`.
@@ -303,11 +304,14 @@ Outras pastas:
   - build e GameTests no Forge 66.0.2 do launcher do dono; achado que o Serene Seasons não age em servidor dedicado no Forge 26.3;
   - lavouras e sementes do Cultivo nas tags de verão e outono do Serene Seasons, `mods.toml` `[66.0.2,)`, `CompatibilityTest` e GameTest `serene_seasons_compat` (`2f6ae47`); evidências no TODO (`bea20be`); estes docs.
 - **25/10/2026, madrugada, PC do dono**, branch `claude/estufinha`: revisão do plano nas fontes (`ff45eee`), a estufinha e o fim do bônus do vidro (`8de8b1a`), cena no teste visual (`6e1fcc8`), mylar brilhando e o `serene_seasons_compat` com a estufinha (`afa87eb`), docs.
+- **25/10/2026, tarde, PC do dono**, branch `claude/teto-de-vidro`: lavoura sob teto de bloco de vidro colhe 3–4 (`GlassRoofRules`, `GlassRoofDetector`, `QualityRules.Route`), GameTest `glass_roof_quality` no lugar de `glass_gives_no_bonus`.
 - Detalhes e resultados de cada etapa estão em TODO.md (evidências) e em `git log`. O prompt da sessão de 21/10 está em `git show 319cf0b:docs/CLOUD_PROMPT.md`.
 
 ## 8. Pendências, em ordem
 
 **Estufinha:** feita e testada em 25/10/2026 (branch `claude/estufinha`, PR para a `main`). Falta o dono jogar com ela (GUIA_INICIANTE.md, seção 6.1, "Plantas e estufinha") e confirmar os números de balanço (base 4, × 1,25, luz 12: DECISIONS.md, "Estufinha"). Se ele achar a luz roxa fraca ou forte, o brilho do mylar é `GROW_TENT_MYLAR_GLOW` em `tools/gen/models.mjs` (regere e rode o teste visual).
+
+**Teto de vidro:** feito e testado em 25/10/2026 (branch `claude/teto-de-vidro`). Falta o dono ver no jogo (GUIA_INICIANTE.md, seção 6.1, "Teto de vidro").
 
 1. **Multiplayer completo** (PC do dono): `run-probe.ps1 -Multiplayer` com o PC folgado (o de 25/10 foi parado por falta de memória: são dois Minecraft e dois Gradle). Depois, dois jogadores de verdade numa estação e fumando perto um do outro (GUIA, seção 6.3).
 2. **O que o teste visual não cobre** (PC do dono, seção 6.1 do guia): mão esquerda, artigos de todos os lados e ouvir os sons.

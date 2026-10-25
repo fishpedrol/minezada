@@ -5,7 +5,7 @@
 **O que é o Cultivo:** um mod para **Minecraft Java 26.3** com **Forge 26.3**, versão **66.0.2 ou mais nova** (o projeto compila com a 66.0.13). No jogo, você:
 
 - acha sementes de **40 genéticas** em baús de aldeia, em lavouras de aldeia, na natureza e com o Mercador Ambulante. São 3 nativas e 37 inspiradas no catálogo da Santa Semente, com nomes de paródia;
-- planta como trigo e colhe flores com qualidade: a **estufinha** (uma barraca de cultivo com luz roxa) dá as melhores, e o pote de vidro ainda cura e melhora um pouco;
+- planta como trigo e colhe flores com qualidade: a **estufinha** (uma barraca de cultivo com luz roxa) dá as melhores, uma lavoura com **teto de vidro** fica no meio, e o pote de vidro ainda cura e melhora um pouco;
 - processa as flores em três estações (secar, peneirar e prensar), que mostram quando estão trabalhando;
 - crafta o baseado e os artigos (bong, cachimbo, bandeja, pote, cinzeiro…), cada um com um uso;
 - pode "fumar" para ganhar efeitos de status do próprio Minecraft, com animação própria.
@@ -749,7 +749,7 @@ Fontes: `core/SeedSources.java`, `tools/gen/manifest.json` (`seed_sources`) e `t
 
 ### 5.5 Estufinha e qualidade
 
-**O que mudou em 25/10/2026:** você pediu para trocar a estufa de vidro pela **estufinha**. A caixa de vidro **não dá mais bônus nenhum**: uma planta na terra arada dentro do vidro cresce e colhe igual a uma ao ar livre (qualidade 2 ou 3). A qualidade alta (4 ou 5) agora só sai da estufinha.
+**O que mudou em 25/10/2026:** você pediu para trocar a estufa de vidro pela **estufinha**, e a qualidade alta (4 ou 5) agora só sai dela. No mesmo dia, pelo seu print da lavoura grande coberta de vidro, a lavoura com **teto de bloco de vidro** ganhou uma qualidade no meio: 3 ou 4 (veja "Teto de vidro" abaixo).
 
 **A estufinha** (`block/GrowTentBlock.java`, regras em `core/GrowTentRules.java`) é uma barraca de cultivo de **2 blocos de altura**, com uma lâmpada roxa no teto e um vaso dentro. Cabe **um pé** da planta, no tamanho normal.
 
@@ -791,12 +791,30 @@ Vista de frente (a frente é aberta)
 
 | Onde a planta cresceu | Base | Resultado possível | Depois da cura no pote (seção 5.9) |
 |---|---|---|---|
-| Ao ar livre (ou sob vidro, ou em qualquer lugar fora da estufinha) | 2 | 2 (Regular) ou 3 (Boa) | 3 ou 4 |
+| Ao ar livre (ou em qualquer lugar fora da estufinha sem teto de vidro) | 2 | 2 (Regular) ou 3 (Boa) | 3 ou 4 |
+| Terra arada com **teto de bloco de vidro** | 3 | 3 (Boa) ou 4 (Ótima) | 4 ou 5 |
 | Estufinha | 4 | 4 (Ótima) ou 5 (Excepcional) | 5 |
 
 O "+1" sai com a chance da potência da genética (20%, 35% ou 50%). A qualidade é sorteada **no servidor, na hora da colheita**. Mesmo com a cura, a estufinha continua dando o melhor produto. As cores no tooltip são: 1 cinza-escuro, 2 cinza, 3 verde, 4 azul-claro, 5 lilás (roxo-claro).
 
-**Mundos antigos:** se você tinha uma estufa de vidro, as plantas continuam lá, mas passam a dar 2 ou 3. Flores já colhidas com 4 ou 5 continuam com a qualidade delas.
+**Teto de vidro** (`core/GlassRoofRules.java`, desde 25/10/2026): uma lavoura normal, na terra arada, que tenha um **bloco de vidro** em cima colhe com qualidade **3 ou 4**. Não precisa de paredes: dá para cobrir uma plantação grande inteira, como no seu print.
+
+```
+Vista de lado
+
+  VVVVVVVVVVVVV   ← teto de blocos de vidro (de 1 a 16 blocos acima das plantas)
+
+  \|/ \|/ \|/ \|/  ← lavoura: 3 ou 4 em todas as plantas debaixo do vidro
+  =============   ← terra arada com água por perto, como sempre
+```
+
+- **Vale:** vidro comum e os 16 vidros tingidos (coloridos), também o vidro de outros mods que se declare como vidro.
+- **Não vale:** vidraça (o painel fino), vidro fosco (ele bloqueia a luz) e qualquer bloco sólido entre a planta e o vidro (por exemplo, uma tábua embaixo do teto). Tocha, teia e cipó no caminho não atrapalham.
+- O mod olha só a coluna de cima de cada planta: uma planta na beirada, fora do teto, dá 2 ou 3.
+- O vidro **não acelera** o crescimento: a planta cresce como ao ar livre (precisa de luz 9, e a luz do sol passa pelo vidro).
+- A estufinha continua melhor (4 ou 5), porque ela tem um pé só e o teto de vidro cobre centenas.
+
+**Mundos antigos:** as plantas da estufa de vidro antiga, que tinham virado 2 ou 3, voltam a ter bônus (3 ou 4). Flores já colhidas continuam com a qualidade delas.
 
 ### 5.6 Estações de processamento
 
@@ -1118,8 +1136,13 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
   7. **Replantar** logo em seguida com outra semente: deve funcionar na hora.
   8. **Quebrar:** com uma planta madura dentro, quebre a metade **de cima** de uma estufinha e a metade **de baixo** de outra. Cada uma deve dar **1 estufinha** e as flores (4 ou 5) com as sementes, sem duplicar nada. Uma estufinha vazia dá só ela mesma; uma com planta verde dá ela e 1 semente.
   9. **Salvar e voltar:** saia do mundo com uma planta pela metade dentro, entre de novo: ela deve estar lá, no mesmo tamanho.
-  10. **Vidro não dá bônus:** uma planta na terra arada dentro de uma caixa de vidro deve dar 2 ou 3, como ao ar livre.
-  11. **Criativo** (opcional): quebre uma estufinha com planta madura no Criativo. Não deve cair nada, nem a estufinha nem a planta.
+  10. **Criativo** (opcional): quebre uma estufinha com planta madura no Criativo. Não deve cair nada, nem a estufinha nem a planta.
+- [ ] **Teto de vidro** (seção 5.5), no Sobrevivência:
+  1. Faça uma lavoura de umas 10 plantas da mesma genética em terra arada com água.
+  2. Cubra **metade** dela com **blocos de vidro**, 2 ou 3 blocos acima das plantas, sem paredes. Deixe a outra metade ao ar livre.
+  3. Espere madurar (ou use farinha de osso) e colha tudo.
+  4. Esperado: debaixo do vidro, flores com **3 (Boa) ou 4 (Ótima)**; ao ar livre, **2 (Regular) ou 3 (Boa)**. As duas metades crescem na mesma velocidade.
+  5. (Opcional) Troque um vidro por uma vidraça ou ponha uma tábua entre a planta e o vidro: aquela planta volta a dar 2 ou 3.
 
 **Estações**
 - [ ] **Colocar:** a frente de cada estação fica virada para você. Com o machado elas quebram mais rápido.
@@ -1489,7 +1512,7 @@ No relatório aparece `expected: <1080> but was: <1170>` (54 s viraram 58,5 s). 
 
 Testes que vão reclamar:
 
-- **Qualidade base:** `QualityRulesTest`, `GrowTentRulesTest` e os GameTests `grow_tent_harvest` (espera 4–5 na estufinha), `glass_gives_no_bonus` (2–3 sob vidro) e `catalog_strain_grows_and_drops` (2–3 ao ar livre).
+- **Qualidade base:** `QualityRulesTest`, `GlassRoofRulesTest`, `GrowTentRulesTest` e os GameTests `grow_tent_harvest` (espera 4–5 na estufinha), `glass_roof_quality` (3–4 sob teto de bloco de vidro; 2–3 sob vidraça, vidro fosco, madeira e céu aberto) e `catalog_strain_grows_and_drops` (2–3 ao ar livre).
 - **Chance e velocidade:** `QualityRulesTest`, `VarietyAndGrowthTest` e `StrainCatalogTest`.
 - **Uma genética:** `StrainCatalogTest` (contagem por raridade e as regras "automática = rápida" e "lenta = sativa"), `ParodyNamesTest` e `DataConsistencyTest` (as três listas iguais).
 - **Estufinha:** `GrowTentRulesTest` (os números como estão escritos aqui) e o GameTest `grow_tent_plants_and_grows`, que mede a média de random ticks até madurar (35, 42 e 49 para rápida, média e lenta).
