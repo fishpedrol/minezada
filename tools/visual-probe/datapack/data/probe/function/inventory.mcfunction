@@ -30,4 +30,5 @@ item replace entity @a inventory.14 with cultivo:wild_plant
 item replace entity @a inventory.15 with cultivo:bala_sortida_dried_flower[cultivo:quality=1]
 item replace entity @a inventory.16 with cultivo:ultravioleta_fresh_flower[cultivo:quality=3]
 item replace entity @a inventory.17 with cultivo:joint
+item replace entity @a inventory.18 with cultivo:grow_tent
 say probe:inventory

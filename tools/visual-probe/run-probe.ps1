@@ -4,8 +4,8 @@ Teste visual automatico do Cultivo (so Windows, precisa de tela).
 Copia o mundo de run\world (criado por .\gradlew.bat runServer) para um mundo de teste, instala o datapack de cena
 (tools\visual-probe\datapack), abre o runClient direto nesse mundo e tira prints (F2) em cada etapa: plantas nos 8
 estagios e uma de cada familia de cor, estacoes vazias/trabalhando/prontas (placa da prensa animada), bandeja, pote e
-cinzeiro, estufa, as geneticas, produtos e artigos, modelos na mao, dicas (tooltips) no inventario, abas do criativo,
-cliques de verdade na bandeja, no suporte e na peneira, e fumar cada aparelho em 1a e 3a pessoa. As legendas de som
+cinzeiro, estufinha, as geneticas, produtos e artigos, modelos na mao, dicas (tooltips) no inventario, abas do criativo,
+cliques de verdade na bandeja, no suporte, na peneira e na estufinha, e fumar cada aparelho em 1a e 3a pessoa. As legendas de som
 ficam ligadas durante o teste. No fim procura no log problemas de modelo, textura e som (log-problems.txt). O datapack
 so existe no mundo de teste; nada disso entra no .jar do mod. Nao mexa no mouse nem no teclado enquanto roda.
 
@@ -301,7 +301,7 @@ try {
     Wait-Step 'cam_articles';    $sw = [Diagnostics.Stopwatch]::StartNew()
     Wait-Until $sw 1000; Key $F1; Shot '08_artigos'; Key $F1
     Wait-Until $sw 2300; Shot '09_pote_cura_a'; Wait-Until $sw 2900; Shot '10_pote_cura_b'
-    Wait-Step 'cam_greenhouse';  Start-Sleep 3; Key $F1; Shot '11_estufa'; Key $F1
+    Wait-Step 'cam_grow_tent';   Start-Sleep 3; Key $F1; Shot '11_estufinha'; Key $F1
     Wait-Step 'cam_strains_a';   Start-Sleep 3; Key $F1; Shot '12_geneticas_1'; Key $F1
     Wait-Step 'cam_strains_b';   Start-Sleep 3; Key $F1; Shot '13_geneticas_2'; Key $F1
     Wait-Step 'cam_products';    Start-Sleep 3; Key $F1; Shot '14_produtos'; Key $F1
@@ -313,7 +313,8 @@ try {
         @('hotbar.0', '17_dica_semente_rara'), @('hotbar.2', '18_dica_semente_incomum'),
         @('hotbar.4', '19_dica_flor_curada'), @('hotbar.5', '20_dica_haxixe'), @('hotbar.6', '21_dica_baseado_piteira'),
         @('hotbar.8', '22_dica_isqueiro'), @('inventory.3', '23_dica_dichavador'), @('inventory.7', '24_dica_estacao'),
-        @('inventory.4', '25_dica_bandeja'), @('inventory.17', '26_dica_baseado_sem_variedade'))
+        @('inventory.4', '25_dica_bandeja'), @('inventory.17', '26_dica_baseado_sem_variedade'),
+        @('inventory.18', '48_dica_estufinha'))
     foreach ($t in $tips) { Hover-Slot $t[0]; Start-Sleep -Milliseconds 350; Shot $t[1] }
     Key $ESC
 
@@ -349,6 +350,9 @@ try {
     Wait-Step 'smoke_hookah';    Start-Sleep 2; Key $F5; Key $F5; Start-Sleep 1; Smoke 1200 '45_narguile_3p' 2800; Key $F5
     Wait-Step 'smoke_pipe';      Start-Sleep 2; Key $F5; Key $F5; Start-Sleep 1; Smoke 600 '46_cachimbo_3p' 2000; Key $F5
     Wait-Step 'smoke_chillum';   Start-Sleep 2; Key $F5; Key $F5; Start-Sleep 1; Smoke 600 '47_chillum_3p' 2000; Key $F5
+    # Estufinha: colher a madura de mao vazia (slot 2) e plantar de novo com a semente (slot 1)
+    Wait-Step 'use_tent';        Start-Sleep -Milliseconds 1500; Key $K2; Right-Tap; Start-Sleep -Milliseconds 900; Shot '49_estufinha_colheu'
+    Key $K1; Right-Tap; Start-Sleep -Milliseconds 900; Shot '50_estufinha_plantou'
     Wait-Step 'end'
 }
 finally {

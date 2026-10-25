@@ -90,15 +90,17 @@ setblock 32 151 6 cultivo:ashtray[ash=1]
 setblock 34 151 6 cultivo:ashtray[ash=2]
 setblock 36 151 6 cultivo:ashtray[ash=3]
 setblock 38 151 6 cultivo:ashtray[ash=4]
-# E) Estufa: caixa de vidro (chao de vidro em y=150) com nativas e duas do catalogo, maduras.
-fill 39 150 10 45 154 16 minecraft:glass hollow
-fill 40 150 13 44 150 13 minecraft:farmland[moisture=7]
-fill 40 150 12 44 150 12 minecraft:water
-setblock 40 151 13 cultivo:brisa_crop[age=7]
-setblock 41 151 13 cultivo:manga_gelada_crop[age=7]
-setblock 42 151 13 cultivo:aurora_crop[age=7]
-setblock 43 151 13 cultivo:ultravioleta_crop[age=7]
-setblock 44 151 13 cultivo:eclipse_crop[age=7]
+# E) Estufinha: sala escura de pedra-negra (parede sul aberta para a camera), chao de pedra, sem farmland nem agua.
+# Tres estufinhas viradas para o sul: x40 vazia, x42 Brisa idade 3, x44 da familia roxa madura. Metade de baixo
+# primeiro (com a planta na BlockEntity), depois a de cima.
+fill 39 150 10 45 154 16 minecraft:blackstone hollow
+fill 40 151 16 44 153 16 minecraft:air
+setblock 40 151 13 cultivo:grow_tent[facing=south,half=lower]
+setblock 40 152 13 cultivo:grow_tent[facing=south,half=upper]
+setblock 42 151 13 cultivo:grow_tent[facing=south,half=lower]{variety:"brisa",age:3}
+setblock 42 152 13 cultivo:grow_tent[facing=south,half=upper]
+setblock 44 151 13 cultivo:grow_tent[facing=south,half=lower]{variety:"ultravioleta",age:7}
+setblock 44 152 13 cultivo:grow_tent[facing=south,half=upper]
 # F) Vitrines (item_display sempre virado para a camera). Geneticas: uma coluna por variedade, de cima
 # para baixo semente, flor fresca e flor seca, agrupadas por familia; duas fotos.
 # Foto 1: brisa, aurora, eclipse, manga_gelada, ouro_colombiano, ouro_18k, kush_de_manga, bananona, amnesia_neblina, jack_heroi, ligeirinha, cao_quimico, cola_de_gorila, ak_48, bolo_de_casamento, luzes_do_norte, viuva_branca, bruno_banner, tri_campea, viagem_25
@@ -256,6 +258,7 @@ summon minecraft:item_display 33.3 152.5 30.5 {item:{id:"cultivo:chillum",count:
 summon minecraft:item_display 33.9 152.5 30.5 {item:{id:"cultivo:drying_rack",count:1},item_display:"gui",billboard:"center",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[0.5f,0.5f,0.5f]}}
 summon minecraft:item_display 34.5 152.5 30.5 {item:{id:"cultivo:sieve",count:1},item_display:"gui",billboard:"center",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[0.5f,0.5f,0.5f]}}
 summon minecraft:item_display 35.1 152.5 30.5 {item:{id:"cultivo:press",count:1},item_display:"gui",billboard:"center",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[0.5f,0.5f,0.5f]}}
+summon minecraft:item_display 35.7 152.5 30.5 {item:{id:"cultivo:grow_tent",count:1},item_display:"gui",billboard:"center",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[0.5f,0.5f,0.5f]}}
 # Modelos na mao (contexto thirdperson_righthand), maiores.
 summon minecraft:item_display 31.5 152.4 42.5 {item:{id:"cultivo:bong",count:1},item_display:"thirdperson_righthand",billboard:"center",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[1f,1f,1f]}}
 summon minecraft:item_display 32.7 152.4 42.5 {item:{id:"cultivo:hookah",count:1},item_display:"thirdperson_righthand",billboard:"center",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[1f,1f,1f]}}

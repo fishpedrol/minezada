@@ -8,7 +8,7 @@ execute if score #t probe matches 420 run function probe:cam_drying
 execute if score #t probe matches 580 run function probe:cam_sieve
 execute if score #t probe matches 740 run function probe:cam_press
 execute if score #t probe matches 900 run function probe:cam_articles
-execute if score #t probe matches 1060 run function probe:cam_greenhouse
+execute if score #t probe matches 1060 run function probe:cam_grow_tent
 execute if score #t probe matches 1220 run function probe:cam_strains_a
 execute if score #t probe matches 1380 run function probe:cam_strains_b
 execute if score #t probe matches 1540 run function probe:cam_products
@@ -26,4 +26,5 @@ execute if score #t probe matches 3640 run function probe:smoke_bong
 execute if score #t probe matches 3940 run function probe:smoke_hookah
 execute if score #t probe matches 4120 run function probe:smoke_pipe
 execute if score #t probe matches 4280 run function probe:smoke_chillum
-execute if score #t probe matches 4440 run function probe:end
+execute if score #t probe matches 4440 run function probe:use_tent
+execute if score #t probe matches 4600 run function probe:end

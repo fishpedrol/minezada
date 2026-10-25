@@ -13,9 +13,9 @@ Sem F1 aparecem a mira e as legendas de som (o teste liga `showSubtitles`). Mens
 | 05–07 | prensa_a/b/c | 740 | x20 placa em cima; x22 placa em alturas diferentes nos 3 prints (ciclo de 40 ticks) e gotas de mel nas bordas; x24 barra de haxixe na base e placa em cima; x26 virada para o leste, trabalhando. "Prensa aperta"; fim de ciclo do x22 entre a e b (progress 160). | **Cubo preto/roxo no lugar da placa**: o modelo sintético `cultivo:press_platen` não carregou. Placa igual nos 3 prints. |
 | 08 | artigos | 900 | z=2: bandeja (sul), bandeja (leste), pote vazio, pote com resina, pote x38 com flores. z=6: cinzeiros com cinza 0→4. | Pote cheio igual ao vazio; cinza sem degraus |
 | 09–10 | pote_cura_a/b | +2,3 s / +2,9 s | Brilho verde (aldeão feliz) no pote x38 e legenda "Flores curadas" (`cure_progress` 2360 de 2400). | Sem brilho e sem legenda |
-| 11 | estufa | 1060 | Vidro com chão de vidro; Brisa, Manga Gelada, Aurora, Ultravioleta e Eclipse maduras. | — |
+| 11 | estufinha | 1060 (cam_grow_tent) | Sala de pedra-negra aberta para a câmera, 3 estufinhas de 2 de altura viradas para cá: x40 vazia (vaso só com terra), x42 Brisa pequena (idade 3), x44 da família roxa madura. Lona escura, mylar prateado por dentro, painel de LEDs roxos aceso no teto de cada uma, ponto roxo no poste da frente, pó roxo caindo da lâmpada; luz roxa no chão em volta. Planta no vaso, sem atravessar as paredes. | **Cubo preto/roxo** (modelo ou textura faltando); planta fora do vaso ou atravessando a lona; LEDs apagados no escuro; a madura sem planta (renderer não registrado) |
 | 12–13 | geneticas_1/2 | 1220 / 1380 | 20 colunas cada: semente (em cima), flor fresca, flor seca; famílias juntas (ordem exata nos comentários de `build.mcfunction`). Ícones de inventário (`item_display:"gui"`). | Ícone faltando; variedades da mesma família idênticas (a arte promete acento por variedade) |
-| 14 | produtos | 1540 | Linha 1: 13 haxixes (sem variedade + 12 famílias, cores diferentes). Linha 2: resina, baseado, baseado com variedade, baseado com piteira, folha de seda, piteira, dichavador, isqueiro, bandeja, pote, cinzeiro, planta silvestre. Linha 3: bong, cachimbo, narguilé, chillum, suporte, peneira, prensa (3D). | Haxixe igual em todas as famílias; piteira sem diferença |
+| 14 | produtos | 1540 | Linha 1: 13 haxixes (sem variedade + 12 famílias, cores diferentes). Linha 2: resina, baseado, baseado com variedade, baseado com piteira, folha de seda, piteira, dichavador, isqueiro, bandeja, pote, cinzeiro, planta silvestre. Linha 3: bong, cachimbo, narguilé, chillum, suporte, peneira, prensa (3D) e o ícone plano da estufinha. | Haxixe igual em todas as famílias; piteira sem diferença |
 | 15 | na_mao_3p | 1700 | Modelos "na mão" (contexto `thirdperson_righthand`): bong, narguilé, cachimbo, chillum, baseado, baseado com piteira, isqueiro. | Ícone plano no lugar do modelo na mão |
 | 16 | inventario | 1860 | Inventário cheio; dica de quem estiver no centro. | Nome em inglês ou chave crua |
 | 17 | dica_semente_rara | | "Sementes de Morango com Banana" + "Rara · Automática · Índica · Potência ★★★" (Rara em lilás). | ★ como quadrado; chave `tooltip.cultivo…` crua |
@@ -28,7 +28,7 @@ Sem F1 aparecem a mira e as legendas de som (o teste liga `showSubtitles`). Mens
 | 24 | dica_estacao | | "Suporte de Secagem" + "Seca flores frescas com o tempo" + uso. | |
 | 25 | dica_bandeja | | "Bandeja de Enrolar" + dica. | |
 | 26 | dica_baseado_sem_variedade | | "Baseado" só com a linha de fumar. | Linha "Variedade: null" |
-| 27 | criativo_aba_cultivo | 2260 | Aba com ícone de baseado selecionada: estações, planta silvestre, resina, haxixe, baseado, artigos. | Outra aba: posição calculada errada (ver riscos) |
+| 27 | criativo_aba_cultivo | 2260 | Aba com ícone de baseado selecionada: estações, estufinha, planta silvestre, resina, haxixe, baseado, artigos. | Outra aba: posição calculada errada (ver riscos) |
 | 28 | criativo_aba_geneticas | | Aba "Cultivo: Genéticas" (dica com o nome sob o mouse): 120 itens, nativas primeiro. | |
 | 29 | criativo_dica | | Dica do 1º item: Sementes de Brisa, "Comum · Automática · Sativa · Potência ★☆☆". | |
 | 30 | bandeja_enrolou | 2520 | Visto de cima: mão com 3 baseados de Eclipse; legenda "Baseado enrolado". | Flores ainda na mão |
@@ -49,6 +49,9 @@ Sem F1 aparecem a mira e as legendas de som (o teste liga `showSubtitles`). Mens
 | 45 | narguile_3p | 3940 | Narguilé com as duas mãos, fumaça branca e bolhas. | |
 | 46 | cachimbo_3p | 4120 | Uma mão, brasa e fumaça. | |
 | 47 | chillum_3p | 4280 | Uma mão, brasa e fumaça. | |
+| 48 | dica_estufinha | (com o 16) | "Estufinha" + "Clique com o botão direito:", "com semente, planta sem terra nem água", "de mão vazia, colhe a planta madura", "Luz roxa: qualidade 4 a 5". | Chave crua; linha cortada |
+| 49 | estufinha_colheu | 4440 (use_tent) | Dentro da sala, de mão vazia: a estufinha x44 ficou vazia; na barra, 1 flor fresca e de 1 a 4 sementes da família roxa; legenda "Estufinha colhida". | Planta continua lá; nada na barra |
+| 50 | estufinha_plantou | | Com as sementes de Brisa: muda pequena no vaso da x44; 3 sementes na barra; legenda "Semente plantada na estufinha". | Semente colocada no chão; estufinha vazia |
 | — | `log-problems.txt` | fim | "nenhum". Procurar especialmente `Missing`, `Unable to load model`, `press_platen`, `Unable to play unknown soundEvent`, `Exception loading blockstate`, `lost connection` (multiplayer). | Qualquer linha em "Ligados ao Cultivo" |
 
 **Notas:**

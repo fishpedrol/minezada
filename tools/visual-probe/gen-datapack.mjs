@@ -50,11 +50,11 @@ const display = (x, y, z, id, c, ctx, s) => `summon minecraft:item_display ${num
 // Os progressos das estacoes no build contam com o build em 60 e as cameras nestes tempos (ver comentarios).
 const steps = [
   [20, 'prepare'], [60, 'build'], [100, 'cam_crops'], [260, 'cam_families'], [420, 'cam_drying'],
-  [580, 'cam_sieve'], [740, 'cam_press'], [900, 'cam_articles'], [1060, 'cam_greenhouse'], [1220, 'cam_strains_a'],
+  [580, 'cam_sieve'], [740, 'cam_press'], [900, 'cam_articles'], [1060, 'cam_grow_tent'], [1220, 'cam_strains_a'],
   [1380, 'cam_strains_b'], [1540, 'cam_products'], [1700, 'cam_in_hand'], [1860, 'inventory'], [2260, 'creative'],
   [2520, 'use_tray_ok'], [2640, 'use_tray_refused'], [2760, 'use_rack'], [2940, 'use_grinder'], [3060, 'held'],
   [3240, 'smoke_joint'], [3460, 'smoke_filtered'], [3640, 'smoke_bong'], [3940, 'smoke_hookah'],
-  [4120, 'smoke_pipe'], [4280, 'smoke_chillum'], [4440, 'end'],
+  [4120, 'smoke_pipe'], [4280, 'smoke_chillum'], [4440, 'use_tent'], [4600, 'end'],
 ];
 
 const fn = {};
@@ -135,13 +135,18 @@ b.push('setblock 34 151 2 cultivo:jar');
 b.push(`setblock 36 151 2 cultivo:jar[filled=true]{Items:[${slot(0, 'resin', 32, { quality: 3 })}]}`);
 for (let ash = 0; ash <= 4; ash++) b.push(`setblock ${30 + 2 * ash} 151 6 cultivo:ashtray[ash=${ash}]`);
 
-b.push('# E) Estufa: caixa de vidro (chao de vidro em y=150) com nativas e duas do catalogo, maduras.');
-b.push('fill 39 150 10 45 154 16 minecraft:glass hollow');
-b.push('fill 40 150 13 44 150 13 minecraft:farmland[moisture=7]');
-b.push('fill 40 150 12 44 150 12 minecraft:water');
+b.push('# E) Estufinha: sala escura de pedra-negra (parede sul aberta para a camera), chao de pedra, sem farmland nem agua.');
+b.push('# Tres estufinhas viradas para o sul: x40 vazia, x42 Brisa idade 3, x44 da familia roxa madura. Metade de baixo');
+b.push('# primeiro (com a planta na BlockEntity), depois a de cima.');
+b.push('fill 39 150 10 45 154 16 minecraft:blackstone hollow');
+b.push('fill 40 151 16 44 153 16 minecraft:air');
 const roxoRep = reps.find(r => r.family === 'roxo') ?? firstCatalog;
-const ghouse = ['brisa', firstCatalog.id, 'aurora', roxoRep.id, 'eclipse'];
-ghouse.forEach((id, i) => b.push(`setblock ${40 + i} 151 13 cultivo:${id}_crop[age=7]`));
+const tents = [[40, null, 0], [42, 'brisa', 3], [44, roxoRep.id, 7]];
+for (const [x, variety, age] of tents) {
+  const plant = variety ? `{variety:"${variety}",age:${age}}` : '';
+  b.push(`setblock ${x} 151 13 cultivo:grow_tent[facing=south,half=lower]${plant}`);
+  b.push(`setblock ${x} 152 13 cultivo:grow_tent[facing=south,half=upper]`);
+}
 
 b.push('# F) Vitrines (item_display sempre virado para a camera). Geneticas: uma coluna por variedade, de cima');
 b.push('# para baixo semente, flor fresca e flor seca, agrupadas por familia; duas fotos.');
@@ -164,7 +169,7 @@ const row2 = [
   ['grinder', null], ['lighter', null], ['rolling_tray', null], ['jar', null], ['ashtray', null], ['wild_plant', null],
 ];
 row2.forEach(([id, c], i) => b.push(display(31.5 + 0.6 * i, 153.2, 30.5, id, c, 'gui', 0.5)));
-const row3 = ['bong', 'pipe', 'hookah', 'chillum', 'drying_rack', 'sieve', 'press'];
+const row3 = ['bong', 'pipe', 'hookah', 'chillum', 'drying_rack', 'sieve', 'press', 'grow_tent'];
 row3.forEach((id, i) => b.push(display(31.5 + 0.6 * i, 152.5, 30.5, id, null, 'gui', 0.5)));
 b.push('# Modelos na mao (contexto thirdperson_righthand), maiores.');
 const inHand = [['bong', null], ['hookah', null], ['pipe', null], ['chillum', null], ['joint', null],
@@ -187,7 +192,7 @@ fn.cam_articles = [
   'tp @a 34.5 153.4 10 180 28',
   'say probe:cam_articles',
 ];
-fn.cam_greenhouse = ['tp @a 42.5 155.8 21.5 180 28', 'say probe:cam_greenhouse'];
+fn.cam_grow_tent = ['tp @a 42.5 152.4 20.5 180 8', 'say probe:cam_grow_tent'];
 fn.cam_strains_a = [`tp @a ${num(centerX(0))} 153.2 35.6 180 0`, 'say probe:cam_strains_a'];
 fn.cam_strains_b = [`tp @a ${num(centerX(1))} 153.2 35.6 180 0`, 'say probe:cam_strains_b'];
 fn.cam_products = ['tp @a 35.1 153.2 34.8 180 0', 'say probe:cam_products'];
@@ -229,6 +234,7 @@ fn.inventory = [
   `item replace entity @a inventory.15 with ${itemArg((reps.find(r => r.family === 'rosa') ?? firstCatalog).id + '_dried_flower', { quality: 1 })}`,
   `item replace entity @a inventory.16 with ${itemArg((reps.find(r => r.family === 'roxo') ?? firstCatalog).id + '_fresh_flower', { quality: 3 })}`,
   `item replace entity @a inventory.17 with ${itemArg('joint')}`,
+  `item replace entity @a inventory.18 with ${itemArg('grow_tent')}`,
   'say probe:inventory',
 ];
 fn.creative = ['clear @a', 'effect clear @a', 'gamemode creative @a', 'say probe:creative'];
@@ -287,6 +293,15 @@ fn.smoke_bong = ['# Mao secundaria vazia: o bong vai com as duas maos. 2 flores 
 fn.smoke_hookah = smoke('smoke_hookah', itemArg('hookah'), 0, `${itemArg('eclipse_dried_flower', { quality: 3 })} 2`);
 fn.smoke_pipe = smoke('smoke_pipe', itemArg('pipe'), 0, `${itemArg('hash', { strain: 'eclipse', quality: 4 })} 2`);
 fn.smoke_chillum = smoke('smoke_chillum', itemArg('chillum'), 0, `${itemArg('brisa_dried_flower', { quality: 3 })} 2`);
+fn.use_tent = [
+  '# Dentro da sala da estufinha, mirando a metade de cima da madura (x=44): mao vazia (slot 2) colhe, semente (slot 1) planta.',
+  'gamemode survival @a',
+  'clear @a',
+  'effect clear @a',
+  'tp @a 44.5 151 15.5 180 10',
+  `item replace entity @a hotbar.0 with ${itemArg('brisa_seeds')} 4`,
+  'say probe:use_tent',
+];
 fn.end = ['say probe:end'];
 
 // ---------- Escrita ----------
