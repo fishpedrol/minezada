@@ -3,7 +3,7 @@ package io.github.peixeangola.cultivo.core;
 /**
  * Estufinha (grow tent, pedido do dono de 25/10/2026): um bloco craftável de 2 de altura com luz roxa e um pé de planta
  * dentro, sem farmland, sem água e sem precisar de luz de fora. A qualidade da colheita (4–5) sai de
- * {@link QualityRules#harvestQuality(Variety, boolean, double)} com {@code tent = true}.
+ * {@link QualityRules#harvestQuality(Variety, QualityRules.Route, double)} com a rota {@code TENT}.
  * <ul>
  *   <li>Crescimento: o mesmo sorteio do trigo ({@link GrowthRules#growthRollBound}) a cada random tick da metade de
  *       baixo, com velocidade {@link #SOIL_SPEED} × variedade × {@link #MULTIPLIER}: FAST 5, MEDIUM 6, SLOW 7 (ao ar

@@ -1,5 +1,7 @@
 # Plano do mod
 
+**Teto de vidro (25/10/2026, PC do dono, branch `claude/teto-de-vidro`):** `build` com 324 testes JUnit, 0 falhas; `runGameTestServer` com `All 73 required tests passed :)`, também com o Serene Seasons (seção 3h).
+
 **Mais buds e bong no chão (25/10/2026, PC do dono, branch `claude/bong-colheita`):** `build` com 318 testes JUnit, `runGameTestServer` com `All 73 required tests passed :)`, também no Forge 66.0.2 com o Serene Seasons (a combinação do launcher do dono), e o teste visual com os bongs no chão (seção 3g).
 
 **Estufinha (25/10/2026, PC do dono, branch `claude/estufinha`):** `build` com 317 testes JUnit, `runGameTestServer` com `All 72 required tests passed :)` depois do alinhamento com o plano revisado (também com o Serene Seasons; antes dele, 70 de 70 nos Forge 66.0.13 e 66.0.2) e o teste visual com 50 prints (seção 3f).
@@ -113,8 +115,8 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 
 ## 2. Conteúdo e cultivo
 - [x] **Regras puras** com testes passando:
-  - qualidade: fora da estufinha 2–3, estufinha 4–5 (desde 25/10/2026; antes, estufa de vidro); bônus 0,20/0,35/0,50 pela potência;
-  - crescimento: fórmula do trigo × crescimento da genética (×1,25/×1,0/×0,8), luz ≥ 9; o vidro não dá mais bônus;
+  - qualidade: ar livre 2–3, teto de bloco de vidro 3–4, estufinha 4–5 (desde 25/10/2026; antes, estufa de vidro 4–5); bônus 0,20/0,35/0,50 pela potência;
+  - crescimento: fórmula do trigo × crescimento da genética (×1,25/×1,0/×0,8), luz ≥ 9; o vidro não acelera;
   - estufinha: 4 × genética × 1,25, sem farmland, água nem luz de fora (seção 3f);
   - fontes de sementes: 4/5 aldeias; pesos por raridade 4/2/1 com vazio 119; lavoura 0,05/0,025/0,01; silvestre 60/30/10; mascate com 2 ofertas a 2/4/8 esmeraldas.
 - [x] **40 genéticas** (3 nativas + 37 paródias do catálogo) com a mesma tabela no Java, no manifesto e em `docs/strains-catalog.json`. Testes conferem as três; nenhum nome real nos arquivos do jogo.
@@ -245,6 +247,21 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 | 25/10/2026 | PC local: teste visual (`run-probe.ps1`), 1ª rodada com os bongs na cena da estufinha | `Rejecting block model cultivo:block/bong, since it contains sprites from outside of supported atlas: {minecraft:textures/atlas/items.png=[cultivo:item/model_glass, …]}`: o bloco usava as texturas do item. Corrigido com cópias em `block/bong_*`. |
 | 25/10/2026 | PC local: teste visual, 2ª rodada | `Prints: 50`; `log-problems.txt` sem nada ligado ao Cultivo além dos avisos conhecidos; no print `11_estufinha`, os dois bongs em pé no chão (vidro azul-claro, água, tubo e fornilho de metal), um de frente e um de lado. |
 - [ ] Ver no jogo de verdade (GUIA_INICIANTE.md, seção 6.1): colher e contar de 3 a 5 flores; pôr o bong agachado, fumar com ele sem agachar, quebrar e pegar de volta.
+
+## 3h. Teto de vidro (pedido de 25/10/2026, branch `claude/teto-de-vidro`)
+
+- [x] **Regra:** uma lavoura em farmland cujo primeiro bloco com colisão acima, de 1 a 16 blocos, é um bloco de vidro (`c:glass_blocks` sem `c:glass_blocks/tinted`) colhe com base 3, ou seja 3–4. Sem paredes. Vidraça, vidro fosco e bloco sólido antes do vidro não contam. Crescimento sem mudança. `core/GlassRoofRules` (pura), `block/GlassRoofDetector` e a rota `QualityRules.Route` (OUTDOOR 2, GLASS_ROOF 3, TENT 4) na função de loot `cultivo:set_harvest_quality`.
+- [x] **Testes:**
+  - JUnit: `GlassRoofRulesTest` (6 testes: alcance 16, céu aberto, vidro a 1/3/16, vidro a 17 não conta, o primeiro bloco sólido decide, só a coluna de cima é consultada); `QualityRulesTest` com as bases 2/3/4, os limites do sorteio nas três rotas e as faixas 2–3, 3–4 e 4–5 (`routesStepUpByOne`).
+  - GameTest `glass_roof_quality` (substitui `glass_gives_no_bonus`): 200 colheitas de Eclipse por caso; vidro a 2 e a 6 blocos, vidro tingido e teia sob o vidro dão exatamente {3, 4}; céu aberto, vidraça, vidro fosco e tábua sob o vidro dão {2, 3}; com o mesmo sorteio fixo, os mesmos random ticks até madurar com e sem o teto.
+
+| Data | Ambiente e comando | Resultado |
+|---|---|---|
+| 25/10/2026 | PC local: `node tools/gen/generate.mjs` / `.\gradlew.bat build --console=plain` / `.\gradlew.bat runGameTestServer --console=plain` | `296 texturas e 811 arquivos JSON` (sai o test_instance `glass_gives_no_bonus`, entra `glass_roof_quality`) / `BUILD SUCCESSFUL`, 324 testes JUnit, 0 falhas, 0 erros (XML de `build/test-results/test`) / `All 73 required tests passed :)` |
+| 25/10/2026 | PC local: `.\gradlew.bat runGameTestServer "-Pcultivo_run_dir=run-compat-ss" --console=plain` (Serene Seasons 26.1.2.0.7 + GlitchCore 26.3.0.0.5, Forge 66.0.13) | `Registered synced config with path sereneseasons/fertility.toml`; `All 73 required tests passed :)` |
+| 25/10/2026 | PC local: testes negativos dos GameTests: (1) `GlassRoofDetector` sem a exclusão do vidro fosco; (2) a função de loot devolvendo OUTDOOR no lugar de GLASS_ROOF | (1) `cultivo:glass_roof_quality: vidro fosco: qualidades [3, 4], esperado [2, 3]`, `1 required tests failed :(`; (2) `cultivo:glass_roof_quality: vidro 6 acima: qualidades [2, 3], esperado [3, 4]`, `1 required tests failed :(`. Os dois restaurados, e de novo `All 73 required tests passed :)` |
+
+- [ ] Ver no jogo de verdade (GUIA_INICIANTE.md, seção 6.1, "Teto de vidro"): metade da lavoura sob blocos de vidro dá 3–4 e a outra metade 2–3.
 
 ## 4. Conteúdo de release
 - [x] Licença escolhida (MIT para código e assets do Cultivo) e registrada em `mods.toml` e `LICENSE`.

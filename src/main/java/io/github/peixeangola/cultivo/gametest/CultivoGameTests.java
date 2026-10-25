@@ -174,7 +174,7 @@ public final class CultivoGameTests {
         TESTS.register("grow_tent_places_two_halves", () -> CultivoGameTests::growTentPlacesTwoHalves);
         TESTS.register("grow_tent_plants_and_grows", () -> CultivoGameTests::growTentPlantsAndGrows);
         TESTS.register("grow_tent_bone_meal", () -> CultivoGameTests::growTentBoneMeal);
-        TESTS.register("glass_gives_no_bonus", () -> CultivoGameTests::glassGivesNoBonus);
+        TESTS.register("glass_roof_quality", () -> CultivoGameTests::glassRoofQuality);
         TESTS.register("grow_tent_breaks_either_half", () -> CultivoGameTests::growTentBreaksEitherHalf);
         TESTS.register("grow_tent_creative_break", () -> CultivoGameTests::growTentCreativeBreak);
         TESTS.register("grow_tent_persists", () -> CultivoGameTests::growTentPersists);
@@ -219,18 +219,6 @@ public final class CultivoGameTests {
     private static void plantOnFarmland(GameTestHelper helper, Variety variety, int age) {
         helper.setBlock(SOIL, Blocks.FARMLAND.defaultBlockState().setValue(FarmlandBlock.MOISTURE, FarmlandBlock.MAX_MOISTURE));
         helper.setBlock(PLANT, crop(variety, age));
-    }
-
-    /**
-     * Teto de vidro 2 blocos acima e paredes de vidro a 2 blocos, na altura da planta: a antiga estufa de vidro, que desde
-     * 25/10/2026 não dá bônus nenhum (glass_gives_no_bonus).
-     */
-    private static void buildGreenhouse(GameTestHelper helper) {
-        helper.setBlock(PLANT.above(2), Blocks.GLASS.defaultBlockState());
-        helper.setBlock(PLANT.east(2), Blocks.GLASS.defaultBlockState());
-        helper.setBlock(PLANT.west(2), Blocks.GLASS.defaultBlockState());
-        helper.setBlock(PLANT.north(2), Blocks.STAINED_GLASS.lime().defaultBlockState());
-        helper.setBlock(PLANT.south(2), Blocks.GLASS_PANE.defaultBlockState());
     }
 
     private static List<ItemStack> harvest(GameTestHelper helper) {
@@ -3367,37 +3355,62 @@ public final class CultivoGameTests {
         });
     }
 
-    /**
-     * A estufa de vidro não dá mais bônus (25/10/2026): uma lavoura madura em farmland dentro do vidro dá qualidade 2–3
-     * (as duas aparecem em 200 colheitas), e cresce igual sem o vidro: com o mesmo sorteio fixo, o mesmo número de random
-     * ticks até madurar.
-     */
-    public static void glassGivesNoBonus(GameTestHelper helper) {
-        run(helper, () -> {
-            ServerLevel level = helper.getLevel();
-            plantOnFarmland(helper, Variety.ECLIPSE, 7);
-            buildGreenhouse(helper);
-            Set<Integer> seen = new java.util.TreeSet<>();
-            for (int i = 0; i < 200; i++) {
-                for (ItemStack drop : harvest(helper)) {
-                    if (drop.is(ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get())) {
-                        Integer q = quality(drop);
-                        check(q != null && (q == 2 || q == 3), "sob vidro deu qualidade " + q);
-                        seen.add(q);
-                    }
+    /** Qualidades das flores de 200 colheitas de uma Eclipse madura (bônus 0,50) com só estes blocos acima da planta. */
+    private static Set<Integer> qualitiesUnderRoof(GameTestHelper helper, Map<Integer, BlockState> roof) {
+        for (int dy = 1; dy <= 6; dy++) {
+            helper.setBlock(PLANT.above(dy), roof.getOrDefault(dy, Blocks.AIR.defaultBlockState()));
+        }
+        plantOnFarmland(helper, Variety.ECLIPSE, 7);
+        Set<Integer> seen = new java.util.TreeSet<>();
+        for (int i = 0; i < 200; i++) {
+            for (ItemStack drop : harvest(helper)) {
+                if (drop.is(ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get())) {
+                    seen.add(quality(drop));
                 }
             }
-            check(seen.equals(Set.of(2, 3)), "qualidades sob vidro: " + seen);
+        }
+        return seen;
+    }
+
+    /**
+     * Teto de vidro (pedido do dono de 25/10/2026): uma lavoura em farmland sob bloco de vidro, sem paredes, colhe 3–4 (as
+     * duas aparecem em 200 colheitas). Vidro tingido conta; vidraça, vidro fosco, madeira antes do vidro e o céu aberto
+     * dão 2–3; uma teia (sem colisão) entre a planta e o vidro não atrapalha. O crescimento não muda: com o mesmo sorteio
+     * fixo, o mesmo número de random ticks até madurar com e sem o teto.
+     */
+    public static void glassRoofQuality(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockState glass = Blocks.GLASS.defaultBlockState();
+            Set<Integer> covered = Set.of(3, 4);
+            Set<Integer> open = Set.of(2, 3);
+            Map<String, Map<Integer, BlockState>> coveredRoofs = Map.of(
+                "vidro 2 acima", Map.of(2, glass),
+                "vidro 6 acima", Map.of(6, glass),
+                "vidro tingido", Map.of(3, Blocks.STAINED_GLASS.lime().defaultBlockState()),
+                "teia sob o vidro", Map.of(1, Blocks.COBWEB.defaultBlockState(), 3, glass));
+            Map<String, Map<Integer, BlockState>> openRoofs = Map.of(
+                "céu aberto", Map.of(),
+                "vidraça", Map.of(2, Blocks.GLASS_PANE.defaultBlockState()),
+                "vidro fosco", Map.of(2, Blocks.TINTED_GLASS.defaultBlockState()),
+                "madeira sob o vidro", Map.of(2, Blocks.OAK_PLANKS.defaultBlockState(), 4, glass));
+            coveredRoofs.forEach((name, roof) -> {
+                Set<Integer> seen = qualitiesUnderRoof(helper, roof);
+                check(seen.equals(covered), name + ": qualidades " + seen + ", esperado " + covered);
+            });
+            openRoofs.forEach((name, roof) -> {
+                Set<Integer> seen = qualitiesUnderRoof(helper, roof);
+                check(seen.equals(open), name + ": qualidades " + seen + ", esperado " + open);
+            });
 
             BlockPos pos = helper.absolutePos(PLANT);
+            helper.setBlock(PLANT.above(2), glass);
             int[] withGlass = new int[5];
             for (int seed = 0; seed < withGlass.length; seed++) {
                 plantOnFarmland(helper, Variety.ECLIPSE, 0);
                 withGlass[seed] = tickUntilMatureWith(level, pos, RandomSource.create(seed));
             }
-            for (BlockPos glass : List.of(PLANT.above(2), PLANT.east(2), PLANT.west(2), PLANT.north(2), PLANT.south(2))) {
-                helper.setBlock(glass, Blocks.AIR.defaultBlockState());
-            }
+            helper.setBlock(PLANT.above(2), Blocks.AIR.defaultBlockState());
             for (int seed = 0; seed < withGlass.length; seed++) {
                 plantOnFarmland(helper, Variety.ECLIPSE, 0);
                 int without = tickUntilMatureWith(level, pos, RandomSource.create(seed));

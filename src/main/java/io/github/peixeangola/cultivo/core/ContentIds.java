@@ -194,7 +194,7 @@ public final class ContentIds {
         "grow_tent_places_two_halves",
         "grow_tent_plants_and_grows",
         "grow_tent_bone_meal",
-        "glass_gives_no_bonus",
+        "glass_roof_quality",
         "grow_tent_breaks_either_half",
         "grow_tent_creative_break",
         "grow_tent_persists",

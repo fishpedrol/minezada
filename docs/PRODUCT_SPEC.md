@@ -63,6 +63,7 @@ Mecânica fictícia de fumar: baseado, cachimbo, chillum, bong e narguilé podem
   - Fumar tem animação própria em 1ª e 3ª pessoa.
   - As estações e os artigos têm animações, partículas e 18 eventos de som com legenda (o áudio é o vanilla).
 - **Estufinha (25/10/2026).** Pedido do dono: trocar a estufa de vidro por uma estufinha craftável com luz roxa, de 2 blocos de altura, que caiba um pé de planta no tamanho normal, sem farmland e sem água. Clique direito na planta madura colhe flores e sementes com qualidade 4–5 e deixa a estufinha vazia. O vidro deixa de dar bônus (ao ar livre continua 2–3).
+- **Teto de vidro (25/10/2026).** Pedido do dono: a lavoura outdoor tampada no teto com bloco de vidro com qualidade parecida com a da estufinha. Escolha dele: 3–4 sob teto de bloco de vidro (sem paredes; vidraça não conta), abaixo da estufinha (4–5), que continua superior; o crescimento não muda.
 
 Regras e números em DECISIONS.md.
 

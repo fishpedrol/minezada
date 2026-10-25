@@ -83,19 +83,19 @@ class GrowTentRulesTest {
         assertEquals(7, GrowTentRules.afterBoneMeal(5, 2));
     }
 
-    /** A colheita da estufinha é 4–5 e a de fora 2–3: a estufinha usa a rota tent da QualityRules. */
+    /** A colheita da estufinha é 4–5 e a de fora 2–3: a estufinha usa a rota TENT da QualityRules. */
     @Test
     void tentQualityIsFourToFive() {
         Random random = new Random(25);
         for (Variety v : Variety.values()) {
             for (int i = 0; i < 1000; i++) {
-                int q = QualityRules.harvestQuality(v, true, random.nextDouble());
+                int q = QualityRules.harvestQuality(v, QualityRules.Route.TENT, random.nextDouble());
                 assertTrue(q == 4 || q == 5, v.id() + " " + q);
             }
         }
-        assertEquals(4, QualityRules.harvestQuality(Variety.ECLIPSE, true, 0.5));
-        assertEquals(5, QualityRules.harvestQuality(Variety.ECLIPSE, true, 0.49));
-        assertEquals(2, QualityRules.harvestQuality(Variety.ECLIPSE, false, 0.5));
-        assertEquals(3, QualityRules.harvestQuality(Variety.ECLIPSE, false, 0.49));
+        assertEquals(4, QualityRules.harvestQuality(Variety.ECLIPSE, QualityRules.Route.TENT, 0.5));
+        assertEquals(5, QualityRules.harvestQuality(Variety.ECLIPSE, QualityRules.Route.TENT, 0.49));
+        assertEquals(2, QualityRules.harvestQuality(Variety.ECLIPSE, QualityRules.Route.OUTDOOR, 0.5));
+        assertEquals(3, QualityRules.harvestQuality(Variety.ECLIPSE, QualityRules.Route.OUTDOOR, 0.49));
     }
 }
