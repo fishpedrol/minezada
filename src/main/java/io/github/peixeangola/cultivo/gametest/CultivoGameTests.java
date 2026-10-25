@@ -2,6 +2,7 @@ package io.github.peixeangola.cultivo.gametest;
 
 import io.github.peixeangola.cultivo.Cultivo;
 import io.github.peixeangola.cultivo.block.AshtrayBlock;
+import io.github.peixeangola.cultivo.block.BongBlock;
 import io.github.peixeangola.cultivo.block.GrowTentBlock;
 import io.github.peixeangola.cultivo.block.GrowTentBlockEntity;
 import io.github.peixeangola.cultivo.block.JarBlock;
@@ -16,6 +17,7 @@ import io.github.peixeangola.cultivo.core.AshtrayRules;
 import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.CuringRules;
 import io.github.peixeangola.cultivo.core.GrowTentRules;
+import io.github.peixeangola.cultivo.core.GrowthRules;
 import io.github.peixeangola.cultivo.core.SeedSources;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.core.SmokeRules;
@@ -178,6 +180,7 @@ public final class CultivoGameTests {
         TESTS.register("grow_tent_persists", () -> CultivoGameTests::growTentPersists);
         TESTS.register("grow_tent_adventure_plant", () -> CultivoGameTests::growTentAdventurePlant);
         TESTS.register("grow_tent_explosion", () -> CultivoGameTests::growTentExplosion);
+        TESTS.register("bong_placed_on_ground", () -> CultivoGameTests::bongPlacedOnGround);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -296,7 +299,7 @@ public final class CultivoGameTests {
                 Item seeds = ModItems.SEEDS.get(variety).get();
                 plantOnFarmland(helper, variety, 7);
                 List<ItemStack> mature = harvest(helper);
-                check(count(mature, flower) == 1, variety + " madura sem flor");
+                check(harvestFlowers(count(mature, flower)), variety + " madura com " + count(mature, flower) + " flores");
                 check(count(mature, seeds) >= 1, variety + " madura sem semente");
                 plantOnFarmland(helper, variety, 3);
                 List<ItemStack> young = harvest(helper);
@@ -1350,7 +1353,7 @@ public final class CultivoGameTests {
                     seeds += stack.getCount();
                 }
             }
-            check(flowers == 1, "flores da colheita: " + flowers);
+            check(harvestFlowers(flowers), "flores da colheita: " + flowers);
             check(seeds >= 1, "a colheita madura não deu sementes");
             drops.forEach(ItemEntity::discard);
         });
@@ -2917,7 +2920,8 @@ public final class CultivoGameTests {
                 "peneira: " + keysOf(station));
             List<Component> bong = tooltipOf(helper, new ItemStack(ModItems.ARTICLES.get("bong").get()));
             check(keysOf(bong).equals(List.of("tooltip.cultivo.smoke.device.1", "tooltip.cultivo.smoke.device.2",
-                "tooltip.cultivo.smoke.device.3")), "bong: " + keysOf(bong));
+                "tooltip.cultivo.smoke.device.3", "tooltip.cultivo.bong.place.1", "tooltip.cultivo.bong.place.2")),
+                "bong: " + keysOf(bong));
             List<Component> jarTip = tooltipOf(helper, new ItemStack(ModItems.ARTICLES.get(ContentIds.JAR).get()));
             check(keysOf(jarTip).equals(List.of("tooltip.cultivo.jar.1", "tooltip.cultivo.jar.2", "tooltip.cultivo.jar.3",
                 "tooltip.cultivo.jar.4")), "pote: " + keysOf(jarTip));
@@ -3086,6 +3090,11 @@ public final class CultivoGameTests {
             new AABB(helper.absolutePos(rel)).inflate(2.0D, 3.0D, 2.0D));
     }
 
+    /** Quantas flores frescas uma colheita madura dá: de 3 a 5 (GrowthRules.HARVEST_FLOWERS_MIN/MAX). */
+    private static boolean harvestFlowers(int flowers) {
+        return flowers >= GrowthRules.HARVEST_FLOWERS_MIN && flowers <= GrowthRules.HARVEST_FLOWERS_MAX;
+    }
+
     private static int countEntities(List<ItemEntity> items, Item item) {
         return items.stream().filter(e -> e.getItem().is(item)).mapToInt(e -> e.getItem().getCount()).sum();
     }
@@ -3161,8 +3170,9 @@ public final class CultivoGameTests {
             List<ItemEntity> items = itemsNear(helper, lowerRel);
             int seeds = countEntities(items, ModItems.SEEDS.get(Variety.ECLIPSE).get());
             check(countEntities(items, ModItems.GROW_TENT.get()) == 1
-                && countEntities(items, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get()) == 1 && seeds >= 1 && seeds <= 4
-                && items.stream().mapToInt(e -> e.getItem().getCount()).sum() == 2 + seeds, "sem chão derrubou " + items);
+                && harvestFlowers(countEntities(items, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get())) && seeds >= 1 && seeds <= 4
+                && items.stream().mapToInt(e -> e.getItem().getCount()).sum()
+                    == 1 + countEntities(items, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get()) + seeds, "sem chão derrubou " + items);
             items.forEach(ItemEntity::discard);
         });
     }
@@ -3253,7 +3263,7 @@ public final class CultivoGameTests {
             rightClick(helper, player, TENT_TOP);
             check(!tent.hasPlant(), "o clique com farinha de osso na planta madura não colheu");
             check(player.getMainHandItem().getCount() == 16 - uses, "a colheita gastou farinha de osso");
-            check(countInInventory(player, ModItems.FRESH_FLOWERS.get(Variety.AURORA).get()) == 1, "a colheita não deu a flor");
+            check(harvestFlowers(countInInventory(player, ModItems.FRESH_FLOWERS.get(Variety.AURORA).get())), "a colheita não deu as flores");
 
             Set<Integer> bonuses = new java.util.TreeSet<>();
             for (int round = 0; round < 200; round++) {
@@ -3271,7 +3281,7 @@ public final class CultivoGameTests {
 
     /**
      * Colheita pelo clique de mão vazia (nas duas metades, alternando) com qualidade 4–5 em 200 rodadas, numa genética
-     * com 50% de chance do +1 (as duas aparecem): 1 flor fresca e de 1 a 4 sementes, e a estufinha fica vazia. Também 4–5
+     * com 50% de chance do +1 (as duas aparecem): de 3 a 5 flores frescas (uma pilha) e de 1 a 4 sementes, e a estufinha fica vazia. Também 4–5
      * nas 40 genéticas. Imatura não colhe. Depois da colheita, replanta na hora com uma semente.
      */
     public static void growTentHarvest(GameTestHelper helper) {
@@ -3288,7 +3298,7 @@ public final class CultivoGameTests {
                 checkPredictedSwing(rightClick(helper, player, round % 2 == 0 ? TENT : TENT_TOP), "colher a estufinha");
                 check(!tent.hasPlant() && tent.age() == 0, "a estufinha não ficou vazia depois da colheita");
                 Item flower = ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get();
-                check(countInInventory(player, flower) == 1, "colheita com " + countInInventory(player, flower) + " flores");
+                check(harvestFlowers(countInInventory(player, flower)), "colheita com " + countInInventory(player, flower) + " flores");
                 int seeds = countInInventory(player, ModItems.SEEDS.get(Variety.ECLIPSE).get());
                 check(seeds >= 1 && seeds <= 4, "colheita com " + seeds + " sementes");
                 Integer q = quality(findInInventory(player, flower));
@@ -3334,9 +3344,9 @@ public final class CultivoGameTests {
             List<ItemEntity> dropped = helper.getLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(3.0D));
             int flowers = countInInventory(player, flower) + countEntities(dropped, flower);
             int seedCount = countInInventory(player, seeds) + countEntities(dropped, seeds);
-            check(!tent.hasPlant() && flowers == 1 && seedCount >= 1 && seedCount <= 4,
+            check(!tent.hasPlant() && harvestFlowers(flowers) && seedCount >= 1 && seedCount <= 4,
                 "inventário cheio: " + flowers + " flores e " + seedCount + " sementes, estufinha " + tent.variety());
-            check(countEntities(dropped, flower) == 1, "a flor que não cabia não caiu no chão: " + dropped);
+            check(harvestFlowers(countEntities(dropped, flower)), "as flores que não cabiam não caíram no chão: " + dropped);
             dropped.forEach(ItemEntity::discard);
 
             // Com a regra blockDrops desligada a colheita esvazia sem dar nada, como o arbusto de frutas vermelhas
@@ -3409,7 +3419,7 @@ public final class CultivoGameTests {
 
     /**
      * Quebrar qualquer metade (Level#destroyBlock e jogador de sobrevivência) derruba exatamente 1 estufinha, as duas
-     * metades somem, e a planta cai uma vez: madura, 1 flor com qualidade 4–5 e de 1 a 4 sementes; imatura, 1 semente;
+     * metades somem, e a planta cai uma vez: madura, de 3 a 5 flores com qualidade 4–5 e de 1 a 4 sementes; imatura, 1 semente;
      * vazia, nada além da estufinha. Nada some e nada duplica. /setblock destroy e replace nas duas metades, e pistões
      * não movem nenhuma delas. Explosões: growTentExplosion.
      */
@@ -3451,7 +3461,7 @@ public final class CultivoGameTests {
                 check(tents == 1, c.what() + ": " + tents + " estufinhas");
                 check(others == 0, c.what() + ": itens a mais " + items);
                 if (c.planted() && c.age() == 7) {
-                    check(flowers == 1 && seedCount >= 1 && seedCount <= 4, c.what() + ": " + flowers + " flores e " + seedCount + " sementes");
+                    check(harvestFlowers(flowers) && seedCount >= 1 && seedCount <= 4, c.what() + ": " + flowers + " flores e " + seedCount + " sementes");
                     for (ItemEntity e : items) {
                         if (e.getItem().is(flower)) {
                             Integer q = quality(e.getItem());
@@ -3482,10 +3492,10 @@ public final class CultivoGameTests {
                     int tents = countEntities(items, tentItem);
                     int flowers = countEntities(items, flower);
                     if (mode.equals("destroy")) {
-                        check(tents == 1 && flowers == 1, what + ": " + tents + " estufinhas e " + flowers + " flores");
+                        check(tents == 1 && harvestFlowers(flowers), what + ": " + tents + " estufinhas e " + flowers + " flores");
                     } else if (upper) {
                         // A de baixo sai pela atualização de forma (como a porta), com drop: 1 estufinha e a planta
-                        check(tents == 1 && flowers == 1, what + ": " + tents + " estufinhas e " + flowers + " flores");
+                        check(tents == 1 && harvestFlowers(flowers), what + ": " + tents + " estufinhas e " + flowers + " flores");
                     } else {
                         check(tents == 0 && flowers == 0 && countEntities(items, seeds) == 0, what + ": derrubou " + items);
                     }
@@ -3608,6 +3618,69 @@ public final class CultivoGameTests {
     }
 
     /**
+     * Bong no chão (pedido do dono de 25/10/2026): agachado, o clique direito em cima de uma pedra põe o bong em pé, com
+     * a frente para quem pôs, e gasta o item (nada no criativo). Sem agachar, o mesmo clique não põe nada (o item segue
+     * para fumar). Quebrar devolve 1 bong; sem chão embaixo ele cai e devolve 1 bong; o botão do meio dá o bong. No
+     * modo aventura não põe.
+     */
+    public static void bongPlacedOnGround(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            Item bongItem = ModItems.ARTICLES.get(ContentIds.BONG).get();
+            BlockPos floor = new BlockPos(4, 1, 4);
+            BlockPos spot = floor.above();
+            helper.setBlock(floor, Blocks.STONE.defaultBlockState());
+            BlockPos floorAbs = helper.absolutePos(floor);
+            BlockPos spotAbs = helper.absolutePos(spot);
+            BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(floorAbs).add(0.0D, 0.5D, 0.0D), Direction.UP, floorAbs, false);
+
+            ServerPlayer player = tentPlayer(helper, GameType.SURVIVAL);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(bongItem));
+            // Sem agachar: o clique num bloco não põe o bong (segue para fumar, que aqui recusa por falta de isqueiro)
+            player.setShiftKeyDown(false);
+            player.gameMode.useItemOn(player, level, player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
+            check(level.getBlockState(spotAbs).isAir() && player.getMainHandItem().is(bongItem), "pôs o bong sem agachar");
+
+            player.setShiftKeyDown(true);
+            InteractionResult placed = player.gameMode.useItemOn(player, level, player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
+            player.setShiftKeyDown(false);
+            BlockState state = level.getBlockState(spotAbs);
+            check(placed.consumesAction() && state.is(ModBlocks.BONG.get()), "agachado não pôs o bong: " + placed + " " + state);
+            check(player.getMainHandItem().isEmpty(), "pôr o bong não gastou o item: " + player.getMainHandItem());
+            check(state.getValue(BongBlock.FACING) == player.getDirection().getOpposite(), "frente do bong: " + state);
+            check(state.getCloneItemStack(level, spotAbs, false).is(bongItem), "o botão do meio não dá o bong");
+
+            check(player.gameMode.destroyBlock(spotAbs), "o jogador não quebrou o bong");
+            List<ItemEntity> items = itemsNear(helper, spot);
+            check(level.getBlockState(spotAbs).isAir() && countEntities(items, bongItem) == 1 && items.size() == 1,
+                "quebrar o bong derrubou " + items);
+            items.forEach(ItemEntity::discard);
+
+            // Sem chão embaixo o bong cai e vira item
+            level.setBlock(spotAbs, ModBlocks.BONG.get().defaultBlockState(), Block.UPDATE_ALL);
+            helper.setBlock(floor, Blocks.AIR.defaultBlockState());
+            items = itemsNear(helper, spot);
+            check(level.getBlockState(spotAbs).isAir() && countEntities(items, bongItem) == 1, "sem chão: " + items);
+            items.forEach(ItemEntity::discard);
+            helper.setBlock(floor, Blocks.STONE.defaultBlockState());
+
+            // Criativo não gasta; aventura não põe
+            ServerPlayer creative = tentPlayer(helper, GameType.CREATIVE);
+            creative.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(bongItem));
+            creative.setShiftKeyDown(true);
+            check(creative.gameMode.useItemOn(creative, level, creative.getMainHandItem(), InteractionHand.MAIN_HAND, hit).consumesAction()
+                && level.getBlockState(spotAbs).is(ModBlocks.BONG.get()) && creative.getMainHandItem().is(bongItem),
+                "criativo: não pôs ou gastou o bong");
+            level.setBlock(spotAbs, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            ServerPlayer adventure = tentPlayer(helper, GameType.ADVENTURE);
+            adventure.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(bongItem));
+            adventure.setShiftKeyDown(true);
+            adventure.gameMode.useItemOn(adventure, level, adventure.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
+            check(level.getBlockState(spotAbs).isAir() && adventure.getMainHandItem().is(bongItem), "aventura pôs o bong");
+        });
+    }
+
+    /**
      * No modo aventura a semente sem {@code can_place_on} não planta (como o uso de item vanilla) nem é gasta, nas duas
      * metades; colher a planta madura ainda vale, como o arbusto de frutas vermelhas.
      */
@@ -3628,13 +3701,13 @@ public final class CultivoGameTests {
             player.getInventory().clearContent();
             player.getInventory().setSelectedSlot(8);
             check(rightClick(helper, player, TENT_TOP).consumesAction() && !tent.hasPlant(), "aventura não colheu a madura");
-            check(countInInventory(player, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get()) == 1, "aventura: a colheita não deu a flor");
+            check(harvestFlowers(countInInventory(player, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get())), "aventura: a colheita não deu as flores");
         });
     }
 
     /**
      * Uma explosão (com decaimento, como TNT e creeper) em qualquer metade tira as duas, derruba no máximo 1 estufinha e
-     * a planta no máximo uma vez: madura, até 1 flor com qualidade 4–5 e até 4 sementes. Nada duplica. Uma explosão que
+     * a planta no máximo uma vez: madura, até 5 flores com qualidade 4–5 e até 4 sementes. Nada duplica. Uma explosão que
      * só aciona blocos (carga de vento) não mexe na estufinha.
      */
     public static void growTentExplosion(GameTestHelper helper) {
@@ -3658,7 +3731,7 @@ public final class CultivoGameTests {
                 int tents = countEntities(items, tentItem);
                 int flowers = countEntities(items, flower);
                 int seedCount = countEntities(items, seeds);
-                check(tents <= 1 && flowers <= 1 && seedCount <= 4, what + ": " + tents + " estufinhas, " + flowers + " flores e "
+                check(tents <= 1 && flowers <= GrowthRules.HARVEST_FLOWERS_MAX && seedCount <= 4, what + ": " + tents + " estufinhas, " + flowers + " flores e "
                     + seedCount + " sementes");
                 check(items.stream().mapToInt(e -> e.getItem().getCount()).sum() == tents + flowers + seedCount, what + ": itens a mais " + items);
                 for (ItemEntity e : items) {

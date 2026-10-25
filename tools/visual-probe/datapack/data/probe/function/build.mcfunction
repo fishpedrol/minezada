@@ -101,6 +101,8 @@ setblock 42 151 13 cultivo:grow_tent[facing=south,half=lower]{variety:"brisa",ag
 setblock 42 152 13 cultivo:grow_tent[facing=south,half=upper]
 setblock 44 151 13 cultivo:grow_tent[facing=south,half=lower]{variety:"ultravioleta",age:7}
 setblock 44 152 13 cultivo:grow_tent[facing=south,half=upper]
+setblock 41 151 15 cultivo:bong[facing=south]
+setblock 43 151 15 cultivo:bong[facing=east]
 # F) Vitrines (item_display sempre virado para a camera). Geneticas: uma coluna por variedade, de cima
 # para baixo semente, flor fresca e flor seca, agrupadas por familia; duas fotos.
 # Foto 1: brisa, aurora, eclipse, manga_gelada, ouro_colombiano, ouro_18k, kush_de_manga, bananona, amnesia_neblina, jack_heroi, ligeirinha, cao_quimico, cola_de_gorila, ak_48, bolo_de_casamento, luzes_do_norte, viuva_branca, bruno_banner, tri_campea, viagem_25

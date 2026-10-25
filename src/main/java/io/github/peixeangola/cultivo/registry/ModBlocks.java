@@ -2,6 +2,7 @@ package io.github.peixeangola.cultivo.registry;
 
 import io.github.peixeangola.cultivo.Cultivo;
 import io.github.peixeangola.cultivo.block.AshtrayBlock;
+import io.github.peixeangola.cultivo.block.BongBlock;
 import io.github.peixeangola.cultivo.block.CannabisCropBlock;
 import io.github.peixeangola.cultivo.block.GrowTentBlock;
 import io.github.peixeangola.cultivo.block.JarBlock;
@@ -87,6 +88,18 @@ public final class ModBlocks {
             .isRedstoneConductor((state, level, pos) -> false)
             .isSuffocating((state, level, pos) -> false)
             .setId(BLOCKS.key(ContentIds.GROW_TENT))));
+
+    /**
+     * Bong no chão (pedido do dono de 25/10/2026): vidro, posto agachado com o item, que continua fumando; estourado por
+     * pistão como os artigos colocáveis.
+     */
+    public static final RegistryObject<BongBlock> BONG = BLOCKS.register(ContentIds.BONG,
+        () -> new BongBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.NONE).strength(0.3F).sound(SoundType.GLASS).noOcclusion().pushReaction(PushReaction.POPPED)
+            .setId(BLOCKS.key(ContentIds.BONG))));
+
+    /** Bloco de cada aparelho que vai para o chão, pelo ID (o mesmo do item). */
+    public static final Map<String, RegistryObject<? extends Block>> PLACED_DEVICES = Map.of(ContentIds.BONG, BONG);
 
     /** Bloco de cada artigo colocável, pelo ID (o mesmo do item). */
     public static final Map<String, RegistryObject<? extends Block>> PLACEABLE_ARTICLES = Map.of(

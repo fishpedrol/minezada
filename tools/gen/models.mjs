@@ -338,8 +338,17 @@ export function articleModels() {
     };
   }
 
+  // Bong no chão (pedido do dono de 25/10/2026): os mesmos elementos do modelo na mão, em pé no bloco, com o fornilho
+  // virado para a esquerda de quem olha a frente (o norte antes de girar), e texturas de bloco (o atlas de blocos não
+  // tem as de item)
+  const bongHand = handModels().bong;
+  const bongTexture = (name) => id(`block/bong_${name}`);
+  const bong = blockParent({ particle: bongTexture('glass'), glass: bongTexture('glass'), water: bongTexture('water'),
+    steel: bongTexture('steel'), bowl: bongTexture('ash') }, bongHand.elements);
+
   return {
     rolling_tray: { facing: true, base: rollingTray, parts: {} },
+    bong: { facing: true, base: bong, parts: {} },
     jar: { facing: false, base: jar, parts: { filled: { when: { filled: ['true'] }, model: jarFilled } } },
     ashtray: { facing: false, base: ashtray, parts: ashParts },
   };

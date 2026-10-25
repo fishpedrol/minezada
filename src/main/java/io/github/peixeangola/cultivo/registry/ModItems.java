@@ -87,7 +87,7 @@ public final class ModItems {
     /**
      * Cada artigo tem um papel ({@link ContentIds#ARTICLES}): cachimbo, chillum, bong e narguilé fumam; o isqueiro tem
      * durabilidade; folha de seda, piteira e dichavador têm uma dica com o uso; bandeja, pote e cinzeiro colocam o
-     * bloco (mantendo o ícone plano) e também mostram a dica.
+     * bloco (mantendo o ícone plano) e também mostram a dica. O bong fuma e, agachado, vai para o chão.
      */
     private static Item article(String name) {
         Item.Properties properties = new Item.Properties().setId(ITEMS.key(name));
@@ -103,7 +103,9 @@ public final class ModItems {
             return new TooltipItem(properties, tooltip);
         }
         return SmokeDevice.byItemId(name)
-            .<Item>map(device -> new SmokingItem(device, properties))
+            .<Item>map(device -> ContentIds.PLACED_DEVICES.contains(name)
+                ? new SmokingItem(device, properties, ModBlocks.PLACED_DEVICES.get(name))
+                : new SmokingItem(device, properties))
             .orElseThrow(() -> new IllegalStateException("artigo sem papel: " + name));
     }
 

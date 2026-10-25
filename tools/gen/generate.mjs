@@ -46,7 +46,7 @@ const flatItems = [
 ];
 const blockItems = [...stations.map((s) => s.id), wild.id];
 // Artigos que viram bloco (bandeja, pote, cinzeiro): o item continua plano, o bloco tem modelo próprio
-const placeables = M.articles.filter((a) => a.placeable);
+const placeables = M.articles.filter((a) => a.placeable || a.placed_device);
 
 rmSync(OUT, { recursive: true, force: true });
 const textures = generateTextures(strains);
@@ -287,7 +287,11 @@ for (const v of strains) {
               type: 'minecraft:item',
               name: id(`${v.id}_fresh_flower`),
               condition: blockState(crop, 7),
-              modifier: { type: id('set_harvest_quality') },
+              // Várias flores numa pilha (manifesto harvest_flowers), e depois a qualidade da pilha inteira
+              modifier: [
+                { type: 'minecraft:set_count', count: { type: 'minecraft:uniform', min: M.harvest_flowers.min, max: M.harvest_flowers.max } },
+                { type: id('set_harvest_quality') },
+              ],
             },
             { type: 'minecraft:item', name: id(`${v.id}_seeds`) },
           ],

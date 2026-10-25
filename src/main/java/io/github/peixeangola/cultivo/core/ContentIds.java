@@ -38,6 +38,7 @@ public final class ContentIds {
     public static final String ROLLING_TRAY = "rolling_tray";
     public static final String JAR = "jar";
     public static final String ASHTRAY = "ashtray";
+    public static final String BONG = "bong";
 
     /**
      * Artigos que são ingrediente de receita: a folha de seda entra no baseado (e na bandeja) e a piteira no baseado
@@ -53,6 +54,12 @@ public final class ContentIds {
      * vaso de flor vanilla): bandeja de enrolar, pote de cura e cinzeiro.
      */
     public static final List<String> PLACEABLE_ARTICLES = List.of(ROLLING_TRAY, JAR, ASHTRAY);
+
+    /**
+     * Aparelhos de fumo que também vão para o chão (pedido do dono de 25/10/2026): o bong. O item continua fumando com o
+     * clique direito; agachado, o clique num bloco põe um bloco com o mesmo ID, que devolve o item ao quebrar.
+     */
+    public static final List<String> PLACED_DEVICES = List.of(BONG);
 
     /** Estufinha (pedido do dono de 25/10/2026): bloco de 2 de altura com um pé de planta dentro ({@link GrowTentRules}). */
     public static final String GROW_TENT = "grow_tent";
@@ -192,7 +199,8 @@ public final class ContentIds {
         "grow_tent_creative_break",
         "grow_tent_persists",
         "grow_tent_adventure_plant",
-        "grow_tent_explosion");
+        "grow_tent_explosion",
+        "bong_placed_on_ground");
 
     private ContentIds() {}
 
@@ -207,9 +215,12 @@ public final class ContentIds {
         return List.copyOf(ids);
     }
 
-    /** Lavouras, estações, planta silvestre, artigos colocáveis e a estufinha (estes dois com item de ícone plano). */
+    /**
+     * Lavouras, estações, planta silvestre, artigos colocáveis, a estufinha e o bong no chão (estes três com item de
+     * ícone plano).
+     */
     public static List<String> allBlocks() {
-        return Stream.of(cropBlocks(), blocksWithItems(), PLACEABLE_ARTICLES, CULTIVATION_BLOCKS)
+        return Stream.of(cropBlocks(), blocksWithItems(), PLACEABLE_ARTICLES, CULTIVATION_BLOCKS, PLACED_DEVICES)
             .flatMap(List::stream).toList();
     }
 
@@ -218,7 +229,7 @@ public final class ContentIds {
 
     /**
      * Propriedades do blockstate de cada bloco do mod, com os valores como aparecem no JSON (espelho dos blocos Java):
-     * lavouras age de 0 a 7; estações facing e contents, a peneira também grinder; bandeja facing; pote filled; cinzeiro
+     * lavouras age de 0 a 7; estações facing e contents, a peneira também grinder; bandeja e bong facing; pote filled; cinzeiro
      * ash de 0 a {@link AshtrayRules#MAX_ASH}; estufinha half e facing; a planta silvestre não tem nenhuma. Os testes dos modelos conferem que
      * todo "when" e toda variante usam só estas propriedades e valores, e o GameTest block_states_match_ids confere o
      * espelho contra a StateDefinition registrada de cada bloco.
@@ -236,7 +247,7 @@ public final class ContentIds {
             }
         }
         switch (blockId) {
-            case ROLLING_TRAY -> out.put("facing", HORIZONTAL_FACINGS);
+            case ROLLING_TRAY, BONG -> out.put("facing", HORIZONTAL_FACINGS);
             case JAR -> out.put("filled", BOOLEAN_VALUES);
             case ASHTRAY -> out.put("ash",
                 IntStream.rangeClosed(0, AshtrayRules.MAX_ASH).mapToObj(String::valueOf).toList());

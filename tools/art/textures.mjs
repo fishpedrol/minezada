@@ -1386,6 +1386,15 @@ export const CROP_STAGE_COUNT = CROP_STAGES.length;
 export const STATION_TEXTURES = Object.keys(BLOCKS);
 export const MODEL_TEXTURE_IDS = Object.keys(MODEL_TEXTURES);
 
+// Bong no chão: o 26.3 recusa um modelo de bloco com sprites do atlas de itens ("outside of supported atlas"), então o
+// bloco usa cópias em block/ das mesmas artes do modelo na mão
+Object.assign(BLOCKS, {
+  bong_glass: MODEL_TEXTURES.model_glass,
+  bong_water: MODEL_TEXTURES.model_water,
+  bong_steel: MODEL_TEXTURES.model_steel,
+  bong_ash: MODEL_TEXTURES.smoke_ash,
+});
+
 /** @param strains seção "strains" do manifesto (id e family de cada variedade) */
 export function generateAll(strains) {
   const written = [];

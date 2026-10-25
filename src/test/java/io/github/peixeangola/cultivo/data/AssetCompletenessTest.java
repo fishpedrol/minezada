@@ -59,6 +59,28 @@ class AssetCompletenessTest {
         }
     }
 
+    /**
+     * Regressão (bong no chão, 25/10/2026): o 26.3 recusa um modelo de bloco com sprites do atlas de itens ("Rejecting
+     * block model … outside of supported atlas") e o bloco aparece sem modelo. Todo modelo de bloco do mod usa só
+     * texturas block/ (do mod ou vanilla).
+     */
+    @Test
+    void blockModelsUseOnlyBlockTextures() throws IOException {
+        try (var files = Files.list(Resources.assets("models/block"))) {
+            for (Path file : files.toList()) {
+                JsonObject textures = Resources.json(file).getAsJsonObject("textures");
+                if (textures == null) {
+                    continue;
+                }
+                for (var entry : textures.entrySet()) {
+                    String texture = entry.getValue().getAsString();
+                    assertTrue(texture.startsWith("#") || texture.startsWith("cultivo:block/") || texture.startsWith("minecraft:block/"),
+                        file.getFileName() + ": " + entry.getKey() + " = " + texture);
+                }
+            }
+        }
+    }
+
     @Test
     void cropsMapEightAgesToEightStages() {
         for (Variety v : Variety.values()) {

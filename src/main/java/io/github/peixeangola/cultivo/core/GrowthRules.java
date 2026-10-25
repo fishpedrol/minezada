@@ -8,6 +8,12 @@ package io.github.peixeangola.cultivo.core;
 public final class GrowthRules {
     public static final int MIN_LIGHT = 9;
     public static final int MAX_AGE = 7;
+    /**
+     * Flores frescas da planta madura (pedido do dono de 25/10/2026, "mais buds"): de 3 a 5, sorteio uniforme, numa
+     * pilha com uma qualidade só. Os mesmos números de harvest_flowers no manifesto (a tabela de loot da lavoura).
+     */
+    public static final int HARVEST_FLOWERS_MIN = 3;
+    public static final int HARVEST_FLOWERS_MAX = 5;
 
     private GrowthRules() {}
 

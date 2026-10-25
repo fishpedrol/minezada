@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.peixeangola.cultivo.core.ArticleRecipes;
 import io.github.peixeangola.cultivo.core.ContentIds;
+import io.github.peixeangola.cultivo.core.GrowthRules;
 import io.github.peixeangola.cultivo.core.SeedSources;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
@@ -309,7 +310,18 @@ class DataConsistencyTest {
             assertEquals("minecraft:match_block", condition.get("type").getAsString());
             assertEquals("cultivo:" + v.cropId(), condition.get("blocks").getAsString());
             assertEquals("7", condition.getAsJsonObject("state").get("age").getAsString());
-            assertEquals("cultivo:set_harvest_quality", modifiers(flower).get(0).getAsJsonObject().get("type").getAsString());
+            // Primeiro 3 a 5 flores (pedido do dono: mais buds), depois a qualidade da pilha inteira
+            JsonArray flowerModifiers = modifiers(flower);
+            assertEquals(2, flowerModifiers.size());
+            JsonObject setCount = flowerModifiers.get(0).getAsJsonObject();
+            assertEquals("minecraft:set_count", setCount.get("type").getAsString());
+            JsonObject count = setCount.getAsJsonObject("count");
+            assertEquals("minecraft:uniform", count.get("type").getAsString());
+            assertEquals(3, count.get("min").getAsInt());
+            assertEquals(5, count.get("max").getAsInt());
+            assertEquals(GrowthRules.HARVEST_FLOWERS_MIN, count.get("min").getAsInt());
+            assertEquals(GrowthRules.HARVEST_FLOWERS_MAX, count.get("max").getAsInt());
+            assertEquals("cultivo:set_harvest_quality", flowerModifiers.get(1).getAsJsonObject().get("type").getAsString());
             JsonObject seedFallback = children.get(1).getAsJsonObject();
             assertEquals("cultivo:" + v.seedsId(), seedFallback.get("name").getAsString());
             assertFalse(seedFallback.has("condition"), "imaturo dá 1 semente");

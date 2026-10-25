@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "cultivo:block/bong"
+    },
+    "facing=east": {
+      "model": "cultivo:block/bong",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "cultivo:block/bong",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "cultivo:block/bong",
+      "y": 270
+    }
+  }
+}

@@ -147,6 +147,9 @@ for (const [x, variety, age] of tents) {
   b.push(`setblock ${x} 151 13 cultivo:grow_tent[facing=south,half=lower]${plant}`);
   b.push(`setblock ${x} 152 13 cultivo:grow_tent[facing=south,half=upper]`);
 }
+// Bong no chao (pedido do dono de 25/10/2026): um virado para a camera e um de lado, na frente das estufinhas
+b.push('setblock 41 151 15 cultivo:bong[facing=south]');
+b.push('setblock 43 151 15 cultivo:bong[facing=east]');
 
 b.push('# F) Vitrines (item_display sempre virado para a camera). Geneticas: uma coluna por variedade, de cima');
 b.push('# para baixo semente, flor fresca e flor seca, agrupadas por familia; duas fotos.');
