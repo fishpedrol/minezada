@@ -9,10 +9,30 @@ Pedido do dono em 25/10/2026: trocar a estufa de vidro por uma **estufinha** cra
 
 O dono aprovou este plano em 25/10/2026 ("aprovo o plano"). **Nada dele foi implementado ainda.**
 
-**Situação deste documento:** é o projeto gerado na nuvem a partir de 5 leituras do código e das fontes do Minecraft/Forge 26.3. A etapa de crítica adversarial **não terminou**, porque os créditos acabaram. Antes de codar:
+**Situação deste documento:** é o projeto gerado na nuvem a partir de 5 leituras do código e das fontes do Minecraft/Forge 26.3. A etapa de crítica adversarial não terminou na nuvem; a revisão abaixo foi feita no PC do dono em 25/10/2026, antes de codar.
 
-1. Confira cada API citada em `/tmp/forge-src` (extraia o jar de fontes do Forge 66.0.13 como em NEXT_SESSION.md).
-2. Revise os riscos da seção final.
+## Revisão de 25/10/2026 (fontes do Forge 26.3-66.0.13 e jar do Serene Seasons 26.1.2.0.7)
+
+Conferido nas fontes decompiladas (`forge-26.3-66.0.13-sources.jar`) e no jar `SereneSeasons-forge-26.3-26.1.2.0.7.jar` do launcher do dono (com `javap`). **Correções ao plano:**
+
+1. **`PushReaction.DESTROY` não existe** no 26.3: o enum é `PUSH_PULL, PUSH, POPPED, IMMOVEABLE, IGNORE_ENTITY`. Use **`IMMOVEABLE`**. Motivo: a metade de baixo tem BlockEntity e o pistão já não a empurra, mas a de cima não tem, e um pistão a separaria; com `POPPED`, o pistão quebra o bloco com a flag 18 (sem atualização de forma), e a outra metade ficaria órfã. Imóvel, como a mesa de encantamento, evita os dois casos.
+2. **`DoublePlantBlock.preventDropFromBottomPart` é `protected static`** no pacote `net.minecraft.world.level.block`. A porta o chama porque está no mesmo pacote; a `GrowTentBlock` (outro pacote, sem herdar de `DoublePlantBlock`) não pode. A estufinha tem uma cópia própria do método (mesmas flags 35 e o `levelEvent 2001`).
+3. **`Block.getDrops(..., Entity, ItemInstance tool)`**: o último parâmetro é `ItemInstance` (o `ItemStack` serve). Confirmado.
+4. **Item:** sem `useBlockDescriptionPrefix`. O `AssetCompletenessTest.everyIdIsTranslatedInBothLanguages` exige `item.cultivo.<id>` para todo item plano e `block.cultivo.<id>` para todo bloco, como nos artigos colocáveis; o gerador escreve as duas chaves.
+5. **`ContentIds`:** a estufinha entra numa lista própria `CULTIVATION_BLOCKS` (em `allBlocks()`) e em `flatItems()` (o ícone é `textures/item/grow_tent`), como os artigos colocáveis, e não em `blocksWithItems()` (que é para itens com modelo de bloco).
+
+**Riscos da seção 8, conferidos:**
+
+1. `DoubleHighBlockItem` limpa o espaço de cima (flags 27), põe a metade de baixo e só então o `BlockItem` chama `setPlacedBy`, que põe a de cima. A BlockEntity nasce no `setBlock` da de baixo (`LevelChunk.setBlockState` chama `newBlockEntity`), antes de existir a de cima; colocar a de cima atualiza a forma da de baixo com o vizinho certo. Sem problema.
+2. Ver correção 4. O `flatItemsHaveOwnTextures` só percorre `flatItems()`, e a estufinha tem textura `item/grow_tent`.
+3. `light_emission` é lido por `CuboidModelElement.Deserializer` (inteiro de 0 a 15; fora disso, erro). O `modelElementsStayWithinLimits` não recusa a chave. A face emissiva só se confirma no cliente (teste visual).
+4. O `BlockModelRenderState.setupModel` usa `Sheets.cutoutBlockItemSheet()` quando o modelo não tem translucidez: a planta (alfa só 0 ou 255) sai em cutout. A escala e o encaixe no vaso só se confirmam no cliente.
+5. O Serene Seasons 26.1.2.0.7 **não** escuta `CropGrowEvent`: ele age pelo mixin no `randomTick` (`SeasonalCropGrowthHandler.onCropGrowth`) e pela farinha de osso no `PlayerInteractEvent$UseBlock` do GlitchCore (`applyBonemeal`), os dois só quando `ModFertility.isCrop(state)` vale para o bloco tocado. A estufinha não está em tag nenhuma do Serene Seasons, então cresce o ano todo.
+6. O conjunto `LootContextParamSets.BLOCK` tem `BLOCK_ENTITY` como opcional: rolar a tabela da lavoura com a BlockEntity da estufinha passa na validação. Não é preciso `getReferencedContextParams`.
+7. `LevelChunk.setBlockState` chama `preRemoveSideEffects` com a BlockEntity ainda registrada (antes de `removeBlockEntity`) e só pula com a flag 256. `Level.destroyBlock` rola o loot do bloco antes do `setBlock`; o loot da estufinha é só o item (metade de baixo), e a planta sai uma vez, no `preRemoveSideEffects`. Explosões rolam o loot de cada metade e o `setBlock` dispara o mesmo `preRemoveSideEffects`. Pistões: ver correção 1.
+8. Larguras e palavras: conferidas pelo `TooltipHintsTest` e pelo `PortugueseEverywhereTest` no build.
+9. Visual probe: conferido pelo `validate.mjs` depois de gerar o datapack.
+10. Números de balanço: travados pelo `GrowTentRulesTest` e registrados em DECISIONS.md para o dono confirmar.
 
 As leituras que embasaram o plano estão em [estufinha-mapas.md](estufinha-mapas.md), com citações `arquivo:linha` do commit `09846e1`. O texto abaixo está em inglês, como saiu do workflow.
 
@@ -154,7 +174,7 @@ The new pure class is `C/core/GrowTentRules.java`. It is Minecraft-free and depe
   | `C/core/GrowTentRules.java` | Pure rules. |
   | `C/client/GrowTentRenderer.java` | Draws the plant. |
 
-- Item: `new DoubleHighBlockItem(ModBlocks.GROW_TENT.get(), new Item.Properties().setId(ITEMS.key(GROW_TENT)).useBlockDescriptionPrefix())`.
+- Item: `new DoubleHighBlockItem(ModBlocks.GROW_TENT.get(), new Item.Properties().setId(ITEMS.key(GROW_TENT)))`.
   - `DoubleHighBlockItem` is at `F/net/minecraft/world/item/DoubleHighBlockItem.java:10-22`.
   - Stack size 64, the vanilla default.
   - The tooltip goes through a small subclass or an `appendHoverText` that calls `TooltipItem.addHint(..., "tooltip.cultivo.grow_tent")` (`C/item/TooltipItem.java:29-33`). Suggested name: `item/GrowTentItem extends DoubleHighBlockItem`.
@@ -173,7 +193,7 @@ The new pure class is `C/core/GrowTentRules.java`. It is Minecraft-free and depe
 
 ```java
 BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).strength(0.8F).sound(SoundType.WOOL)
-    .noOcclusion().pushReaction(PushReaction.DESTROY)
+    .noOcclusion().pushReaction(PushReaction.IMMOVEABLE)
     .lightLevel(s -> s.getValue(GrowTentBlock.HALF) == DoubleBlockHalf.UPPER ? GrowTentRules.LAMP_LIGHT : 0)
     .isRedstoneConductor((s, l, p) -> false).isSuffocating((s, l, p) -> false).isViewBlocking((s, l, p) -> false)
     .setId(BLOCKS.key(ContentIds.GROW_TENT))
@@ -199,7 +219,7 @@ BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).strength(0.8F).so
 | `setPlacedBy` | `level.setBlockAndUpdate(pos.above(), state.setValue(HALF, UPPER))` (`DoorBlock.java:146-148`). |
 | `updateShape` | If the neighbour in `half.getDirectionToOther()` is not this block with the other half, return AIR (`DoublePlantBlock.java:35-56`). Lower half: if the neighbour below changed and `!canSurvive`, return AIR. |
 | `canSurvive` | Lower half: `below.isFaceSturdy(level, pos.below(), Direction.UP)`. Upper half: the block below is this block with `half=lower` (`DoorBlock.java:230-235`). |
-| `playerWillDestroy` | Copy the door: on the server, if `player.preventsBlockDrops()`, call `DoublePlantBlock.preventDropFromBottomPart(level, pos, state, player)`; then call super. |
+| `playerWillDestroy` | Copy the door: on the server, if `player.preventsBlockDrops()`, call the tent's own copy of `preventDropFromBottomPart` (the vanilla one is not accessible, see the review); then call super. |
 | `newBlockEntity` | `half == LOWER ? new GrowTentBlockEntity(pos, state) : null` (`F/.../chunk/LevelChunk.java:330-341`). No ticker (`getTicker` returns null). |
 | `lowerPos(state, pos)` | `half == LOWER ? pos : pos.below()`, the pattern in `PitcherCropBlock.getLowerHalf` (`:188-196`). Every read and write goes through `level.getBlockEntity(lowerPos)`. |
 
