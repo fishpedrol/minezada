@@ -99,7 +99,8 @@ class CompatibilityTest {
 
     @Test
     void forgeRangeStartsAtTheTestedVersion() throws IOException {
-        String toml = Files.readString(Resources.MAIN.resolve("META-INF/mods.toml"));
+        // sem \r: num checkout do Windows com CRLF a comparação de várias linhas continua valendo
+        String toml = Files.readString(Resources.MAIN.resolve("META-INF/mods.toml")).replace("\r", "");
         // Forge 26.3-66.0.2 é a menor versão testada (o launcher do dono); 66.0.13 é a da matriz
         assertTrue(toml.contains("modId=\"forge\"\n    mandatory=true\n    versionRange=\"[66.0.2,)\""), "faixa do Forge");
         assertTrue(toml.contains("versionRange=\"[26.3,26.4)\""), "faixa do Minecraft");

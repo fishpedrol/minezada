@@ -24,7 +24,7 @@ O `build.gradle` aceita duas propriedades. Os padrões são a matriz fixada em [
 
 Os dois jars vieram do Modrinth, com o sha512 conferido contra o que a API do Modrinth informa. O Serene Seasons pede forge `[66.0.2,)` e glitchcore `[26.3.0.0.3,)`. Outras versões deles não foram testadas.
 
-Para conferir um jar baixado, calcule o sha512 em minúsculas e abra `https://api.modrinth.com/v2/version_file/<sha512>?algorithm=sha512`. Com o jar certo, a resposta traz o `version_number` acima; com outro, dá erro 404.
+Para conferir um jar baixado, calcule o sha512 em minúsculas e abra `https://api.modrinth.com/v2/version_file/<sha512>?algorithm=sha512`. Com o jar certo, a resposta traz `"version_number": "26.1.2.0.7"` (Serene Seasons) ou `"26.3.0.0.5"` (GlitchCore); com outra versão publicada no Modrinth, o `version_number` é outro; com um arquivo que não está no Modrinth (corrompido ou de outra fonte), dá 404.
 - Linux: `sha512sum arquivo.jar`
 - PowerShell: `(Get-FileHash -Algorithm SHA512 arquivo.jar).Hash.ToLower()`
 
@@ -32,7 +32,7 @@ Para conferir um jar baixado, calcule o sha512 em minúsculas e abra `https://ap
 
 É o caminho principal e roda no ambiente de desenvolvimento. Os GameTests obrigatórios (em 25/10/2026, 63: 62 do Cultivo + `minecraft:always_pass`) rodam como num `runGameTestServer` comum. Com o Serene Seasons na pasta de mods, o `serene_seasons_compat` confere também o efeito das estações: Cultivo e trigo parados no início da primavera, crescendo sob um bloco de vidro e no meio do verão.
 
-O Forge 26.3 só dispara o `TagsUpdatedEvent` no cliente (veja "Servidor dedicado" abaixo). Por isso o teste o dispara como o cliente do single player faria, e o resultado vale para single player e LAN.
+O Forge 26.3 só dispara o `TagsUpdatedEvent` no cliente (veja "Servidor dedicado" abaixo). Por isso o teste o dispara como o cliente do single player faria (`ForgeEventFactory.onTagsUpdated(registryAccess, true, true)`): simula o single player e a LAN, mas ainda não foi conferido num single player de verdade (GUIA_INICIANTE.md, seção 6.5).
 
 ### Linux (da raiz do projeto)
 
@@ -60,20 +60,20 @@ Rode um comando do Gradle por vez. O primeiro run com outro Forge baixa esse For
 No PowerShell, na pasta do projeto, com o `JAVA_HOME` do Java 25 já configurado (GUIA_INICIANTE.md, seção 2):
 ```
 New-Item -ItemType Directory -Force run-compat-ss\mods, run-compat-ss\config\sereneseasons
-Invoke-WebRequest -Uri https://cdn.modrinth.com/data/e0bNACJD/versions/RLW2r4KA/SereneSeasons-forge-26.3-26.1.2.0.7.jar -OutFile run-compat-ss\mods\SereneSeasons-forge-26.3-26.1.2.0.7.jar
-Invoke-WebRequest -Uri https://cdn.modrinth.com/data/s3dmwKy5/versions/SKPPEwnV/GlitchCore-forge-26.3-26.3.0.0.5.jar -OutFile run-compat-ss\mods\GlitchCore-forge-26.3-26.3.0.0.5.jar
+Invoke-WebRequest -UseBasicParsing -Uri https://cdn.modrinth.com/data/e0bNACJD/versions/RLW2r4KA/SereneSeasons-forge-26.3-26.1.2.0.7.jar -OutFile run-compat-ss\mods\SereneSeasons-forge-26.3-26.1.2.0.7.jar
+Invoke-WebRequest -UseBasicParsing -Uri https://cdn.modrinth.com/data/s3dmwKy5/versions/SKPPEwnV/GlitchCore-forge-26.3-26.3.0.0.5.jar -OutFile run-compat-ss\mods\GlitchCore-forge-26.3-26.3.0.0.5.jar
 Copy-Item tools\compat\config-cant-grow\sereneseasons\fertility.toml run-compat-ss\config\sereneseasons\
-.\gradlew.bat runGameTestServer -Pcultivo_forge_version=26.3-66.0.2 -Pcultivo_run_dir=run-compat-ss
+.\gradlew.bat runGameTestServer "-Pcultivo_forge_version=26.3-66.0.2" "-Pcultivo_run_dir=run-compat-ss"
 ```
-Também dá para copiar os dois jars de `%APPDATA%\.minecraft\mods`. Nesse caso a versão é a do launcher: confira o nome dos arquivos. Ponha só o Serene Seasons e o GlitchCore; os outros mods do launcher não foram testados assim.
+Também dá para copiar os dois jars de `$env:APPDATA\.minecraft\mods` (no Explorador, `%APPDATA%\.minecraft\mods`). Nesse caso a versão é a do launcher: confira o nome dos arquivos. Ponha só o Serene Seasons e o GlitchCore; os outros mods do launcher não foram testados assim.
 
-Os comandos do Gradle acima são os que rodaram na nuvem em 25/10/2026. O preparo da pasta com `curl` ou `Invoke-WebRequest` e os comandos do Windows ainda não rodaram exatamente assim.
+Os comandos do Gradle acima são os que rodaram na nuvem em 25/10/2026 (os de "Só outro Forge" com o código anterior ao `2f6ae47`). O preparo da pasta com `curl` ou `Invoke-WebRequest` e os comandos do Windows ainda não rodaram exatamente assim.
 
 ### O que esperar
 
-- `All 63 required tests passed :)`: foi o resultado de 25/10/2026, no Forge 66.0.13 e no 66.0.2.
+- Com o Serene Seasons (os dois últimos comandos do bloco Linux): `All 63 required tests passed :)`, em 25/10/2026, no 66.0.13 e no 66.0.2. Os dois comandos de "Só outro Forge" rodaram antes das tags do Serene Seasons (311 testes JUnit e `All 62 required tests passed :)`); com o código atual ainda não rodaram.
 - No log: `Registered synced config with path sereneseasons/fertility.toml` (o Serene Seasons carregou); com o 66.0.2, `Forge mod loading, version 66.0.2`.
-- Se a config não estiver com o valor 1, o `serene_seasons_compat` falha com `rode com out_of_season_crop_behavior = 1 (tools/compat/config-cant-grow), veio 0`. Sem a config na pasta vale o padrão 0, e o teste falha do mesmo jeito.
+- Se a config não estiver com o valor 1, o `serene_seasons_compat` falha com `rode com out_of_season_crop_behavior = 1 (tools/compat/config-cant-grow), veio <valor>` (por exemplo `veio 0`). Sem a config na pasta vale o padrão 0, e o teste falha do mesmo jeito (pelo código; não rodado).
 - Sem os jars em `mods/`, o `serene_seasons_compat` só confere as tags e passa, sem provar o efeito. Procure a linha do `fertility.toml` no log.
 
 ## 2. Servidor de produção (só Linux/macOS)
@@ -86,10 +86,10 @@ CULTIVO_COMPAT_CONFIG=tools/compat/config-cant-grow bash tools/compat/forge-serv
 ```
 - O primeiro comando gera `build/libs/cultivo-0.1.0.jar`, compilado contra o 66.0.13 (o padrão).
 - O segundo roda só o Cultivo com a sonda padrão, `growth.txt`.
-- O terceiro acrescenta os jars da pasta indicada (aqui, os dois de `run-compat-ss/mods`), copia a config "não cresce" e roda a sonda de estações.
+- O terceiro acrescenta os jars da pasta indicada (aqui, os dois de `run-compat-ss/mods`, preparada na seção 1), copia a config "não cresce" e roda a sonda de estações.
 
 O que o script faz:
-- baixa o instalador do Forge para `~/.cache/cultivo-compat` (ou para `CULTIVO_COMPAT_CACHE`) e instala o servidor uma vez em `run-compat-prod-<versão>` (com extras, `run-compat-prod-<versão>-extras`);
+- baixa o instalador do Forge para `~/.cache/cultivo-compat` (ou para `CULTIVO_COMPAT_CACHE`) e instala o servidor uma vez em `run-compat-prod-<versão>` (por exemplo `run-compat-prod-26.3-66.0.2`; com extras, `run-compat-prod-26.3-66.0.2-extras`);
 - a cada execução, refaz `mods/`, `world/`, `logs/` e `config/`, escreve `eula=true` (aceita a EULA da Mojang nessa pasta) e um `server.properties` com `generate-structures=false`, `spawn-protection=0` e `pause-when-empty-seconds=0`;
 - sobe o servidor, manda os comandos da sonda pelo console e desliga com `stop`;
 - grava tudo em `console.out` e termina mostrando as linhas que interessam. O código de saída é 0 se o servidor subiu, a sonda rodou até o fim e o servidor desligou. O resultado em si está nas linhas "SONDA".
@@ -109,7 +109,7 @@ Cada linha sai de um `say` da sonda. Exemplo real de `console.out`:
 ```
 - `SONDA diagnostico bioma=plains`: o bioma forçado pegou. Com `bioma=OUTRO`, o `fillbiome` falhou, e o resto não vale.
 - `SONDA <condição> <planta> idade=<N>`: uma linha por planta (1 a 4), com a idade de 0 a 7; 7 é madura. Se faltar a linha de uma planta, o bloco não é mais aquela lavoura (quebrou ou foi trocado).
-- Linhas de resumo com `Unknown or incomplete command`, `Incorrect argument`, `Unknown block` ou `Could not set the block`: um comando da sonda falhou, e o resultado não vale. Exemplo: `seasons.txt` sem o Serene Seasons, porque o comando `season` não existe.
+- Linhas de resumo com `Unknown or incomplete command`, `Incorrect argument`, `Unknown block` ou `Could not set the block`: um comando da sonda falhou, e o resultado não vale. Exemplo: `seasons.txt` sem o Serene Seasons, porque o comando `season` não existe. Exceção: em `seasons.txt`, se as fileiras `primavera *_ar_livre` ficaram em 0 (o esperado com o Serene Seasons agindo), o replantio da fase 2 põe o mesmo bloco na idade 0 e dá `Could not set the block` nessas 8 posições; isso não invalida o resultado.
 
 Por sonda:
 - **`growth.txt`** (condições `cultivo` e `trigo`): as duas fileiras devem chegar perto de 7 em 30 s com `random_tick_speed 300`. O crescimento é sorteado, então uma planta em 6 ainda é normal. Em 25/10/2026, no 66.0.2: Cultivo [6, 7, 7, 7] e trigo [7, 7, 7, 7].
@@ -120,7 +120,7 @@ Por sonda:
 
 ## Por que os GameTests não rodam no servidor de produção
 
-Em produção o Forge não avança os GameTests: `ForgeGameTestHooks.isGametestEnabled()` exige `!FMLLoader.isProduction()`, e o `MinecraftServer` só chama `GameTestTicker.SINGLETON.tick()` quando ele é verdadeiro. Em 25/10/2026, `/test run cultivo:*` no servidor oficial 66.0.2 montou as estruturas (`Running 61 test(s)...`) e não terminou em 15 minutos. Por isso o teste de produção usa as sondas de console, e os GameTests ficam no ambiente de desenvolvimento (seção 1).
+Em produção o Forge não avança os GameTests: `ForgeGameTestHooks.isGametestEnabled()` exige `!FMLLoader.isProduction()`, e o `MinecraftServer` só chama `GameTestTicker.SINGLETON.tick()` quando ele é verdadeiro. Em 25/10/2026, `/test run cultivo:*` no servidor oficial 66.0.2 montou as estruturas (`Running 61 test(s)...`, com o jar de antes do `serene_seasons_compat`) e não terminou em 15 minutos. Por isso o teste de produção usa as sondas de console, e os GameTests ficam no ambiente de desenvolvimento (seção 1).
 
 ## Servidor dedicado e o Serene Seasons
 
@@ -140,7 +140,7 @@ Formato de uma sonda: um comando de console por linha, sem a `/`; `@wait N` espe
 
 ## Pastas geradas e rede
 
-- O `.gitignore` tem `run-compat*`, então as pastas `run-compat-ss/`, `run-compat-forge-<versão>/` e `run-compat-prod-<versão>[-extras]/` ficam fora do git. O cache do instalador fica em `~/.cache/cultivo-compat`. Pode apagar tudo isso; o próximo run recria.
+- O `.gitignore` tem `run-compat*`, então as pastas `run-compat-ss/`, `run-compat-forge-66.0.2/` e `run-compat-prod-26.3-66.0.2[-extras]/` (com outra versão, o nome muda do mesmo jeito) ficam fora do git. O cache do instalador fica em `~/.cache/cultivo-compat`. Pode apagar tudo isso; o próximo run recria.
 - Rede necessária:
   - servidor do Forge: `maven.minecraftforge.net`, `piston-meta.mojang.com`, `piston-data.mojang.com` e `libraries.minecraft.net`;
   - jars do Modrinth: `api.modrinth.com` e `cdn.modrinth.com`.

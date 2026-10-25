@@ -31,6 +31,12 @@ JAVA_BIN=${JAVA_HOME:+$JAVA_HOME/bin/}java
 MOD_JAR=$(ls "$ROOT"/build/libs/cultivo-*.jar 2>/dev/null | grep -v -- '-sources' | head -1 || true)
 [ -n "$MOD_JAR" ] || { echo "jar do Cultivo não encontrado em build/libs: rode ./gradlew build antes" >&2; exit 2; }
 [ -f "$PROBE" ] || { echo "sonda não encontrada: $PROBE" >&2; exit 2; }
+EXTRA_JARS=()
+if [ -n "$EXTRA_DIR" ]; then
+  [ -d "$EXTRA_DIR" ] || { echo "pasta de mods extras não encontrada: $EXTRA_DIR" >&2; exit 2; }
+  shopt -s nullglob; EXTRA_JARS=("$EXTRA_DIR"/*.jar); shopt -u nullglob
+  [ ${#EXTRA_JARS[@]} -gt 0 ] || { echo "nenhum .jar em $EXTRA_DIR (baixe os mods extras antes)" >&2; exit 2; }
+fi
 
 SUFFIX=""
 [ -n "$EXTRA_DIR" ] && SUFFIX="-extras"
@@ -56,9 +62,7 @@ if [ -n "${CULTIVO_COMPAT_CONFIG:-}" ]; then
   mkdir -p "$SERVER/config" && cp -r "$CULTIVO_COMPAT_CONFIG"/. "$SERVER/config/"
 fi
 cp "$MOD_JAR" "$SERVER/mods/"
-if [ -n "$EXTRA_DIR" ]; then
-  cp "$EXTRA_DIR"/*.jar "$SERVER/mods/"
-fi
+[ ${#EXTRA_JARS[@]} -gt 0 ] && cp "${EXTRA_JARS[@]}" "$SERVER/mods/"
 echo "eula=true" > "$SERVER/eula.txt"
 # Mundo normal sem estruturas. A sonda monta a própria plataforma no alto (y=120), com o bioma forçado por
 # fillbiome, para não depender do relevo nem do bioma sorteado perto de 0,0.
@@ -72,40 +76,59 @@ EOF
 echo "Forge $FORGE_VERSION; mods em $SERVER/mods:"; ls -1 "$SERVER/mods"
 echo "Sonda: $PROBE"
 
-# O instalador do Forge cria run.sh (que lê user_jvm_args.txt). Comandos entram pelo stdin do servidor.
+# O instalador do Forge cria run.sh (que lê user_jvm_args.txt e chama o "java" do PATH; pomos o do JAVA_HOME na
+# frente, o mesmo do instalador). Comandos entram pelo stdin do servidor.
 FIFO="$SERVER/console.in"
 rm -f "$FIFO" && mkfifo "$FIFO"
 LOG="$SERVER/console.out"
-(cd "$SERVER" && exec bash ./run.sh nogui < "$FIFO" > "$LOG" 2>&1) &
+(cd "$SERVER" && PATH="${JAVA_HOME:+$JAVA_HOME/bin:}$PATH" exec bash ./run.sh nogui < "$FIFO" > "$LOG" 2>&1) &
 SERVER_PID=$!
+
+# Se o servidor morrer, o FIFO fica sem leitor: sem isto o próximo echo mataria o script com SIGPIPE, sem resumo.
+trap '' PIPE
+alive() { kill -0 "$SERVER_PID" 2>/dev/null; }
+send() { alive && { echo "$1" >&3; } 2>/dev/null || true; }
+STATUS=1
+cleanup() {
+  exec 3>&- 2>/dev/null || true
+  if alive; then # não desligou sozinho: espera um pouco e encerra o run.sh e o java filho
+    for _ in $(seq 30); do alive || break; sleep 1; done
+    pkill -P "$SERVER_PID" 2>/dev/null || true; kill "$SERVER_PID" 2>/dev/null || true
+    STATUS=1
+  fi
+  rm -f "$FIFO"
+  echo "---- resultado ($LOG)"
+  grep -E 'Forge mod loading, version|Done \([0-9.]+s\)!|SONDA|Unknown or incomplete command|Incorrect argument|Unknown block|Could not set the block' "$LOG" 2>/dev/null || true
+  exit "$STATUS"
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM
 exec 3> "$FIFO"
 
 wait_for() { # padrão, segundos
   local i=0
   while ! grep -qE "$1" "$LOG" 2>/dev/null; do
     sleep 1; i=$((i + 1))
-    if ! kill -0 "$SERVER_PID" 2>/dev/null; then echo "o servidor parou antes de: $1" >&2; return 1; fi
+    if ! alive; then echo "o servidor parou antes de: $1" >&2; return 1; fi
     if [ "$i" -ge "$2" ]; then echo "tempo esgotado esperando: $1" >&2; return 1; fi
   done
 }
 
-STATUS=1
+OK=0
 if wait_for 'Done \([0-9.]+s\)!' 600; then
+  OK=1
   while IFS= read -r line || [ -n "$line" ]; do
+    alive || { echo "o servidor parou no meio da sonda" >&2; OK=0; break; }
     case "$line" in
       ''|'#'*) ;;
       '@wait '*) sleep "${line#@wait }" ;;
-      *) echo "$line" >&3 ;;
+      *) send "$line" ;;
     esac
   done < "$PROBE"
   sleep 2
-  STATUS=0
 fi
-echo "stop" >&3 || true
-exec 3>&-
-wait "$SERVER_PID" 2>/dev/null || STATUS=1
-rm -f "$FIFO"
-
-echo "---- resultado ($LOG)"
-grep -E 'Forge mod loading, version|Done \([0-9.]+s\)!|SONDA|Unknown or incomplete command|Incorrect argument|Unknown block|Could not set the block' "$LOG" || true
+send stop
+# Espera o desligamento por até 120 s; quem passar disso é encerrado pelo cleanup.
+for _ in $(seq 120); do alive || break; sleep 1; done
+if ! alive && wait "$SERVER_PID" 2>/dev/null && [ "$OK" = 1 ]; then STATUS=0; fi
 exit "$STATUS"

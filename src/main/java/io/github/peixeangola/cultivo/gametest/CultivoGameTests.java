@@ -2940,6 +2940,9 @@ public final class CultivoGameTests {
      * player: o trigo e a lavoura do Cultivo pertencem às mesmas estações; no início da primavera, num bioma temperado,
      * nenhum dos dois cresce; sob um bloco de vidro os dois crescem; no meio do verão os dois crescem. O Forge 26.3 só
      * dispara o TagsUpdatedEvent no cliente, então o teste o dispara como o cliente do single player faria.
+     *
+     * <p>Muda estado global: depois dele, até o fim da execução, o Serene Seasons segue com as listas montadas e a
+     * estação fica no meio do verão (fértil para tudo que ele lista), então os outros testes crescem normalmente.
      */
     public static void sereneSeasonsCompat(GameTestHelper helper) {
         run(helper, () -> {
@@ -2975,40 +2978,45 @@ public final class CultivoGameTests {
 
             // O que o cliente do single player faz ao receber as tags: o Serene Seasons monta as listas de lavouras.
             net.minecraftforge.event.ForgeEventFactory.onTagsUpdated(helper.getLevel().registryAccess(), true, true);
-            BlockPos min = helper.absolutePos(BlockPos.ZERO);
-            BlockPos max = helper.absolutePos(new BlockPos(8, 8, 8));
-            command(helper, "fillbiome " + min.getX() + " " + min.getY() + " " + min.getZ() + " "
-                + max.getX() + " " + max.getY() + " " + max.getZ() + " minecraft:plains");
-            check(helper.getLevel().getBiome(helper.absolutePos(PLANT)).is(net.minecraft.world.level.biome.Biomes.PLAINS),
-                "o bioma da área não virou plains");
-            check(helper.getLevel().canSeeSky(helper.absolutePos(PLANT)), "a planta precisa ver o céu");
+            // A partir daqui o Serene Seasons fica ativo até o fim da execução (não há como desfazer o evento). O finally
+            // termina no meio do verão, fértil para o Cultivo e para o trigo, para não travar testes que rodem depois.
+            try {
+                BlockPos min = helper.absolutePos(BlockPos.ZERO);
+                BlockPos max = helper.absolutePos(new BlockPos(8, 8, 8));
+                command(helper, "fillbiome " + min.getX() + " " + min.getY() + " " + min.getZ() + " "
+                    + max.getX() + " " + max.getY() + " " + max.getZ() + " minecraft:plains");
+                check(helper.getLevel().getBiome(helper.absolutePos(PLANT)).is(net.minecraft.world.level.biome.Biomes.PLAINS),
+                    "o bioma da área não virou plains");
+                check(helper.getLevel().canSeeSky(helper.absolutePos(PLANT)), "a planta precisa ver o céu");
 
-            BlockPos wheatSoil = SOIL.east(2);
-            BlockPos wheat = PLANT.east(2);
-            Runnable plantBoth = () -> {
-                plantOnFarmland(helper, Variety.BRISA, 0);
-                helper.setBlock(wheatSoil, Blocks.FARMLAND.defaultBlockState().setValue(FarmlandBlock.MOISTURE, FarmlandBlock.MAX_MOISTURE));
-                helper.setBlock(wheat, Blocks.WHEAT.defaultBlockState());
-            };
+                BlockPos wheatSoil = SOIL.east(2);
+                BlockPos wheat = PLANT.east(2);
+                Runnable plantBoth = () -> {
+                    plantOnFarmland(helper, Variety.BRISA, 0);
+                    helper.setBlock(wheatSoil, Blocks.FARMLAND.defaultBlockState().setValue(FarmlandBlock.MOISTURE, FarmlandBlock.MAX_MOISTURE));
+                    helper.setBlock(wheat, Blocks.WHEAT.defaultBlockState());
+                };
 
-            command(helper, "season set early_spring");
-            plantBoth.run();
-            check(tickUntilMature(helper, PLANT, 300) == 0, "Cultivo cresceu fora de estação (primavera)");
-            check(tickUntilMature(helper, wheat, 300) == 0, "trigo cresceu fora de estação (primavera): o Serene Seasons não está ativo");
+                command(helper, "season set early_spring");
+                plantBoth.run();
+                check(tickUntilMature(helper, PLANT, 300) == 0, "Cultivo cresceu fora de estação (primavera)");
+                check(tickUntilMature(helper, wheat, 300) == 0, "trigo cresceu fora de estação (primavera): o Serene Seasons não está ativo");
 
-            // Um bloco de vidro até 16 acima é a "estufa" do Serene Seasons: os dois crescem mesmo fora de estação.
-            helper.setBlock(PLANT.above(3), Blocks.GLASS.defaultBlockState());
-            helper.setBlock(wheat.above(3), Blocks.GLASS.defaultBlockState());
-            check(tickUntilMature(helper, PLANT, 20_000) == 7, "Cultivo sob vidro não cresceu na primavera");
-            check(tickUntilMature(helper, wheat, 20_000) == 7, "trigo sob vidro não cresceu na primavera");
-            helper.setBlock(PLANT.above(3), Blocks.AIR.defaultBlockState());
-            helper.setBlock(wheat.above(3), Blocks.AIR.defaultBlockState());
+                // Um bloco de vidro até 16 acima é a "estufa" do Serene Seasons: os dois crescem mesmo fora de estação.
+                helper.setBlock(PLANT.above(3), Blocks.GLASS.defaultBlockState());
+                helper.setBlock(wheat.above(3), Blocks.GLASS.defaultBlockState());
+                check(tickUntilMature(helper, PLANT, 20_000) == 7, "Cultivo sob vidro não cresceu na primavera");
+                check(tickUntilMature(helper, wheat, 20_000) == 7, "trigo sob vidro não cresceu na primavera");
+                helper.setBlock(PLANT.above(3), Blocks.AIR.defaultBlockState());
+                helper.setBlock(wheat.above(3), Blocks.AIR.defaultBlockState());
 
-            command(helper, "season set mid_summer");
-            plantBoth.run();
-            check(tickUntilMature(helper, PLANT, 20_000) == 7, "Cultivo não cresceu no verão");
-            check(tickUntilMature(helper, wheat, 20_000) == 7, "trigo não cresceu no verão");
-            command(helper, "season set early_spring");
+                command(helper, "season set mid_summer");
+                plantBoth.run();
+                check(tickUntilMature(helper, PLANT, 20_000) == 7, "Cultivo não cresceu no verão");
+                check(tickUntilMature(helper, wheat, 20_000) == 7, "trigo não cresceu no verão");
+            } finally {
+                command(helper, "season set mid_summer");
+            }
         });
     }
 }
