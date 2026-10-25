@@ -279,6 +279,8 @@ Outras pastas:
 
 ## 8. Pendências, em ordem
 
+**Próxima tarefa (pedido do dono de 25/10/2026, plano aprovado):** a **estufinha**, que substitui a estufa de vidro. É um bloco craftável de 2 de altura, com luz roxa, um pé de planta dentro, sem farmland nem água, e qualidade 4–5. Siga [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md), com os mapas do código em [estufinha-mapas.md](estufinha-mapas.md). A crítica adversarial do plano não chegou a rodar, então confira as APIs citadas nas fontes do 26.3 antes de codar. Trabalhe numa branch nova `claude/estufinha` a partir da `main`, depois que o PR da compatibilidade (`claude/forge-compat-seasons`) for mesclado. No fim: gerador, `build`, `runGameTestServer` e o TODO com evidências.
+
 1. **Multiplayer completo** (PC do dono): `run-probe.ps1 -Multiplayer` com o PC folgado (o de 25/10 foi parado por falta de memória: são dois Minecraft e dois Gradle). Depois, dois jogadores de verdade numa estação e fumando perto um do outro (GUIA, seção 6.3).
 2. **O que o teste visual não cobre** (PC do dono, seção 6.1 do guia): mão esquerda, artigos de todos os lados e ouvir os sons.
 3. **Mundo novo** (PC do dono, GUIA_INICIANTE.md, seção 6.2): planta silvestre na selva e na planície, lavouras de aldeia, baús de aldeia e um mascate com sementes do catálogo.
