@@ -1,0 +1,165 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "cultivo:brisa_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:aurora_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:eclipse_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:manga_gelada_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:amnesia_neblina_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:cola_de_gorila_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:ouro_colombiano_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:ultravioleta_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:kush_roxinha_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:neblina_roxa_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:ak_48_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:jack_heroi_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:bruno_banner_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:ouro_18k_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:kush_do_bubba_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:kush_de_manga_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:mirtilo_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:andarilho_do_ceu_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:soco_roxo_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:tri_campea_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:bolo_de_casamento_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:caramelo_critico_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:luzes_do_norte_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:bala_sortida_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:azul_arroxeado_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:creme_de_caramelo_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:confeitez_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:gorilao_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:viuva_branca_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:ligeirinha_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:do_si_do_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:viagem_25_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:cao_quimico_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:morango_com_banana_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:frutinha_veloz_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:chiclete_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:viagem_lisergica_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:gelato_azul_42_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:morango_azedo_crop",
+      "required": false
+    },
+    {
+      "id": "cultivo:bananona_crop",
+      "required": false
+    }
+  ]
+}

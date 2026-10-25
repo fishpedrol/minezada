@@ -1,0 +1,165 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "cultivo:brisa_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:aurora_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:eclipse_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:manga_gelada_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:amnesia_neblina_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:cola_de_gorila_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:ouro_colombiano_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:ultravioleta_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:kush_roxinha_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:neblina_roxa_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:ak_48_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:jack_heroi_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:bruno_banner_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:ouro_18k_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:kush_do_bubba_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:kush_de_manga_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:mirtilo_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:andarilho_do_ceu_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:soco_roxo_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:tri_campea_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:bolo_de_casamento_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:caramelo_critico_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:luzes_do_norte_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:bala_sortida_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:azul_arroxeado_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:creme_de_caramelo_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:confeitez_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:gorilao_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:viuva_branca_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:ligeirinha_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:do_si_do_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:viagem_25_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:cao_quimico_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:morango_com_banana_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:frutinha_veloz_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:chiclete_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:viagem_lisergica_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:gelato_azul_42_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:morango_azedo_seeds",
+      "required": false
+    },
+    {
+      "id": "cultivo:bananona_seeds",
+      "required": false
+    }
+  ]
+}

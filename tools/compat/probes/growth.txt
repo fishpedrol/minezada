@@ -1,0 +1,85 @@
+# Sonda de crescimento em produção (gerada por tools/compat/gen-probes.mjs; não edite à mão).
+# 4 lavouras do Cultivo e 4 trigos de controle em farmland molhada, numa plataforma a céu aberto em
+# y=120 com bioma plains forçado. Com random_tick_speed 300 o trigo leva cerca de 15 s; esperamos 30 s.
+forceload add -16 -16 15 15
+gamerule random_tick_speed 300
+fill -10 112 -10 10 130 10 minecraft:air
+fillbiome -16 112 -16 15 135 15 minecraft:plains
+fill -8 120 -8 8 120 8 minecraft:farmland[moisture=7]
+execute if biome 0 121 0 minecraft:plains run say SONDA diagnostico bioma=plains
+execute unless biome 0 121 0 minecraft:plains run say SONDA diagnostico bioma=OUTRO
+fill -6 120 -3 -3 120 -3 minecraft:water
+setblock -6 121 -4 cultivo:brisa_crop
+setblock -5 121 -4 cultivo:brisa_crop
+setblock -4 121 -4 cultivo:brisa_crop
+setblock -3 121 -4 cultivo:brisa_crop
+fill 2 120 -3 5 120 -3 minecraft:water
+setblock 2 121 -4 minecraft:wheat
+setblock 3 121 -4 minecraft:wheat
+setblock 4 121 -4 minecraft:wheat
+setblock 5 121 -4 minecraft:wheat
+@wait 30
+execute if block -6 121 -4 cultivo:brisa_crop[age=0] run say SONDA cultivo 1 idade=0
+execute if block -6 121 -4 cultivo:brisa_crop[age=1] run say SONDA cultivo 1 idade=1
+execute if block -6 121 -4 cultivo:brisa_crop[age=2] run say SONDA cultivo 1 idade=2
+execute if block -6 121 -4 cultivo:brisa_crop[age=3] run say SONDA cultivo 1 idade=3
+execute if block -6 121 -4 cultivo:brisa_crop[age=4] run say SONDA cultivo 1 idade=4
+execute if block -6 121 -4 cultivo:brisa_crop[age=5] run say SONDA cultivo 1 idade=5
+execute if block -6 121 -4 cultivo:brisa_crop[age=6] run say SONDA cultivo 1 idade=6
+execute if block -6 121 -4 cultivo:brisa_crop[age=7] run say SONDA cultivo 1 idade=7
+execute if block -5 121 -4 cultivo:brisa_crop[age=0] run say SONDA cultivo 2 idade=0
+execute if block -5 121 -4 cultivo:brisa_crop[age=1] run say SONDA cultivo 2 idade=1
+execute if block -5 121 -4 cultivo:brisa_crop[age=2] run say SONDA cultivo 2 idade=2
+execute if block -5 121 -4 cultivo:brisa_crop[age=3] run say SONDA cultivo 2 idade=3
+execute if block -5 121 -4 cultivo:brisa_crop[age=4] run say SONDA cultivo 2 idade=4
+execute if block -5 121 -4 cultivo:brisa_crop[age=5] run say SONDA cultivo 2 idade=5
+execute if block -5 121 -4 cultivo:brisa_crop[age=6] run say SONDA cultivo 2 idade=6
+execute if block -5 121 -4 cultivo:brisa_crop[age=7] run say SONDA cultivo 2 idade=7
+execute if block -4 121 -4 cultivo:brisa_crop[age=0] run say SONDA cultivo 3 idade=0
+execute if block -4 121 -4 cultivo:brisa_crop[age=1] run say SONDA cultivo 3 idade=1
+execute if block -4 121 -4 cultivo:brisa_crop[age=2] run say SONDA cultivo 3 idade=2
+execute if block -4 121 -4 cultivo:brisa_crop[age=3] run say SONDA cultivo 3 idade=3
+execute if block -4 121 -4 cultivo:brisa_crop[age=4] run say SONDA cultivo 3 idade=4
+execute if block -4 121 -4 cultivo:brisa_crop[age=5] run say SONDA cultivo 3 idade=5
+execute if block -4 121 -4 cultivo:brisa_crop[age=6] run say SONDA cultivo 3 idade=6
+execute if block -4 121 -4 cultivo:brisa_crop[age=7] run say SONDA cultivo 3 idade=7
+execute if block -3 121 -4 cultivo:brisa_crop[age=0] run say SONDA cultivo 4 idade=0
+execute if block -3 121 -4 cultivo:brisa_crop[age=1] run say SONDA cultivo 4 idade=1
+execute if block -3 121 -4 cultivo:brisa_crop[age=2] run say SONDA cultivo 4 idade=2
+execute if block -3 121 -4 cultivo:brisa_crop[age=3] run say SONDA cultivo 4 idade=3
+execute if block -3 121 -4 cultivo:brisa_crop[age=4] run say SONDA cultivo 4 idade=4
+execute if block -3 121 -4 cultivo:brisa_crop[age=5] run say SONDA cultivo 4 idade=5
+execute if block -3 121 -4 cultivo:brisa_crop[age=6] run say SONDA cultivo 4 idade=6
+execute if block -3 121 -4 cultivo:brisa_crop[age=7] run say SONDA cultivo 4 idade=7
+execute if block 2 121 -4 minecraft:wheat[age=0] run say SONDA trigo 1 idade=0
+execute if block 2 121 -4 minecraft:wheat[age=1] run say SONDA trigo 1 idade=1
+execute if block 2 121 -4 minecraft:wheat[age=2] run say SONDA trigo 1 idade=2
+execute if block 2 121 -4 minecraft:wheat[age=3] run say SONDA trigo 1 idade=3
+execute if block 2 121 -4 minecraft:wheat[age=4] run say SONDA trigo 1 idade=4
+execute if block 2 121 -4 minecraft:wheat[age=5] run say SONDA trigo 1 idade=5
+execute if block 2 121 -4 minecraft:wheat[age=6] run say SONDA trigo 1 idade=6
+execute if block 2 121 -4 minecraft:wheat[age=7] run say SONDA trigo 1 idade=7
+execute if block 3 121 -4 minecraft:wheat[age=0] run say SONDA trigo 2 idade=0
+execute if block 3 121 -4 minecraft:wheat[age=1] run say SONDA trigo 2 idade=1
+execute if block 3 121 -4 minecraft:wheat[age=2] run say SONDA trigo 2 idade=2
+execute if block 3 121 -4 minecraft:wheat[age=3] run say SONDA trigo 2 idade=3
+execute if block 3 121 -4 minecraft:wheat[age=4] run say SONDA trigo 2 idade=4
+execute if block 3 121 -4 minecraft:wheat[age=5] run say SONDA trigo 2 idade=5
+execute if block 3 121 -4 minecraft:wheat[age=6] run say SONDA trigo 2 idade=6
+execute if block 3 121 -4 minecraft:wheat[age=7] run say SONDA trigo 2 idade=7
+execute if block 4 121 -4 minecraft:wheat[age=0] run say SONDA trigo 3 idade=0
+execute if block 4 121 -4 minecraft:wheat[age=1] run say SONDA trigo 3 idade=1
+execute if block 4 121 -4 minecraft:wheat[age=2] run say SONDA trigo 3 idade=2
+execute if block 4 121 -4 minecraft:wheat[age=3] run say SONDA trigo 3 idade=3
+execute if block 4 121 -4 minecraft:wheat[age=4] run say SONDA trigo 3 idade=4
+execute if block 4 121 -4 minecraft:wheat[age=5] run say SONDA trigo 3 idade=5
+execute if block 4 121 -4 minecraft:wheat[age=6] run say SONDA trigo 3 idade=6
+execute if block 4 121 -4 minecraft:wheat[age=7] run say SONDA trigo 3 idade=7
+execute if block 5 121 -4 minecraft:wheat[age=0] run say SONDA trigo 4 idade=0
+execute if block 5 121 -4 minecraft:wheat[age=1] run say SONDA trigo 4 idade=1
+execute if block 5 121 -4 minecraft:wheat[age=2] run say SONDA trigo 4 idade=2
+execute if block 5 121 -4 minecraft:wheat[age=3] run say SONDA trigo 4 idade=3
+execute if block 5 121 -4 minecraft:wheat[age=4] run say SONDA trigo 4 idade=4
+execute if block 5 121 -4 minecraft:wheat[age=5] run say SONDA trigo 4 idade=5
+execute if block 5 121 -4 minecraft:wheat[age=6] run say SONDA trigo 4 idade=6
+execute if block 5 121 -4 minecraft:wheat[age=7] run say SONDA trigo 4 idade=7

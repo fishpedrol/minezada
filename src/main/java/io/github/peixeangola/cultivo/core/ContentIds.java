@@ -101,6 +101,12 @@ public final class ContentIds {
     public static final String GRINDER_PROPERTY = "grinder";
 
     /** Nomes dos GameTests; cada um tem data/cultivo/test_instance/&lt;nome&gt;.json. */
+    /**
+     * Estações do Serene Seasons (mod opcional de terceiros) em que as lavouras do Cultivo são férteis: as mesmas do
+     * trigo no Serene Seasons 26.1.2.0.7 (verão e outono). O gerador escreve as tags sereneseasons:*_crops.
+     */
+    public static final List<String> SERENE_SEASONS_CROP_SEASONS = List.of("summer", "autumn");
+
     public static final List<String> GAME_TESTS = List.of(
         "outdoor_growth",
         "greenhouse_quality",
@@ -162,7 +168,8 @@ public final class ContentIds {
         "sieve_grinder_shape",
         "ashtray_search_edges",
         "block_states_match_ids",
-        "tooltips_show_profile_and_marks");
+        "tooltips_show_profile_and_marks",
+        "serene_seasons_compat");
 
     private ContentIds() {}
 

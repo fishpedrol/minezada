@@ -165,6 +165,7 @@ public final class CultivoGameTests {
         TESTS.register("ashtray_search_edges", () -> CultivoGameTests::ashtraySearchEdges);
         TESTS.register("block_states_match_ids", () -> CultivoGameTests::blockStatesMatchIds);
         TESTS.register("tooltips_show_profile_and_marks", () -> CultivoGameTests::tooltipsShowProfileAndMarks);
+        TESTS.register("serene_seasons_compat", () -> CultivoGameTests::sereneSeasonsCompat);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -2895,6 +2896,127 @@ public final class CultivoGameTests {
             List<Component> jarTip = tooltipOf(helper, new ItemStack(ModItems.ARTICLES.get(ContentIds.JAR).get()));
             check(keysOf(jarTip).equals(List.of("tooltip.cultivo.jar.1", "tooltip.cultivo.jar.2", "tooltip.cultivo.jar.3",
                 "tooltip.cultivo.jar.4")), "pote: " + keysOf(jarTip));
+        });
+    }
+
+    // ------------------------------------------------------------------ compatibilidade: Serene Seasons
+
+    /** Estações do Serene Seasons, escritas como na especificação (DECISIONS.md, "Compatibilidade: Serene Seasons"). */
+    private static final List<String> SS_SEASONS = List.of("spring", "summer", "autumn", "winter");
+    private static final List<String> SS_FERTILE_LIKE_WHEAT = List.of("summer", "autumn");
+
+    private static net.minecraft.tags.TagKey<Block> ssBlockTag(String path) {
+        return net.minecraft.tags.TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("sereneseasons", path));
+    }
+
+    private static net.minecraft.tags.TagKey<Item> ssItemTag(String path) {
+        return net.minecraft.tags.TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("sereneseasons", path));
+    }
+
+    private static void command(GameTestHelper helper, String command) {
+        var server = helper.getLevel().getServer();
+        server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(), command);
+    }
+
+    /** Dá random ticks na planta (passando pelo BlockState, onde o Serene Seasons se pendura) até a idade 7. */
+    private static int tickUntilMature(GameTestHelper helper, BlockPos relative, int maxTicks) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pos = helper.absolutePos(relative);
+        int ticks = 0;
+        while (ticks < maxTicks && level.getBlockState(pos).getValue(CropBlock.AGE) < 7) {
+            level.getBlockState(pos).randomTick(level, pos, level.getRandom());
+            ticks++;
+        }
+        return level.getBlockState(pos).getValue(CropBlock.AGE);
+    }
+
+    /**
+     * Serene Seasons (mod opcional de terceiros). Sempre: as 40 lavouras estão nas tags de bloco de verão e de outono
+     * do Serene Seasons, e só nelas, as 40 sementes nas tags de item correspondentes, e a planta silvestre em nenhuma
+     * (sem o Serene Seasons instalado, essas tags existem só pelos dados do Cultivo e nada as lê).
+     *
+     * <p>Com o Serene Seasons na pasta de mods (tools/compat/README.md: runGameTestServer com
+     * -Pcultivo_run_dir=run-compat-ss e out_of_season_crop_behavior = 1), confere também o efeito, como no single
+     * player: o trigo e a lavoura do Cultivo pertencem às mesmas estações; no início da primavera, num bioma temperado,
+     * nenhum dos dois cresce; sob um bloco de vidro os dois crescem; no meio do verão os dois crescem. O Forge 26.3 só
+     * dispara o TagsUpdatedEvent no cliente, então o teste o dispara como o cliente do single player faria.
+     *
+     * <p>Muda estado global: depois dele, até o fim da execução, o Serene Seasons segue com as listas montadas e a
+     * estação fica no meio do verão (fértil para tudo que ele lista), então os outros testes crescem normalmente.
+     */
+    public static void sereneSeasonsCompat(GameTestHelper helper) {
+        run(helper, () -> {
+            Block wild = ModBlocks.WILD_PLANT.get();
+            for (String season : SS_SEASONS) {
+                boolean fertile = SS_FERTILE_LIKE_WHEAT.contains(season);
+                for (Variety variety : Variety.values()) {
+                    check(crop(variety, 0).is(ssBlockTag(season + "_crops")) == fertile,
+                        variety.cropId() + " em sereneseasons:" + season + "_crops deveria ser " + fertile);
+                    check(new ItemStack(ModItems.SEEDS.get(variety).get()).is(ssItemTag(season + "_crops")) == fertile,
+                        variety.seedsId() + " na tag de item " + season + "_crops deveria ser " + fertile);
+                }
+                check(!wild.defaultBlockState().is(ssBlockTag(season + "_crops")), "planta silvestre em " + season);
+            }
+            check(!crop(Variety.BRISA, 0).is(ssBlockTag("unbreakable_infertile_crops")), "o trigo não está nessa tag");
+
+            if (!net.minecraftforge.fml.ModList.isLoaded("sereneseasons")) {
+                return;
+            }
+            // Com o Serene Seasons: o trigo está nas mesmas estações que o Cultivo (paridade).
+            for (String season : SS_SEASONS) {
+                check(Blocks.WHEAT.defaultBlockState().is(ssBlockTag(season + "_crops")) == SS_FERTILE_LIKE_WHEAT.contains(season),
+                    "o trigo mudou de estações no Serene Seasons (" + season + "): reveja a paridade");
+            }
+            int behavior;
+            try {
+                Object fertility = Class.forName("sereneseasons.init.ModConfig").getField("fertility").get(null);
+                behavior = fertility.getClass().getField("outOfSeasonCropBehavior").getInt(fertility);
+            } catch (ReflectiveOperationException e) {
+                throw new Failure("não consegui ler a config do Serene Seasons: " + e);
+            }
+            check(behavior == 1, "rode com out_of_season_crop_behavior = 1 (tools/compat/config-cant-grow), veio " + behavior);
+
+            // O que o cliente do single player faz ao receber as tags: o Serene Seasons monta as listas de lavouras.
+            net.minecraftforge.event.ForgeEventFactory.onTagsUpdated(helper.getLevel().registryAccess(), true, true);
+            // A partir daqui o Serene Seasons fica ativo até o fim da execução (não há como desfazer o evento). O finally
+            // termina no meio do verão, fértil para o Cultivo e para o trigo, para não travar testes que rodem depois.
+            try {
+                BlockPos min = helper.absolutePos(BlockPos.ZERO);
+                BlockPos max = helper.absolutePos(new BlockPos(8, 8, 8));
+                command(helper, "fillbiome " + min.getX() + " " + min.getY() + " " + min.getZ() + " "
+                    + max.getX() + " " + max.getY() + " " + max.getZ() + " minecraft:plains");
+                check(helper.getLevel().getBiome(helper.absolutePos(PLANT)).is(net.minecraft.world.level.biome.Biomes.PLAINS),
+                    "o bioma da área não virou plains");
+                check(helper.getLevel().canSeeSky(helper.absolutePos(PLANT)), "a planta precisa ver o céu");
+
+                BlockPos wheatSoil = SOIL.east(2);
+                BlockPos wheat = PLANT.east(2);
+                Runnable plantBoth = () -> {
+                    plantOnFarmland(helper, Variety.BRISA, 0);
+                    helper.setBlock(wheatSoil, Blocks.FARMLAND.defaultBlockState().setValue(FarmlandBlock.MOISTURE, FarmlandBlock.MAX_MOISTURE));
+                    helper.setBlock(wheat, Blocks.WHEAT.defaultBlockState());
+                };
+
+                command(helper, "season set early_spring");
+                plantBoth.run();
+                check(tickUntilMature(helper, PLANT, 300) == 0, "Cultivo cresceu fora de estação (primavera)");
+                check(tickUntilMature(helper, wheat, 300) == 0, "trigo cresceu fora de estação (primavera): o Serene Seasons não está ativo");
+
+                // Um bloco de vidro até 16 acima é a "estufa" do Serene Seasons: os dois crescem mesmo fora de estação.
+                helper.setBlock(PLANT.above(3), Blocks.GLASS.defaultBlockState());
+                helper.setBlock(wheat.above(3), Blocks.GLASS.defaultBlockState());
+                check(tickUntilMature(helper, PLANT, 20_000) == 7, "Cultivo sob vidro não cresceu na primavera");
+                check(tickUntilMature(helper, wheat, 20_000) == 7, "trigo sob vidro não cresceu na primavera");
+                helper.setBlock(PLANT.above(3), Blocks.AIR.defaultBlockState());
+                helper.setBlock(wheat.above(3), Blocks.AIR.defaultBlockState());
+
+                command(helper, "season set mid_summer");
+                plantBoth.run();
+                check(tickUntilMature(helper, PLANT, 20_000) == 7, "Cultivo não cresceu no verão");
+                check(tickUntilMature(helper, wheat, 20_000) == 7, "trigo não cresceu no verão");
+            } finally {
+                command(helper, "season set mid_summer");
+            }
         });
     }
 }

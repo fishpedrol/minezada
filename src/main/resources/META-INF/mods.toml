@@ -11,10 +11,12 @@ authors="Colaboradores do Cultivo"
 description='''Cultivo fictício de variedades de planta, com estufa, secagem, peneira, prensa e artigos de fumo para fabricar.
 Mod privado para jogar com os amigos; tudo é mecânica de jogo, sem nada do mundo real.'''
 
+# Forge 66.0.2 é a menor versão testada (a do launcher do dono; veja docs/TECHNICAL_RESEARCH.md). As 66.0.0 e 66.0.1
+# ficam de fora: não foram testadas e a 66.0.2 corrige "players dropping items", que o Cultivo usa para devolver sobras.
 [[dependencies.cultivo]]
     modId="forge"
     mandatory=true
-    versionRange="[66,)"
+    versionRange="[66.0.2,)"
     ordering="NONE"
     side="BOTH"
 

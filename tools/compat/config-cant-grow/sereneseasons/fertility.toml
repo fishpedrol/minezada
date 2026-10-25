@@ -1,0 +1,8 @@
+# Config do Serene Seasons usada só pela sonda de compatibilidade (tools/compat/README.md): com
+# out_of_season_crop_behavior = 1, uma lavoura fora de estação NÃO cresce, o que torna o resultado determinístico
+# (o padrão 0 só deixa passar 1 de cada 6 random ticks, e uma planta sozinha pode amadurecer por sorte).
+[general]
+	seasonal_crops = true
+	out_of_season_crop_behavior = 1
+	underground_fertility_level = 48
+	crop_tooltips = true

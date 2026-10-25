@@ -1,6 +1,6 @@
 # Plano do mod
 
-**Estado em 25/10/2026, com o código do commit `f515cb9` (branch `claude/polish-visual-uses`).**
+**Estado em 25/10/2026.** No PC do dono, com o código de `f515cb9` (branch `claude/polish-visual-uses`, já na `main` pelo PR #4). Na nuvem, com a branch `claude/forge-compat-seasons` (compatibilidade com o Forge 66.0.2 do launcher do dono e com o Serene Seasons): `build` com 316 testes JUnit e `runGameTestServer` com `All 63 required tests passed :)`, também no Forge 66.0.2 e com o Serene Seasons carregado (linhas de 25/10/2026, nuvem, na tabela abaixo).
 
 Compilam e passam no PC do dono:
 - o MVP;
@@ -53,6 +53,20 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 | 25/10/2026 | PC local: investigação da bandeja (log temporário no `useItemOn` e no clique do mouse, removido depois) | O raio do clique acertava a pedra ao lado da bandeja (2 px de altura); olhando de cima, o clique chega ao bloco e o mod funciona: `Baseado enrolado`, 3 baseados, e sem folhas "Você precisa de 3 folhas de seda no inventário". Não era bug do mod; o teste passou a mirar de cima. |
 | 25/10/2026 | PC local, correção da fumaça em 1ª pessoa + teste ajustado (commit `f515cb9`): `.\gradlew.bat build` / teste visual completo de novo | **`BUILD SUCCESSFUL in 11s`**, 311 testes, 0 falhas (inclui a varredura que proíbe classes de cliente no código comum) / 47 prints, log limpo; a mancha preta sumiu (fica a brasa e a chama), bandeja enrola e recusa, suporte recebe e devolve (agachado). |
 | 25/10/2026 | PC local: `run-probe.ps1 -Multiplayer` (servidor dedicado em 127.0.0.1 + cliente) | Parcial: `Done (0.434s)!`, `Dev[/127.0.0.1:55502] logged in with entity id 1`, cenas `cam_crops` e `cam_families` construídas e vistas pelo cliente (2 prints), nenhum erro nem desconexão nos dois logs. O Claude Code parou o teste por falta de memória (dois jogos + dois Gradle). `server.properties` e `options.txt` voltaram ao original. |
+| 25/10/2026 | nuvem (Linux, Temurin 25.0.1+8, Node 22.22.0), ponto de partida `6d6ed4a` (main com o PR #4): `node tools/gen/generate.mjs` / `./gradlew build --console=plain` / `./gradlew runGameTestServer --console=plain` | `285 texturas e 786 arquivos JSON`, `git status` limpo / **`BUILD SUCCESSFUL in 1m 13s`**, XML do JUnit: 311 testes, 0 falhas / **`All 62 required tests passed :)`** |
+| 25/10/2026 | nuvem: `./gradlew build -Pcultivo_forge_version=26.3-66.0.2 --console=plain` (propriedade nova; o padrão continua 66.0.13) | **`BUILD SUCCESSFUL in 2m 1s`**, log `Processing Minecraft dependency: net.minecraftforge:forge:26.3-66.0.2`; 311 testes, 0 falhas |
+| 25/10/2026 | nuvem: `./gradlew runGameTestServer -Pcultivo_forge_version=26.3-66.0.2 -Pcultivo_run_dir=run-compat-forge-66.0.2 --console=plain` | Log `Forge mod loading, version 66.0.2`; **`All 62 required tests passed :)`** |
+| 25/10/2026 | nuvem: servidor de **produção** Forge 26.3-66.0.2 (instalador oficial `--installServer`) com o jar do Cultivo compilado no 66.0.13, `/test run cultivo:*` pelo console | Sobe (`Done (0.701s)!`) e responde `Running 61 test(s)...`, mas os testes nunca terminam (parado após 15 min): em produção o Forge não avança o `GameTestTicker` (`ForgeGameTestHooks.isGametestEnabled()` exige `!FMLLoader.isProduction()`). Não é falha do Cultivo; o teste de produção passou a usar sondas de console. |
+| 25/10/2026 | nuvem: `bash tools/compat/forge-server-compat.sh 26.3-66.0.2` (produção, sonda `growth.txt`: 4 lavouras `brisa_crop` e 4 trigos a céu aberto, y=120, bioma plains, `random_tick_speed 300`, 30 s) | `SONDA diagnostico bioma=plains`; idades Cultivo [6, 7, 7, 7] e trigo [7, 7, 7, 7] |
+| 25/10/2026 | nuvem: Serene Seasons 26.1.2.0.7 + GlitchCore 26.3.0.0.5 (Modrinth, sha512 conferido) em produção no Forge 66.0.2, com `out_of_season_crop_behavior = 1` (`CULTIVO_COMPAT_CONFIG=tools/compat/config-cant-grow`), sonda `seasons.txt` | `Set season to Early Spring`; os 4 **trigos** ao ar livre chegaram à idade 7 na primavera, o que seria impossível com o Serene Seasons ativo. Mixin confirmado com `-Dmixin.debug.export=true` (`Mixing MixinBlockStateBase from sereneseasons.mixins.json into ...BlockBehaviour$BlockStateBase`). Causa achada nas fontes do Forge 26.3 (66.0.2 e 66.0.13): `ForgeEventFactory.onTagsUpdated` só é chamado em `ClientPacketListener`; o servidor nunca dispara o `TagsUpdatedEvent`, e o Serene Seasons só monta a lista de lavouras nesse evento. **Num servidor dedicado o Serene Seasons não afeta nenhuma lavoura**; em single player/LAN o cliente dispara o evento e as estações funcionam. |
+| 25/10/2026 | nuvem, commit `2f6ae47` (tags do Serene Seasons iguais às do trigo + `mods.toml` forge `[66.0.2,)`): `node tools/gen/generate.mjs` / `./gradlew build --console=plain` / `./gradlew runGameTestServer --console=plain` | `285 texturas e 791 arquivos JSON` (786 + 4 tags + 1 test_instance) / **`BUILD SUCCESSFUL in 8s`**, XML do JUnit: 316 testes, 0 falhas (5 do `CompatibilityTest`) / **`All 63 required tests passed :)`**, sem `Couldn't load tag` |
+| 25/10/2026 | nuvem: `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` (`run-compat-ss/mods` com Serene Seasons + GlitchCore, `config/sereneseasons/fertility.toml` com `out_of_season_crop_behavior = 1`) | Log `Registered synced config with path sereneseasons/fertility.toml`; **`All 63 required tests passed :)`**. O `serene_seasons_compat`, com a sincronização de tags do single player simulada, viu: primavera, Cultivo e trigo parados em 300 random ticks; com um bloco de vidro 3 acima, os dois chegam a 7; no verão, os dois chegam a 7. |
+| 25/10/2026 | nuvem: teste negativo, sem a linha `ForgeEventFactory.onTagsUpdated(...)` no `serene_seasons_compat`, mesmo comando | `cultivo:serene_seasons_compat failed ... Cultivo cresceu fora de estação (primavera)` e `1 required tests failed :(`: o ramo do Serene Seasons testa de verdade. Linha restaurada. |
+| 25/10/2026 | nuvem: `./gradlew runGameTestServer -Pcultivo_forge_version=26.3-66.0.2 -Pcultivo_run_dir=run-compat-ss --console=plain` (a combinação do launcher do dono) | Log `Forge mod loading, version 66.0.2`; **`All 63 required tests passed :)`** |
+| 25/10/2026 | nuvem: produção Forge 66.0.2 + Serene Seasons + GlitchCore com o jar novo (com as tags), config "não cresce", sonda `seasons.txt` | Todas as fileiras (Cultivo e trigo, ao ar livre e sob vidro, primavera e verão) com idades [7, 7, 7, 7]; 0 linhas `Couldn't load tag`. No servidor dedicado o Cultivo se comporta igual ao trigo. |
+| 25/10/2026 | nuvem: inspeção do jar `build/libs/cultivo-0.1.0.jar` do código `2f6ae47` (`unzip -l`) | 1250 entradas, 285 PNGs, 105 classes (5 em `cultivo/client/`); 0 arquivos em `net/minecraft`, `com/mojang` ou `assets/minecraft`. Dados: `assets/cultivo`, `data/cultivo`, `data/minecraft` (5 tags + `farm_plains.json`, overrides do próprio mod) e `data/sereneseasons` (4 tags). `mods.toml`: `cultivo` 0.1.0, MIT, forge `[66.0.2,)`, minecraft `[26.3,26.4)`. |
+| 25/10/2026 | nuvem, commit `ace0bf3` (revisão: `serene_seasons_compat` termina no meio do verão num `finally`; script de compatibilidade com `trap` de SIGPIPE/EXIT, checagem da pasta de extras e java do `JAVA_HOME`; `CompatibilityTest` tira `\r`): `node tools/gen/generate.mjs` / `./gradlew build --console=plain` / `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` / `./gradlew runGameTestServer --console=plain` | `285 texturas e 791 arquivos JSON`, sem diferença / XML do JUnit: 316 testes, 0 falhas / **`All 63 required tests passed :)`** (com Serene Seasons) / **`All 63 required tests passed :)`** (sem) |
+| 25/10/2026 | nuvem: `bash tools/compat/forge-server-compat.sh 26.3-66.0.2` com o script revisado / mesmo script com pasta de extras inexistente / com uma pasta de extras contendo uma cópia do jar do Cultivo | Código 0, `SONDA diagnostico bioma=plains`, Cultivo [7, 7, 7, 7], trigo [7, 7, 4, 7] / `pasta de mods extras não encontrada`, código 2, antes de baixar ou apagar nada / o Forge ignorou o jar duplicado e a sonda rodou normal (código 0); o caminho "servidor morre no meio" segue sem teste real. |
 **Conferência dos formatos:**
 - Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: `loot_table/blocks/wheat.json`, `chests/village/village_plains_house.json`, `processor_list/farm_plains.json` (as regras vanilla do mod são idênticas às do jar), `feature/melon.json`, `placed_feature/patch_melon.json`, `recipe/bowl.json`/`book.json` e `test_instance/always_pass.json`.
 - Os formatos novos de 24/10 foram conferidos contra o código e os JSONs do 26.3 e pelos testes JUnit de `data/`; os de cliente carregaram sem erro no `runClient` do teste visual de 25/10. São eles:
@@ -175,14 +189,22 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 - [x] Animações, texturas animadas, partículas e legendas dos sons vistas no cliente (teste visual de 25/10).
 - [ ] Ouvir os sons (o teste só confere as legendas).
 
+## 3e. Compatibilidade com o ambiente do dono (25/10/2026)
+- [x] Forge 26.3-66.0.2 (o do launcher do dono): build, 311 testes JUnit e 62 GameTests passam compilando contra ele; o jar compilado no 66.0.13 sobe num servidor de produção 66.0.2 e as lavouras crescem.
+- [x] `mods.toml` passa a exigir forge `[66.0.2,)` (menor versão testada); o build continua no 66.0.13 da matriz.
+- [x] Serene Seasons: as lavouras do Cultivo seguem as estações do trigo (tags `sereneseasons:summer_crops`/`autumn_crops`, bloco e semente), conferido por JUnit (`CompatibilityTest`) e pelo GameTest `serene_seasons_compat` com o Serene Seasons carregado, nos Forge 66.0.13 e 66.0.2.
+- [x] Servidor dedicado: descoberto e documentado que o Serene Seasons não afeta lavoura nenhuma no Forge 26.3 (o servidor nunca dispara o `TagsUpdatedEvent`).
+- [ ] Single player com o Serene Seasons e os outros mods do launcher (dica "Estações férteis" nas sementes, lavoura lenta na primavera, normal sob vidro): só o dono, com tela (GUIA_INICIANTE.md, seção 6).
+- [ ] Decisões do dono sobre o Serene Seasons (DECISIONS.md, "Em aberto").
+**Gate:** automático OK; falta a conferência do dono em single player.
+
 ## 4. Conteúdo de release
 - [x] Licença escolhida (MIT para código e assets do Cultivo) e registrada em `mods.toml` e `LICENSE`.
-- [x] Jar inspecionado: assets incluídos, nenhum arquivo do Minecraft (última inspeção registrada: código `1e7325a`).
-- [ ] Inspecionar e registrar o jar do código atual.
+- [x] Jar inspecionado: assets incluídos, nenhum arquivo do Minecraft (última inspeção registrada: código `2f6ae47`, 25/10/2026).
 - [x] `build` (com `test`), `runGameTestServer` e `runClient` (teste visual) com o código atual.
 - [ ] Cliente conectado ao servidor dedicado do começo ao fim (25/10 só parcial: entrou e sincronizou 2 cenas; parado por falta de memória).
 
-**Gate:** pendente do multiplayer completo e de registrar o jar atual.
+**Gate:** pendente do multiplayer completo.
 
 ## Próximos passos
 O passo a passo para leigos está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md); a lista completa, em [NEXT_SESSION.md](NEXT_SESSION.md), seção 8.
@@ -190,5 +212,5 @@ O passo a passo para leigos está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md); a l
 1. **Multiplayer:** repetir `run-probe.ps1 -Multiplayer` com o PC folgado (feche navegador e jogos; são dois Minecraft e dois Gradle). Depois, o ciclo completo com um amigo (plantar, colher, secar, peneirar, prensar, craftar, curar, enrolar, fumar).
 2. **Olhar com calma no `runClient`** (seção 6.1 do guia): mão esquerda, sons e o que o teste automático não cobre.
 3. **Mundo novo:** planta silvestre na selva e na planície, lavouras de aldeia, baús de aldeia e um mascate com sementes do catálogo.
-4. **Ambiente do dono:** testar com o Serene Seasons e decidir a faixa do Forge no `mods.toml`.
+4. **Ambiente do dono:** jogar em single player com o Serene Seasons e os outros mods do launcher (Forge 66.0.2 agora aceito) e conferir as estações nas lavouras do Cultivo (GUIA_INICIANTE.md, seção 6); decidir as perguntas em aberto do Serene Seasons (DECISIONS.md).
 5. **Balanceamento** depois de jogar (DECISIONS.md, "Em aberto").
