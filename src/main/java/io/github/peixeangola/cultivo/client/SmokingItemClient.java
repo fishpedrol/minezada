@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.peixeangola.cultivo.core.SmokeAnimation;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.item.SmokingItem;
+import io.github.peixeangola.cultivo.smoke.SmokeEffects;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.LocalPlayer;
@@ -50,7 +52,11 @@ public final class SmokingItemClient implements IClientItemExtensions {
      * acontece.
      */
     static void init() {
-        // O inicializador estático desta classe é o trabalho todo
+        // O inicializador estático desta classe cria as poses; aqui só falta avisar quem é a câmera em 1ª pessoa
+        SmokeEffects.setFirstPersonViewer(entity -> {
+            Minecraft minecraft = Minecraft.getInstance();
+            return entity == minecraft.getCameraEntity() && minecraft.options.getCameraType().isFirstPerson();
+        });
     }
 
     @Override

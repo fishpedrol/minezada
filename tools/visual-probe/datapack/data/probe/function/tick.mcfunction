@@ -1,11 +1,29 @@
-# Linha do tempo em ticks desde que o jogador entrou. O run-probe.ps1 tira os prints nos mesmos tempos.
+# Linha do tempo em ticks desde que o jogador entrou. O run-probe.ps1 espera cada "say probe:<nome>".
 execute if entity @a run scoreboard players add #t probe 1
 execute if score #t probe matches 20 run function probe:prepare
 execute if score #t probe matches 60 run function probe:build
 execute if score #t probe matches 100 run function probe:cam_crops
-execute if score #t probe matches 300 run function probe:cam_stations
-execute if score #t probe matches 500 run function probe:cam_greenhouse
-execute if score #t probe matches 700 run function probe:cam_items
-execute if score #t probe matches 900 run function probe:inventory
-execute if score #t probe matches 1100 run function probe:held
-execute if score #t probe matches 1300 run function probe:smoke
+execute if score #t probe matches 260 run function probe:cam_families
+execute if score #t probe matches 420 run function probe:cam_drying
+execute if score #t probe matches 580 run function probe:cam_sieve
+execute if score #t probe matches 740 run function probe:cam_press
+execute if score #t probe matches 900 run function probe:cam_articles
+execute if score #t probe matches 1060 run function probe:cam_greenhouse
+execute if score #t probe matches 1220 run function probe:cam_strains_a
+execute if score #t probe matches 1380 run function probe:cam_strains_b
+execute if score #t probe matches 1540 run function probe:cam_products
+execute if score #t probe matches 1700 run function probe:cam_in_hand
+execute if score #t probe matches 1860 run function probe:inventory
+execute if score #t probe matches 2260 run function probe:creative
+execute if score #t probe matches 2520 run function probe:use_tray_ok
+execute if score #t probe matches 2640 run function probe:use_tray_refused
+execute if score #t probe matches 2760 run function probe:use_rack
+execute if score #t probe matches 2940 run function probe:use_grinder
+execute if score #t probe matches 3060 run function probe:held
+execute if score #t probe matches 3240 run function probe:smoke_joint
+execute if score #t probe matches 3460 run function probe:smoke_filtered
+execute if score #t probe matches 3640 run function probe:smoke_bong
+execute if score #t probe matches 3940 run function probe:smoke_hookah
+execute if score #t probe matches 4120 run function probe:smoke_pipe
+execute if score #t probe matches 4280 run function probe:smoke_chillum
+execute if score #t probe matches 4440 run function probe:end

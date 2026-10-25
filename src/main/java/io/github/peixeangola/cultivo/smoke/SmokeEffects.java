@@ -4,6 +4,7 @@ import io.github.peixeangola.cultivo.core.SmokeAnimation;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.registry.ModSounds;
 import java.util.Optional;
+import java.util.function.Predicate;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -36,8 +37,18 @@ public final class SmokeEffects {
     private static final ParticleOptions EMBER = new DustParticleOptions(0xFF8A2A, 0.45F);
     /** De quantos em quantos ticks o bong e o narguilé borbulham (som), depois de chegar à boca. */
     public static final int BUBBLE_SOUND_TICKS = 14;
+    /**
+     * Diz se a entidade é a câmera do próprio jogador em 1ª pessoa. O cliente troca isto no setup (este pacote não
+     * importa classes do cliente); no servidor fica sempre falso.
+     */
+    private static Predicate<LivingEntity> firstPersonViewer = entity -> false;
 
     private SmokeEffects() {}
+
+    /** Chamado pelo cliente no setup. */
+    public static void setFirstPersonViewer(Predicate<LivingEntity> viewer) {
+        firstPersonViewer = viewer;
+    }
 
     /** Lado da mão que segura o aparelho: +1 direita, -1 esquerda. */
     private static double handSide(LivingEntity user) {
@@ -80,12 +91,15 @@ public final class SmokeEffects {
         }
         double jx = (random.nextDouble() - 0.5D) * 0.06D;
         double jz = (random.nextDouble() - 0.5D) * 0.06D;
+        // Os fios de fumaça nascem a meio bloco do olho: na própria câmera em 1ª pessoa viravam uma mancha preta cobrindo
+        // a tela. Ali ficam de fora; brasa, bolhas e a baforada final continuam, e os outros jogadores veem a fumaça.
+        boolean wisps = !firstPersonViewer.test(user);
         switch (device) {
             case JOINT, PIPE, CHILLUM -> {
                 if (elapsed % 2 == 0) {
                     level.addParticle(EMBER, at.x + jx, at.y, at.z + jz, 0.0D, 0.01D, 0.0D);
                 }
-                if (elapsed % 3 == 0) {
+                if (wisps && elapsed % 3 == 0) {
                     level.addParticle(ParticleTypes.SMOKE, at.x, at.y + 0.04D, at.z, jx * 0.1D, 0.025D, jz * 0.1D);
                 }
             }
@@ -94,12 +108,12 @@ public final class SmokeEffects {
                     level.addParticle(ParticleTypes.BUBBLE_POP, at.x + jx, at.y + random.nextDouble() * 0.12D, at.z + jz,
                         0.0D, 0.02D, 0.0D);
                 }
-                if (elapsed % 4 == 0) {
+                if (wisps && elapsed % 4 == 0) {
                     level.addParticle(ParticleTypes.SMOKE, at.x, at.y + 0.18D, at.z, 0.0D, 0.03D, 0.0D);
                 }
             }
             case HOOKAH -> {
-                if (elapsed % 4 == 0) {
+                if (wisps && elapsed % 4 == 0) {
                     level.addParticle(ParticleTypes.WHITE_SMOKE, at.x + jx, at.y + 0.1D, at.z + jz, 0.0D, 0.02D, 0.0D);
                 }
                 if (random.nextInt(3) == 0) {
