@@ -43,7 +43,7 @@ class SoundsTest {
 
     @Test
     void registryManifestAndSoundsJsonListTheSameEvents() throws IOException {
-        assertEquals(16, ContentIds.SOUNDS.size());
+        assertEquals(18, ContentIds.SOUNDS.size());
         assertEquals(ContentIds.SOUNDS, registeredIds(), "ModSounds registra exatamente ContentIds.SOUNDS, na ordem");
         List<String> manifest = new ArrayList<>();
         Resources.json(StrainColumns.MANIFEST).getAsJsonArray("sounds")

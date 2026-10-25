@@ -3,8 +3,8 @@ package io.github.peixeangola.cultivo.core;
 /**
  * Pote (cultivo:jar): guarda uma pilha e cura flores secas. Uma pilha de flores secas que fica {@link #CURE_TICKS}
  * ticks no pote sem o conteúdo mudar ganha +1 de qualidade (até {@link QualityRules#MAX}) e a marca cultivo:cured, uma
- * vez só. O contador zera sempre que o conteúdo muda. Com a cura, o outdoor vai de 2–3 para 3–4 e a estufa de 4–5
- * para 5: a estufa continua melhor. Também define o sinal de comparador do pote. Classe pura; mecânica fictícia de
+ * vez só. O contador zera sempre que o conteúdo muda. Com a cura, o outdoor vai de 2–3 para 3–4 e a estufinha de 4–5
+ * para 5: a estufinha continua melhor. Também define o sinal de comparador do pote. Classe pura; mecânica fictícia de
  * jogo, em ticks.
  */
 public final class CuringRules {

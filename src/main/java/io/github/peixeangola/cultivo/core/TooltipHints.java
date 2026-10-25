@@ -22,7 +22,9 @@ public final class TooltipHints {
         Map.entry("tooltip.cultivo.grinder", 4),
         Map.entry("tooltip.cultivo.rolling_tray", 3),
         Map.entry("tooltip.cultivo.jar", 4),
-        Map.entry("tooltip.cultivo.ashtray", 3));
+        Map.entry("tooltip.cultivo.ashtray", 3),
+        Map.entry("tooltip.cultivo.grow_tent", 4),
+        Map.entry("tooltip.cultivo.bong.place", 2));
 
     private TooltipHints() {}
 

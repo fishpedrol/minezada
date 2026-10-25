@@ -338,8 +338,17 @@ export function articleModels() {
     };
   }
 
+  // Bong no chão (pedido do dono de 25/10/2026): os mesmos elementos do modelo na mão, em pé no bloco, com o fornilho
+  // virado para a esquerda de quem olha a frente (o norte antes de girar), e texturas de bloco (o atlas de blocos não
+  // tem as de item)
+  const bongHand = handModels().bong;
+  const bongTexture = (name) => id(`block/bong_${name}`);
+  const bong = blockParent({ particle: bongTexture('glass'), glass: bongTexture('glass'), water: bongTexture('water'),
+    steel: bongTexture('steel'), bowl: bongTexture('ash') }, bongHand.elements);
+
   return {
     rolling_tray: { facing: true, base: rollingTray, parts: {} },
+    bong: { facing: true, base: bong, parts: {} },
     jar: { facing: false, base: jar, parts: { filled: { when: { filled: ['true'] }, model: jarFilled } } },
     ashtray: { facing: false, base: ashtray, parts: ashParts },
   };
@@ -630,3 +639,120 @@ export function pressPlatenBlockstate() {
 
 /** Aparelhos cujo modelo na mão ganha a variante "_lit" (brasa) enquanto o jogador fuma. */
 export const LIT_DEVICES = ['bong', 'hookah', 'pipe', 'chillum', 'joint'];
+
+// ------------------------------------------------------------------ estufinha (grow tent)
+/** Metades da estufinha, na ordem do Minecraft (espelho de ContentIds.DOUBLE_BLOCK_HALVES). */
+export const GROW_TENT_HALVES = ['upper', 'lower'];
+
+/** Brilho do mylar de dentro da estufinha: o reflexo da lâmpada roxa aparece mesmo de dia e no escuro. */
+export const GROW_TENT_MYLAR_GLOW = 11;
+
+const OPPOSITE = { north: 'south', south: 'north', west: 'east', east: 'west', up: 'down', down: 'up' };
+
+/**
+ * Parede fina da estufinha: lona por fora (e nas bordas finas) e, por dentro, um plano de mylar que brilha com a luz
+ * roxa (light_emission só vale por elemento, então o mylar é um elemento à parte, sem a face interna da lona atrás).
+ * `outside` é a face que dá para fora.
+ */
+function tentWall(from, to, outside) {
+  const inside = OPPOSITE[outside];
+  const axis = AXIS[NORMAL_AXIS[inside]];
+  const wall = box(from, to, '#canvas', { cull: false, faces: ALL_FACES.filter((f) => f !== inside) });
+  // O plano fica na superfície de dentro da parede
+  const at = (inside === 'south' || inside === 'east' || inside === 'up') ? to[axis] : from[axis];
+  const planeFrom = [...from];
+  const planeTo = [...to];
+  planeFrom[axis] = at;
+  planeTo[axis] = at;
+  const mylar = {
+    from: planeFrom, to: planeTo,
+    light_emission: GROW_TENT_MYLAR_GLOW,
+    faces: { [inside]: { uv: defaultFaceUv(planeFrom, planeTo, inside).map(round), texture: '#mylar' } },
+  };
+  return [wall, mylar];
+}
+
+/**
+ * Modelos das duas metades da estufinha, com a frente (aberta) para o norte, como as estações: quatro postes de metal,
+ * paredes de lona com mylar por dentro, chão de lona e o vaso de tecido em baixo; teto, aba enrolada e a lâmpada roxa
+ * em cima. O painel de LEDs e o ponto roxo no poste da frente têm light_emission 15 (novo no 26.3): brilham mesmo no
+ * escuro. A planta não está no modelo: o cliente desenha a lavoura da variedade dentro dela (GrowTentRenderer).
+ */
+export function growTentModels() {
+  const textures = {
+    particle: id('block/grow_tent_canvas'),
+    canvas: id('block/grow_tent_canvas'),
+    mylar: id('block/grow_tent_mylar'),
+    frame: id('block/grow_tent_frame'),
+    flap: id('block/grow_tent_flap'),
+    lamp: id('block/grow_tent_lamp'),
+    pot: id('block/grow_tent_pot'),
+  };
+  const poles = (top) => [[1, 1], [14, 1], [1, 14], [14, 14]].map(([x, z]) =>
+    box([x, 0, z], [x + 1, top, z + 1], '#frame', { grain: 'y', cull: false }));
+  // O vaso: laterais de tecido preto (linhas 8–15 da textura) e substrato em cima (linhas 0–5)
+  const potSide = [5, 12, 11, 15];
+  const pot = {
+    from: [5, 1, 5], to: [11, 4, 11],
+    faces: {
+      up: face('#pot', [5, 0, 11, 6]),
+      north: face('#pot', potSide), south: face('#pot', potSide), west: face('#pot', potSide), east: face('#pot', potSide),
+    },
+  };
+  const lower = blockParent(textures, [
+    ...poles(16),
+    box([1, 0, 1], [15, 1, 15], '#canvas'),
+    ...tentWall([2, 1, 14.5], [14, 16, 15], 'south'),
+    ...tentWall([1, 1, 2], [1.5, 16, 14], 'west'),
+    ...tentWall([14.5, 1, 2], [15, 16, 14], 'east'),
+    // Soleira da porta: a lona da frente enrolada embaixo
+    box([2, 1, 1], [14, 3, 1.5], '#flap', { cull: false }),
+    pot,
+  ]);
+  // Lâmpada: caixa preta (linhas 0–3 da textura) e o painel de LEDs roxos (linhas 4–15) virado para baixo
+  const lampHousing = [4, 0, 12, 3];
+  const upper = blockParent(textures, [
+    ...poles(13),
+    ...tentWall([2, 0, 14.5], [14, 13, 15], 'south'),
+    ...tentWall([1, 0, 2], [1.5, 13, 14], 'west'),
+    ...tentWall([14.5, 0, 2], [15, 13, 14], 'east'),
+    // Teto: lona em cima e nas bordas, mylar brilhando por baixo
+    ...tentWall([1, 13, 1], [15, 14, 15], 'up'),
+    // Aba da frente enrolada no alto, com o puxador do zíper
+    box([1.5, 10, 1], [14.5, 13, 3], '#flap', { cull: false }),
+    {
+      from: [4, 11, 4], to: [12, 12.5, 12],
+      faces: {
+        up: face('#lamp', lampHousing), north: face('#lamp', lampHousing), south: face('#lamp', lampHousing),
+        west: face('#lamp', lampHousing), east: face('#lamp', lampHousing),
+      },
+    },
+    {
+      from: [4.5, 10.9, 4.5], to: [11.5, 11, 11.5],
+      light_emission: 15,
+      shade_direction_override: 'up',
+      faces: { down: face('#lamp', [4.5, 4.5, 11.5, 11.5]) },
+    },
+    // Luz de "ligada" no poste da frente, para ver de fora que a lâmpada está acesa
+    {
+      from: [1.25, 5, 0.75], to: [1.75, 6, 1],
+      light_emission: 15,
+      shade_direction_override: 'up',
+      faces: { north: face('#lamp', [7, 7, 8, 8]), west: face('#lamp', [7, 7, 8, 8]), east: face('#lamp', [7, 7, 8, 8]) },
+    },
+  ]);
+  return { grow_tent_lower: lower, grow_tent_upper: upper };
+}
+
+/** Blockstate da estufinha: uma variante por metade e facing (8), girada como a porta vanilla. */
+export function growTentBlockstate() {
+  const variants = {};
+  for (const facing of STATION_PROPERTIES.facing) {
+    const y = FACING_Y[facing];
+    for (const half of GROW_TENT_HALVES) {
+      const model = id(`block/grow_tent_${half}`);
+      variants[`facing=${facing},half=${half}`] = y ? { model, y } : { model };
+    }
+  }
+  return { variants };
+}

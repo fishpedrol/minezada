@@ -66,6 +66,15 @@ public final class ArticleRecipes {
         shaped("press", 1, List.of("III", " S ", "PPP"), Map.of('I', IRON, 'S', STICK, 'P', PLANKS)));
 
     /**
+     * Estufinha: lã roxa (o tecido), ametista (a lente roxa), tocha (a lâmpada) e vaso de flor (o vaso da planta). Sem
+     * vidro, como o dono pediu.
+     */
+    private static final List<Recipe> CULTIVATION = List.of(
+        shaped("grow_tent", 1, List.of("WAW", "WLW", "WPW"), Map.of(
+            'W', Key.item("minecraft:purple_wool"), 'A', Key.item("minecraft:amethyst_shard"),
+            'L', Key.item("minecraft:torch"), 'P', Key.item("minecraft:flower_pot"))));
+
+    /**
      * Baseado com piteira: transmute do baseado (qualquer variedade e qualidade, que passam adiante porque o transmute
      * copia os componentes da entrada) com a piteira, gravando cultivo:filtered. Um baseado que já tem piteira não
      * casa: o TransmuteRecipe do 26.3 recusa um resultado igual à entrada.
@@ -73,12 +82,13 @@ public final class ArticleRecipes {
     public static final Recipe JOINT_FILTERED = new Recipe("joint_filtered", Kind.TRANSMUTE, "joint", 1, List.of(),
         Map.of(), List.of(Key.item("cultivo:joint"), Key.item("cultivo:filter_tip")), Map.of("cultivo:filtered", "{}"));
 
-    /** Artigos, um baseado por variedade (todas as da tabela {@link Variety}), a piteira e as três estações. */
+    /** Artigos, um baseado por variedade (todas as da tabela {@link Variety}), a piteira, as três estações e a estufinha. */
     public static final List<Recipe> ALL = Stream.of(
             ARTICLES.stream(),
             Arrays.stream(Variety.values()).map(ArticleRecipes::joint),
             Stream.of(JOINT_FILTERED),
-            STATIONS.stream())
+            STATIONS.stream(),
+            CULTIVATION.stream())
         .flatMap(recipes -> recipes)
         .toList();
 

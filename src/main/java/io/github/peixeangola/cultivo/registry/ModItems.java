@@ -8,6 +8,7 @@ import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.item.ArticleBlockItem;
 import io.github.peixeangola.cultivo.item.FlowerItem;
+import io.github.peixeangola.cultivo.item.GrowTentItem;
 import io.github.peixeangola.cultivo.item.LighterItem;
 import io.github.peixeangola.cultivo.item.QualityItem;
 import io.github.peixeangola.cultivo.item.SeedItem;
@@ -68,6 +69,10 @@ public final class ModItems {
         () -> new BlockItem(ModBlocks.WILD_PLANT.get(),
             new Item.Properties().setId(ITEMS.key(ContentIds.WILD_PLANT)).useBlockDescriptionPrefix()));
 
+    /** Estufinha: coloca as duas metades e tem o ícone plano; empilha 64, como as portas. */
+    public static final RegistryObject<Item> GROW_TENT = ITEMS.register(ContentIds.GROW_TENT,
+        () -> new GrowTentItem(ModBlocks.GROW_TENT.get(), new Item.Properties().setId(ITEMS.key(ContentIds.GROW_TENT))));
+
     private ModItems() {}
 
     /** Isqueiro: durabilidade própria (e por isso empilha 1). */
@@ -82,7 +87,7 @@ public final class ModItems {
     /**
      * Cada artigo tem um papel ({@link ContentIds#ARTICLES}): cachimbo, chillum, bong e narguilé fumam; o isqueiro tem
      * durabilidade; folha de seda, piteira e dichavador têm uma dica com o uso; bandeja, pote e cinzeiro colocam o
-     * bloco (mantendo o ícone plano) e também mostram a dica.
+     * bloco (mantendo o ícone plano) e também mostram a dica. O bong fuma e, agachado, vai para o chão.
      */
     private static Item article(String name) {
         Item.Properties properties = new Item.Properties().setId(ITEMS.key(name));
@@ -98,7 +103,9 @@ public final class ModItems {
             return new TooltipItem(properties, tooltip);
         }
         return SmokeDevice.byItemId(name)
-            .<Item>map(device -> new SmokingItem(device, properties))
+            .<Item>map(device -> ContentIds.PLACED_DEVICES.contains(name)
+                ? new SmokingItem(device, properties, ModBlocks.PLACED_DEVICES.get(name))
+                : new SmokingItem(device, properties))
             .orElseThrow(() -> new IllegalStateException("artigo sem papel: " + name));
     }
 

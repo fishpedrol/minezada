@@ -39,18 +39,19 @@ class VarietyAndGrowthTest {
     @Test
     void auroraOutdoorMatchesWheat() {
         // Trigo em farmland hidratada isolada: velocidade 1 + 3 = 4 → nextInt(7)
-        assertEquals(7, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.AURORA, false)));
+        assertEquals(7, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.AURORA)));
     }
 
+    /** Ao ar livre: velocidade vanilla × variedade, sem bônus de estufa de vidro (25/10/2026). */
     @Test
-    void greenhouseAndVarietyMultiply() {
-        assertEquals(4.0F * 1.25F * 1.25F, GrowthRules.effectiveSpeed(4.0F, Variety.BRISA, true), 1e-6);
-        assertEquals(4.0F * 0.8F, GrowthRules.effectiveSpeed(4.0F, Variety.ECLIPSE, false), 1e-6);
-        int brisa = GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.BRISA, false));
-        int eclipse = GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.ECLIPSE, false));
-        int eclipseGreenhouse = GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.ECLIPSE, true));
+    void outdoorSpeedIsVanillaTimesVariety() {
+        assertEquals(4.0F * 1.25F, GrowthRules.effectiveSpeed(4.0F, Variety.BRISA), 1e-6);
+        assertEquals(4.0F * 0.8F, GrowthRules.effectiveSpeed(4.0F, Variety.ECLIPSE), 1e-6);
+        // Lavoura de trigo densa (cercada de farmland hidratada e de outras lavouras): (1 + 3 + 8 × 0,75) / 2 = 5
+        assertEquals(6, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(5.0F, Variety.AURORA)));
+        int brisa = GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.BRISA));
+        int eclipse = GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.ECLIPSE));
         assertTrue(brisa < eclipse, "brisa cresce mais rápido");
-        assertTrue(eclipseGreenhouse < eclipse, "estufa acelera");
         assertThrows(IllegalArgumentException.class, () -> GrowthRules.growthRollBound(0.0F));
     }
 
@@ -60,10 +61,10 @@ class VarietyAndGrowthTest {
         assertEquals(1.25F, Variety.KUSH_ROXINHA.growthMultiplier());
         assertEquals(1.0F, Variety.MANGA_GELADA.growthMultiplier());
         assertEquals(0.8F, Variety.AMNESIA_NEBLINA.growthMultiplier());
-        assertEquals(6, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.KUSH_ROXINHA, false)));
-        assertEquals(7, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.MANGA_GELADA, false)));
-        assertEquals(8, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.AMNESIA_NEBLINA, false)));
-        assertEquals(4.0F * 0.8F * 1.25F, GrowthRules.effectiveSpeed(4.0F, Variety.MORANGO_AZEDO, true), 1e-6);
+        assertEquals(6, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.KUSH_ROXINHA)));
+        assertEquals(7, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.MANGA_GELADA)));
+        assertEquals(8, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.AMNESIA_NEBLINA)));
+        assertEquals(4.0F * 0.8F, GrowthRules.effectiveSpeed(4.0F, Variety.MORANGO_AZEDO), 1e-6);
     }
 
     @Test

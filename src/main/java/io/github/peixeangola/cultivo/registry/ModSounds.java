@@ -47,6 +47,10 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> ASHTRAY_ASH = register("ashtray.ash");
     /** Cinzeiro esvaziado (sai farinha de osso). */
     public static final RegistryObject<SoundEvent> ASHTRAY_EMPTY = register("ashtray.empty");
+    /** Semente plantada na estufinha. */
+    public static final RegistryObject<SoundEvent> GROW_TENT_PLANT = register("grow_tent.plant");
+    /** Estufinha colhida (flores e sementes saem, ela fica vazia). */
+    public static final RegistryObject<SoundEvent> GROW_TENT_HARVEST = register("grow_tent.harvest");
 
     private ModSounds() {}
 

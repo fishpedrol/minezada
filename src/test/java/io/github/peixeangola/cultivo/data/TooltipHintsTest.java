@@ -141,7 +141,8 @@ class TooltipHintsTest {
         String station = String.join(" ", lines(pt, "tooltip.cultivo.station.usage"));
         String filter = String.join(" ", lines(pt, "tooltip.cultivo.filter_tip"));
         String ashtray = String.join(" ", lines(pt, "tooltip.cultivo.ashtray"));
-        for (String hint : List.of(grinder, tray, jar, station, ashtray)) {
+        String tent = String.join(" ", lines(pt, "tooltip.cultivo.grow_tent"));
+        for (String hint : List.of(grinder, tray, jar, station, ashtray, tent)) {
             assertTrue(hint.contains("botão direito"), "sem o botão: " + hint);
         }
         assertTrue(grinder.contains("peneira de bancada") && !grinder.contains("Peneira de Bancada"), grinder);
@@ -149,6 +150,8 @@ class TooltipHintsTest {
         assertTrue(jar.contains("guarda") && jar.contains("mão vazia") && jar.contains("retira"), jar);
         assertTrue(station.contains("mão vazia") && station.contains("agachado") && station.contains("entrada"), station);
         assertTrue(filter.contains("bancada") && filter.contains("efeito dura mais"), filter);
+        assertTrue(tent.contains("semente") && tent.contains("mão vazia") && tent.contains("colhe") && tent.contains("qualidade 4 a 5"), tent);
+        assertEquals(4, lines(pt, "tooltip.cultivo.grow_tent").size());
         assertEquals(List.of("Clique com o botão direito:", "com o ingrediente, coloca", "de mão vazia, tira o que está pronto",
             "agachado e de mãos vazias, tira a entrada"), lines(pt, "tooltip.cultivo.station.usage"));
     }

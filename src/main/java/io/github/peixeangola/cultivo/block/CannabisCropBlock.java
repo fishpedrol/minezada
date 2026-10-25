@@ -16,7 +16,8 @@ import net.minecraftforge.common.ForgeHooks;
 
 /**
  * Lavoura das variedades. Herda tudo do trigo (farmland, luz ≥ 9, idades 0–7, farinha de osso, pisoteio),
- * sem nenhum filtro de bioma. Só o random tick muda: velocidade vanilla × variedade × 1,25 na estufa.
+ * sem nenhum filtro de bioma. Só o random tick muda: velocidade vanilla × variedade (a estufa de vidro não dá bônus;
+ * a qualidade alta vem da estufinha, {@link GrowTentBlock}).
  * Crescimento e colheita rodam apenas no servidor.
  */
 public class CannabisCropBlock extends CropBlock {
@@ -45,8 +46,7 @@ public class CannabisCropBlock extends CropBlock {
         if (age >= getMaxAge()) {
             return;
         }
-        boolean greenhouse = GreenhouseDetector.isGreenhouse(level, pos);
-        float speed = GrowthRules.effectiveSpeed(vanillaGrowthSpeed(this, level, pos), variety, greenhouse);
+        float speed = GrowthRules.effectiveSpeed(vanillaGrowthSpeed(this, level, pos), variety);
         boolean grows = random.nextInt(GrowthRules.growthRollBound(speed)) == 0;
         if (ForgeHooks.onCropsGrowPre(level, pos, state, grows)) {
             level.setBlock(pos, getStateForAge(age + 1), Block.UPDATE_CLIENTS);

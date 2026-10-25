@@ -23,10 +23,14 @@ public final class CultivoClientEvents {
         SmokingItemClient.init();
     }
 
-    /** Placa da prensa animada: a BlockEntity das estações é uma só; o renderer só desenha a prensa trabalhando. */
+    /**
+     * Placa da prensa animada (a BlockEntity das estações é uma só; o renderer só desenha a prensa trabalhando) e a
+     * planta dentro da estufinha.
+     */
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.PROCESSING_STATION.get(), PressPlatenRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.GROW_TENT.get(), GrowTentRenderer::new);
     }
 
     /** Estado sintético cultivo:press_platen, para o jogo carregar e assar o modelo da placa (blockstates/press_platen.json). */

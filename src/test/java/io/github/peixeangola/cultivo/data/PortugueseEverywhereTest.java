@@ -78,6 +78,7 @@ class PortugueseEverywhereTest {
             m.getAsJsonArray(section).forEach(row -> out.add(row.getAsJsonObject().get("en").getAsString()));
         }
         out.add(m.getAsJsonObject("wild_plant").get("en").getAsString());
+        out.add(m.getAsJsonObject("grow_tent").get("en").getAsString());
         for (Map.Entry<String, JsonElement> p : m.getAsJsonObject("name_patterns").entrySet()) {
             if (p.getValue().isJsonObject()) {
                 out.add(p.getValue().getAsJsonObject().get("en").getAsString());
@@ -108,6 +109,12 @@ class PortugueseEverywhereTest {
                     JsonElement value = row.getAsJsonObject().get(column);
                     assertTrue(value != null && !value.getAsString().isBlank(), section + " sem " + column + ": " + row);
                 }
+            }
+        }
+        for (String single : List.of("wild_plant", "grow_tent")) {
+            for (String column : List.of("pt", "en")) {
+                JsonElement value = m.getAsJsonObject(single).get(column);
+                assertTrue(value != null && !value.getAsString().isBlank(), single + " sem " + column);
             }
         }
         for (Map.Entry<String, JsonElement> p : m.getAsJsonObject("name_patterns").entrySet()) {
@@ -177,6 +184,9 @@ class PortugueseEverywhereTest {
         assertEquals("Narguilé borbulha", pt.get("subtitles.cultivo.hookah.bubble"));
         assertEquals("Dichavador mói", pt.get("subtitles.cultivo.grinder.grind"));
         assertEquals("Você precisa de 3 folhas de seda no inventário", pt.get("message.cultivo.tray_need_papers"));
+        assertEquals("Estufinha", pt.get("item.cultivo.grow_tent"));
+        assertEquals("Estufinha", pt.get("block.cultivo.grow_tent"));
+        assertEquals("Estufinha colhida", pt.get("subtitles.cultivo.grow_tent.harvest"));
     }
 
     /** Nome, autores e descrição do mod (lista de mods) e do pacote de recursos também em português. */

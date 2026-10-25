@@ -1,12 +1,12 @@
 # Decisões e questões em aberto
 
-Atualizado em 25/10/2026, com o código do commit `2f6ae47`. As constantes ficam nas classes puras de `io.github.peixeangola.cultivo.core` (e no `tools/gen/manifest.json`, quando também viram JSON); os testes JUnit conferem um contra o outro. A tabela completa das genéticas está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md), seção 5.2.
+Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As constantes ficam nas classes puras de `io.github.peixeangola.cultivo.core` (e no `tools/gen/manifest.json`, quando também viram JSON); os testes JUnit conferem um contra o outro. A tabela completa das genéticas está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md), seção 5.2.
 
 ## Pedidos e confirmações do dono
 - Mod de Minecraft Java para uso privado com um grupo de amigos; não há plano de divulgação pública.
 - Tema de cultivo ficcional inspirado em variedades de cannabis, com etapas de crafting até haxixe e artigos de fumo.
 - **Baseado e artigos:** deve ser possível craftar um baseado usando folha de seda e flor seca do mod. Bong e variedade de artigos de fumo também fazem parte do conteúdo.
-- **Duas rotas:** outdoor em biomas apropriados e indoor em estufa; ambas funcionam, com qualidade superior na estufa e um pouco inferior ao ar livre.
+- **Duas rotas:** outdoor em biomas apropriados e indoor em estufa; ambas funcionam, com qualidade superior na estufa e um pouco inferior ao ar livre. Desde 25/10/2026 a rota indoor é a estufinha (seção "Estufinha").
 - **Plantio e descoberta:**
   - o plantio outdoor se comporta como o do trigo e funciona em qualquer bioma/local adequado, sem restrição por bioma;
   - as sementes ficam em baús de mais da metade dos tipos de aldeia da versão escolhida e em plantações/campos de planície e selva quando existirem, ou numa fonte equivalente de campo/loot natural se um desses biomas não gerar aldeias;
@@ -15,11 +15,14 @@ Atualizado em 25/10/2026, com o código do commit `2f6ae47`. As constantes ficam
 - **21/10/2026, mecânica de fumar:** "quero que implemente sim" (seção "Mecânica de fumar").
 - **24/10/2026, catálogo de genéticas.** O dono pediu: "quero que tenha essas sementes e esses tipos de maconha, pode ser o nome deles mesmo, ou se preferir use um nome parodia", com o link do catálogo High THC da Santa Semente BR. Antes disso a loja era só referência de categorias. Seção "Catálogo de genéticas".
 - **24/10/2026, português e animações:** "deixe tudo no mod em português, também crie as animações" (seção "Português e animações").
+- **25/10/2026, estufinha:** o dono pediu trocar a estufa de vidro por uma estufinha craftável com luz roxa, que caiba um pé de planta, sem farmland e sem água, com qualidade maior. Respostas dele: a estufa de vidro sai (o vidro deixa de dar bônus; ao ar livre continua 2–3); 2 blocos de altura, como uma grow tent, com a planta no tamanho normal; colher no clique direito, que dá flores e sementes como a lavoura e deixa a estufinha vazia; qualidade 4–5. Plano aprovado ("aprovo o plano") em [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md); seção "Estufinha".
+
+- **25/10/2026, mais buds e bong no chão:** "quero que venha mais buds quando pegar o pé, tambem quero que deixe o bong como um item que possa colocar no chao". Respostas dele: de 3 a 5 flores por planta madura; o bong vai para o chão agachado com o clique direito e, no chão, é enfeite (seções "Crescimento e lavoura" e "Papéis dos artigos").
 
 ## Recomendações de produto registradas
 - **Nativas:** Brisa, Aurora e Eclipse, as três variedades originais do MVP, continuam como as genéticas "nativas" do mundo, com ciclo e genética distintos (automática/fotoperíodo; sativa/índica/híbrida).
 - **Raridade:** cada genética tem uma raridade (comum, incomum, rara) que regula a chance de encontrá-la e nunca limita onde ela pode ser plantada.
-- **Qualidade:** atributo simples e persistente do produto colhido; a estufa dá um bônus moderado. Rendimento e qualidade são variáveis distintas.
+- **Qualidade:** atributo simples e persistente do produto colhido; a estufinha dá um bônus moderado. Rendimento e qualidade são variáveis distintas.
 - **Distribuição:** sementes em baús de mais da metade dos tipos de aldeia, sem garantir item em cada instância, mais plantações/campos de planície e selva (ou fontes equivalentes).
 
 ## Alvo de loader
@@ -63,23 +66,39 @@ Atualizado em 25/10/2026, com o código do commit `2f6ae47`. As constantes ficam
 - **Tooltip** de sementes e flores: "Comum · Automática · Sativa · Potência ★☆☆", com a raridade colorida.
 
 ### Crescimento e lavoura (`GrowthRules`)
-- **Regras do trigo:** farmland, luz ≥ 9, sem filtro de bioma. A cada random tick, a chance de crescer é `1/(floor(25/v)+1)`, sendo `v = velocidade vanilla × crescimento da genética × 1,25 se estiver em estufa`. A velocidade vanilla foi portada de `CropBlock#getGrowthSpeed`; os hooks `ForgeHooks.onCropsGrowPre/Post` continuam valendo.
+- **Regras do trigo:** farmland, luz ≥ 9, sem filtro de bioma. A cada random tick, a chance de crescer é `1/(floor(25/v)+1)`, sendo `v = velocidade vanilla × crescimento da genética`. Desde 25/10/2026 o vidro não multiplica mais nada (antes era × 1,25 numa estufa de vidro); a estufinha tem a regra própria. A velocidade vanilla foi portada de `CropBlock#getGrowthSpeed`; os hooks `ForgeHooks.onCropsGrowPre/Post` continuam valendo.
 - **8 estágios visuais**, um por idade (como o trigo).
   - A idade 6 tem uma cola pequena no topo, com pontinhos de pistilo (ainda verde).
   - Só a idade 7 mostra as colas grandes e coloridas: é o sinal de colher.
+- **Colheita** (desde 25/10/2026, pedido do dono): a planta madura dá **de 3 a 5 flores frescas** (sorteio uniforme; `GrowthRules.HARVEST_FLOWERS_MIN/MAX` e `harvest_flowers` no manifesto), todas numa pilha com a mesma qualidade, e de 1 a 4 sementes (a Fortuna aumenta só as sementes). Imatura, 1 semente. Vale na lavoura, na estufinha e nas explosões (o decaimento pode levar algumas). Antes era 1 flor.
 - **Arte por família:** as texturas da lavoura são por família de arte. São 12 famílias: as 3 nativas e verde, verde_escuro, limao, dourado, roxo, azul, rosa, gelo e creme. Sementes e flores têm ícone próprio por genética.
 - **Aldeões:** o fazendeiro que colhe uma lavoura madura do mod replanta a mesma genética na idade 0 (`village/FarmerReplant`). A flor e as sementes caem no chão, e os aldeões não as recolhem. Isso mantém a lavoura da aldeia como fonte de sementes.
 
 ### Qualidade (`QualityRules`)
-- Base 2 ao ar livre e 4 na estufa, mais +1 se `random < chance da genética`, limitada a 1–5. Resultado: outdoor 2–3 e estufa 4–5.
-- Sorteada no servidor, na colheita, pela função de loot `cultivo:set_harvest_quality`, e gravada no componente `cultivo:quality`.
-- **Cura no pote:** +1 uma vez (seção "Pote de vidro e cura"). Depois dela, outdoor fica em 3–4 e estufa em 5: a estufa continua superior.
+- Base 2 fora da estufinha (ao ar livre, sob vidro, em qualquer lugar) e 4 na estufinha (`QualityRules.TENT_BASE`), mais +1 se `random < chance da genética`, limitada a 1–5. Resultado: fora 2–3 e estufinha 4–5.
+- Sorteada no servidor, na colheita, pela função de loot `cultivo:set_harvest_quality`, e gravada no componente `cultivo:quality`. A função escolhe a rota pelo contexto do loot: a estufinha rola a tabela da lavoura passando a própria BlockEntity; uma lavoura no mundo não tem BlockEntity.
+- **Cura no pote:** +1 uma vez (seção "Pote de vidro e cura"). Depois dela, outdoor fica em 3–4 e estufinha em 5: a estufinha continua superior.
 
-### Estufa (`GreenhouseRules`)
-1. O primeiro bloco não-ar acima da planta, até 6 blocos, é da tag `cultivo:greenhouse_glass`: vidro, vidro fosco, vidraça (painel de vidro), 16 vidros tingidos e 16 vidraças tingidas (35 blocos).
-2. Nas 4 direções horizontais há um bloco dessa tag a até 6 blocos, na altura da planta ou um bloco acima.
-
-Não exige luz artificial nem irrigação extra além da farmland.
+### Estufinha (`GrowTentRules`, `GrowTentBlock`, `GrowTentBlockEntity`; desde 25/10/2026)
+- **O bloco:** `cultivo:grow_tent`, "Estufinha". 2 blocos de altura, como a porta vanilla: o item coloca as duas metades (precisa de espaço livre em cima e de chão firme embaixo) e a frente aberta olha para quem colocou. Lona escura, mylar lilás por dentro, vaso de tecido, lâmpada roxa no teto. Empilha 64. Pistões não a movem.
+- **Planta:** um pé dentro, guardado na BlockEntity da metade de baixo (variedade e idade 0–7). O cliente desenha o modelo da própria lavoura da genética, no estágio da idade, dentro do vaso. Sem farmland, sem água e sem precisar de luz de fora (cresce até numa sala fechada).
+- **Crescimento:** o random tick da metade de baixo, com o sorteio do trigo `1/(floor(25/v)+1)` e `v = 4 × crescimento da genética × 1,25` (4 é a farmland hidratada sozinha). Limites: rápida 5, média 6, lenta 7 (ao ar livre, numa farmland hidratada sozinha, 6, 7 e 8; numa lavoura densa de trigo, a média também dá 6). Na velocidade padrão de random tick (3), uma média leva uns 48 minutos de jogo para madurar, uma rápida uns 40 e uma lenta uns 56. A farinha de osso dá +2 a +5 idades por uso, como no `CropBlock`, também pelo dispensador.
+- **Luz:** a metade de cima emite luz de bloco 12 (cerca de 11 na de baixo); o painel de LEDs e o ponto no poste da frente brilham no escuro (`light_emission` 15 nos elementos do modelo), e o mylar de dentro, lilás, brilha com 11 (`GROW_TENT_MYLAR_GLOW` em `tools/gen/models.mjs`), para a luz roxa aparecer de qualquer ângulo. Pó roxo cai da lâmpada; madura, sobe um ponto roxo a mais na metade de baixo. Efeito colateral: monstros não nascem colados a uma estufinha.
+- **Clique direito** (em qualquer metade):
+  - com semente na estufinha vazia: planta, gasta 1 semente (nada no criativo), som "Semente plantada na estufinha". No modo aventura, só com uma semente que tenha `can_place_on` para a estufinha (o mesmo portão de colocar um bloco no vanilla); colher continua valendo, como o arbusto de frutas vermelhas;
+  - planta madura, com qualquer coisa na mão: colhe pela tabela da lavoura (de 3 a 5 flores frescas com qualidade 4–5 e de 1 a 4 sementes; a Fortuna da mão principal conta), entrega na mão/inventário (o que não couber cai aos pés), som "Estufinha colhida", e a estufinha fica vazia na hora. Com a regra `blockDrops` desligada, esvazia sem dar nada, como o arbusto de frutas vermelhas. A Fortuna só vale aqui: quebrar a estufinha rola a planta sem ferramenta;
+  - planta crescendo: nada (a farinha de osso do vanilla segue);
+  - para tirar uma planta imatura: quebre a estufinha (ela devolve 1 semente).
+- **Quebrar:** qualquer metade derruba 1 estufinha (o item só sai do loot da metade de baixo, como a porta) e a planta uma vez: madura, a flor 4–5 e as sementes; imatura, 1 semente; vazia, nada.
+  - **Criativo:** não cai nada, nem a estufinha (como a porta) nem a planta (como a lavoura quebrada no criativo). Revisão de 25/10/2026, pelo plano revisado; antes a planta caía, como o conteúdo do pote. Dá para voltar se o dono preferir.
+  - **Explosão** (TNT, creeper) em qualquer metade: as duas somem, a estufinha cai com a chance normal de explosão e a planta uma vez, com o decaimento da explosão da tabela da lavoura (algumas sementes podem se perder). A carga de vento não mexe nela.
+  - **Comandos:** `/setblock … destroy` quebra como o jogador; `/setblock … replace` na metade de baixo apaga a estufinha e a planta sem drop (o comando pula os efeitos de remoção); na de cima, a de baixo sai pela atualização de forma e derruba os dois.
+- **Genética desconhecida:** uma estufinha salva com um id que o mod não conhece (genética renomeada, mod mais antigo) carrega **inerte**: ocupada, sem crescer, sem colher, sem replantar e sem desenho; quebrar devolve só a estufinha. O id e a idade continuam no save, então voltar à versão certa do mod traz a planta de volta. O log avisa uma vez por carga.
+- **Pegar com o meio do mouse (Ctrl) e `/give` com dados:** no criativo dá para ter um item de estufinha já plantada; vale só para o criativo e operadores (a idade é cortada para 0–7 ao carregar). No sobrevivência não existe esse caminho.
+- **Receita** (sem vidro): `"WAW"/"WLW"/"WPW"` com lã roxa (W), fragmento de ametista (A, a lente roxa), tocha (L, a lâmpada) e vaso de flor (P). Tudo do Overworld.
+- **Estufa de vidro:** saiu. Uma lavoura em farmland dentro de vidro cresce e colhe como ao ar livre (2–3). A tag `cultivo:greenhouse_glass` não existe mais: um datapack de terceiros que a cite vai dar erro de tag no log. Mundos antigos: as lavouras continuam as mesmas (nenhum bloco sumiu); as que estavam sob vidro passam a dar 2–3; flores já colhidas mantêm a qualidade (inclusive 4–5 e 5 curadas).
+- **Aldeões e abelhas:** o fazendeiro só colhe `CropBlock` em farmland, então nunca mexe na estufinha. Ela fica fora das tags `crops`, `maintains_farmland` e `bee_growables`.
+- **Números para o dono confirmar depois de jogar:** a base 4 (`SOIL_SPEED`), o × 1,25 e a luz 12.
 
 ### Fontes de sementes (`SeedSources`)
 - **Baús das casas de aldeia:**
@@ -155,9 +174,10 @@ Não exige luz artificial nem irrigação extra além da farmland.
 | suporte de secagem | `"SSS"/"T T"/"SSS"`: graveto + linha |
 | peneira | `"PTP"/"P P"`: tábuas + linha |
 | prensa | `"III"/" S "/"PPP"`: ferro, graveto, tábuas |
+| estufinha | `"WAW"/"WLW"/"WPW"`: lã roxa, fragmento de ametista, tocha, vaso de flor (sem vidro) |
 
 - **Por que um transmute por genética:** no 26.3 o `crafting_transmute` copia só o *patch* de componentes da entrada, então um transmute único com tag de entrada perderia a genética.
-- **Total:** 55 receitas de crafting (11 artigos + 3 estações + 40 baseados + baseado com piteira). Os baseados ficam agrupados como `cultivo_joint` no livro de receitas.
+- **Total:** 56 receitas de crafting (11 artigos + 3 estações + 40 baseados + baseado com piteira + estufinha). Os baseados ficam agrupados como `cultivo_joint` no livro de receitas.
 - **Livro de receitas:** cada receita tem o avanço `data/cultivo/advancement/recipes/misc/<id>.json`, e qualquer um dos ingredientes a desbloqueia.
 - O GameTest `article_recipes` confere que cada grade resolve para o item do mod; `joint_filter_recipe` confere o baseado com piteira para as 40 genéticas.
 
@@ -167,6 +187,7 @@ Não exige luz artificial nem irrigação extra além da farmland.
 - **Ingredientes:** folha de seda (baseado e bandeja) e piteira (baseado com piteira).
 - **Melhoria:** dichavador (peneira).
 - **Colocáveis:** bandeja de enrolar, pote de vidro e cinzeiro. O item é um BlockItem com o mesmo ID e mantém o ícone plano, como o vaso de flor vanilla; quebrado, cada um derruba o próprio item.
+- **Bong no chão** (desde 25/10/2026, pedido do dono; `ContentIds.PLACED_DEVICES`, `BongBlock`): o item continua fumando com o clique direito. **Agachado**, o clique direito em cima de um bloco põe o bong em pé (`cultivo:bong`, o mesmo modelo da mão, com a frente para quem pôs), gastando o item (nada no criativo; no modo aventura não põe). No chão é enfeite: precisa de chão firme embaixo, quebra na hora como vidro e devolve o bong; sem chão, cai e vira item; o pistão o estoura; o botão do meio dá o bong. A dica do item ganhou "Agachado, clique direito num bloco / para pôr o bong no chão".
 - **Nenhum artigo é só decorativo:** `DecorativeItem` e a dica "Item decorativo" foram removidos.
 - **Pilhas:** folha de seda e piteira empilham 64; baseado 16 (só com a mesma genética, qualidade e marcas); os outros artigos, 1.
 
@@ -316,7 +337,7 @@ O dono pediu: "deixe tudo no mod em português, também crie as animações".
   - "com o ingrediente, coloca";
   - "de mão vazia, tira o que está pronto";
   - "agachado e de mãos vazias, tira a entrada".
-- **Sons:** 16 eventos do mod (`cultivo:<id>`, `registry/ModSounds`), todos tocados no servidor.
+- **Sons:** 18 eventos do mod (`cultivo:<id>`, `registry/ModSounds`; os 2 da estufinha desde 25/10/2026), todos tocados no servidor.
   - Não há áudio próprio: cada evento reaproveita um evento vanilla, com volume e tom próprios definidos no manifesto, e tem legenda em português:
 
     | Evento | Áudio vanilla | Legenda |
@@ -335,6 +356,7 @@ O dono pediu: "deixe tudo no mod em português, também crie as animações".
     | `jar.cured` | `block.amethyst_block.chime` | Flores curadas |
     | `grinder.grind` | `block.grindstone.use` | Dichavador mói |
     | `ashtray.ash` / `ashtray.empty` | `block.composter.fill` / `block.composter.empty` | Cinza cai no cinzeiro / Cinzeiro esvaziado |
+    | `grow_tent.plant` / `grow_tent.harvest` | `item.crop.plant` / `block.sweet_berry_bush.pick_berries` | Semente plantada na estufinha / Estufinha colhida |
   - O código de jogo não toca `SoundEvents` vanilla direto (`SoundsTest`).
 - **Animação de fumar** (`core/SmokeAnimation`, `client/SmokingItemClient`):
   - o item usa a animação `NONE` do vanilla e o Cultivo desenha a sua;
@@ -389,9 +411,9 @@ Em 25/10/2026 o Cultivo foi testado na nuvem (Linux, sem tela), na combinação 
   - Sem o SS instalado, ninguém lê essas tags: são inofensivas.
 - **Estufa:**
   - A estufa do SS é qualquer bloco da tag `sereneseasons:greenhouse_glass` de 1 a 16 blocos acima, na mesma coluna, sem exigir paredes. A tag é `#c:glass_blocks` (vidro, 16 vidros tingidos e vidro fosco; também o vidro de outros mods que esteja nela); vidraças (painéis) não contam. Ela só tira a penalidade de estação, sem bônus.
-  - A estufa do Cultivo com teto de bloco de vidro também vale como estufa do SS: a lavoura cresce normalmente o ano todo (dedução das duas tags; o teste usou só um bloco de vidro 3 acima, sem as paredes da estufa do Cultivo).
-  - Com teto de vidraça, só a regra do Cultivo vale: qualidade 4–5, mas sem proteção de estação.
-  - A qualidade da colheita não muda com o SS: continua vindo da `GreenhouseRules` e da `QualityRules`.
+  - Uma lavoura do Cultivo sob vidro segue essa regra do SS, como o trigo. Desde 25/10/2026 o vidro não dá mais bônus de qualidade no Cultivo.
+  - **Estufinha:** não está em tag nenhuma do SS, então cresce o ano todo. Conferido no jar do SS 26.1.2.0.7 com `javap`: o SS só mexe no crescimento pelo mixin no `randomTick` (`SeasonalCropGrowthHandler.onCropGrowth`) e na farinha de osso pelo `PlayerInteractEvent$UseBlock` do GlitchCore, os dois só quando `ModFertility.isCrop` vale para o bloco tocado; não escuta o `CropGrowEvent` que a estufinha dispara.
+  - A qualidade da colheita não muda com o SS: continua vindo da `QualityRules` (estufinha 4–5, fora 2–3).
 - **Servidor dedicado (descoberta de 25/10/2026):**
   - No Forge 26.3 (66.0.2 e 66.0.13), `ForgeEventFactory.onTagsUpdated` só é chamado pelo `ClientPacketListener`: o servidor nunca dispara o `TagsUpdatedEvent` ao carregar os dados. O SS só monta as listas de lavouras (`ModFertility.populate`, via GlitchCore) nesse evento.
   - Consequência: num servidor dedicado o SS não afeta nenhuma lavoura, nem o trigo. Em single player e LAN o cliente do anfitrião dispara o evento na mesma JVM, e as estações devem funcionar: é o que as fontes do Forge indicam e o que o GameTest simula; falta ver num cliente de verdade ("Em aberto").

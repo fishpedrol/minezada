@@ -2,18 +2,23 @@ package io.github.peixeangola.cultivo.core;
 
 /**
  * Crescimento igual ao do trigo: a cada random tick com luz suficiente, cresce 1 idade com chance
- * 1 / (floor(25 / velocidade) + 1). A velocidade vanilla é multiplicada pela variedade e pela estufa.
+ * 1 / (floor(25 / velocidade) + 1). A velocidade vanilla é multiplicada pela variedade. A estufa de vidro não dá
+ * mais bônus (pedido do dono de 25/10/2026); a estufinha tem a regra própria em {@link GrowTentRules}.
  */
 public final class GrowthRules {
     public static final int MIN_LIGHT = 9;
     public static final int MAX_AGE = 7;
-    public static final float GREENHOUSE_MULTIPLIER = 1.25F;
+    /**
+     * Flores frescas da planta madura (pedido do dono de 25/10/2026, "mais buds"): de 3 a 5, sorteio uniforme, numa
+     * pilha com uma qualidade só. Os mesmos números de harvest_flowers no manifesto (a tabela de loot da lavoura).
+     */
+    public static final int HARVEST_FLOWERS_MIN = 3;
+    public static final int HARVEST_FLOWERS_MAX = 5;
 
     private GrowthRules() {}
 
-    public static float effectiveSpeed(float vanillaSpeed, Variety variety, boolean greenhouse) {
-        float speed = vanillaSpeed * variety.growthMultiplier();
-        return greenhouse ? speed * GREENHOUSE_MULTIPLIER : speed;
+    public static float effectiveSpeed(float vanillaSpeed, Variety variety) {
+        return vanillaSpeed * variety.growthMultiplier();
     }
 
     /** Limite exclusivo do sorteio: cresce quando {@code random.nextInt(bound) == 0}. */

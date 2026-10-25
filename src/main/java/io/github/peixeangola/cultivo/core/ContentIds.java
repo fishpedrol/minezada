@@ -38,6 +38,7 @@ public final class ContentIds {
     public static final String ROLLING_TRAY = "rolling_tray";
     public static final String JAR = "jar";
     public static final String ASHTRAY = "ashtray";
+    public static final String BONG = "bong";
 
     /**
      * Artigos que são ingrediente de receita: a folha de seda entra no baseado (e na bandeja) e a piteira no baseado
@@ -53,6 +54,24 @@ public final class ContentIds {
      * vaso de flor vanilla): bandeja de enrolar, pote de cura e cinzeiro.
      */
     public static final List<String> PLACEABLE_ARTICLES = List.of(ROLLING_TRAY, JAR, ASHTRAY);
+
+    /**
+     * Aparelhos de fumo que também vão para o chão (pedido do dono de 25/10/2026): o bong. O item continua fumando com o
+     * clique direito; agachado, o clique num bloco põe um bloco com o mesmo ID, que devolve o item ao quebrar.
+     */
+    public static final List<String> PLACED_DEVICES = List.of(BONG);
+
+    /** Estufinha (pedido do dono de 25/10/2026): bloco de 2 de altura com um pé de planta dentro ({@link GrowTentRules}). */
+    public static final String GROW_TENT = "grow_tent";
+
+    /**
+     * Blocos de cultivo craftáveis, fora dos artigos de fumo do MVP: a estufinha. O item mantém o ícone plano
+     * (textures/item/&lt;id&gt;), como os artigos colocáveis.
+     */
+    public static final List<String> CULTIVATION_BLOCKS = List.of(GROW_TENT);
+
+    /** Metades de um bloco de 2 de altura, na ordem do Minecraft (DoubleBlockHalf: UPPER, LOWER). */
+    public static final List<String> DOUBLE_BLOCK_HALVES = List.of("upper", "lower");
 
     /** Efeitos próprios (textura em textures/mob_effect/&lt;id&gt;.png, 18×18). */
     public static final List<String> EFFECTS = List.of("high");
@@ -78,7 +97,9 @@ public final class ContentIds {
         "jar.cured",
         "grinder.grind",
         "ashtray.ash",
-        "ashtray.empty");
+        "ashtray.empty",
+        "grow_tent.plant",
+        "grow_tent.harvest");
 
     public static final List<String> STATIONS =
         Arrays.stream(StationKind.values()).map(StationKind::blockId).toList();
@@ -100,16 +121,16 @@ public final class ContentIds {
     /** Propriedade booleana da peneira com o dichavador instalado (SieveBlock.GRINDER). */
     public static final String GRINDER_PROPERTY = "grinder";
 
-    /** Nomes dos GameTests; cada um tem data/cultivo/test_instance/&lt;nome&gt;.json. */
     /**
      * Estações do Serene Seasons (mod opcional de terceiros) em que as lavouras do Cultivo são férteis: as mesmas do
      * trigo no Serene Seasons 26.1.2.0.7 (verão e outono). O gerador escreve as tags sereneseasons:*_crops.
      */
     public static final List<String> SERENE_SEASONS_CROP_SEASONS = List.of("summer", "autumn");
 
+    /** Nomes dos GameTests; cada um tem data/cultivo/test_instance/&lt;nome&gt;.json. */
     public static final List<String> GAME_TESTS = List.of(
         "outdoor_growth",
-        "greenhouse_quality",
+        "grow_tent_harvest",
         "harvest_drops",
         "drying_station",
         "sieve_station",
@@ -169,7 +190,17 @@ public final class ContentIds {
         "ashtray_search_edges",
         "block_states_match_ids",
         "tooltips_show_profile_and_marks",
-        "serene_seasons_compat");
+        "serene_seasons_compat",
+        "grow_tent_places_two_halves",
+        "grow_tent_plants_and_grows",
+        "grow_tent_bone_meal",
+        "glass_gives_no_bonus",
+        "grow_tent_breaks_either_half",
+        "grow_tent_creative_break",
+        "grow_tent_persists",
+        "grow_tent_adventure_plant",
+        "grow_tent_explosion",
+        "bong_placed_on_ground");
 
     private ContentIds() {}
 
@@ -184,9 +215,13 @@ public final class ContentIds {
         return List.copyOf(ids);
     }
 
-    /** Lavouras, estações, planta silvestre e artigos colocáveis (estes com item de ícone plano). */
+    /**
+     * Lavouras, estações, planta silvestre, artigos colocáveis, a estufinha e o bong no chão (estes três com item de
+     * ícone plano).
+     */
     public static List<String> allBlocks() {
-        return Stream.of(cropBlocks(), blocksWithItems(), PLACEABLE_ARTICLES).flatMap(List::stream).toList();
+        return Stream.of(cropBlocks(), blocksWithItems(), PLACEABLE_ARTICLES, CULTIVATION_BLOCKS, PLACED_DEVICES)
+            .flatMap(List::stream).toList();
     }
 
     /** Idades da lavoura no blockstate (CropBlock.AGE, 0–7, como o trigo). */
@@ -194,8 +229,8 @@ public final class ContentIds {
 
     /**
      * Propriedades do blockstate de cada bloco do mod, com os valores como aparecem no JSON (espelho dos blocos Java):
-     * lavouras age de 0 a 7; estações facing e contents, a peneira também grinder; bandeja facing; pote filled; cinzeiro
-     * ash de 0 a {@link AshtrayRules#MAX_ASH}; a planta silvestre não tem nenhuma. Os testes dos modelos conferem que
+     * lavouras age de 0 a 7; estações facing e contents, a peneira também grinder; bandeja e bong facing; pote filled; cinzeiro
+     * ash de 0 a {@link AshtrayRules#MAX_ASH}; estufinha half e facing; a planta silvestre não tem nenhuma. Os testes dos modelos conferem que
      * todo "when" e toda variante usam só estas propriedades e valores, e o GameTest block_states_match_ids confere o
      * espelho contra a StateDefinition registrada de cada bloco.
      */
@@ -212,10 +247,14 @@ public final class ContentIds {
             }
         }
         switch (blockId) {
-            case ROLLING_TRAY -> out.put("facing", HORIZONTAL_FACINGS);
+            case ROLLING_TRAY, BONG -> out.put("facing", HORIZONTAL_FACINGS);
             case JAR -> out.put("filled", BOOLEAN_VALUES);
             case ASHTRAY -> out.put("ash",
                 IntStream.rangeClosed(0, AshtrayRules.MAX_ASH).mapToObj(String::valueOf).toList());
+            case GROW_TENT -> {
+                out.put("half", DOUBLE_BLOCK_HALVES);
+                out.put("facing", HORIZONTAL_FACINGS);
+            }
             default -> { }
         }
         return Collections.unmodifiableMap(out);
@@ -242,6 +281,7 @@ public final class ContentIds {
         ids.addAll(qualityItems());
         ids.add(JOINT);
         ids.addAll(ARTICLES);
+        ids.addAll(CULTIVATION_BLOCKS);
         return List.copyOf(ids);
     }
 
@@ -250,11 +290,12 @@ public final class ContentIds {
     }
 
     /**
-     * Itens da aba "Cultivo", em ordem: estações, planta silvestre, processados (resina, haxixe, baseado) e artigos.
-     * Sementes e flores ficam na aba "Cultivo: Genéticas".
+     * Itens da aba "Cultivo", em ordem: estações, estufinha, planta silvestre, processados (resina, haxixe, baseado) e
+     * artigos. Sementes e flores ficam na aba "Cultivo: Genéticas".
      */
     public static List<String> mainTabItems() {
         List<String> ids = new ArrayList<>(STATIONS);
+        ids.addAll(CULTIVATION_BLOCKS);
         ids.add(WILD_PLANT);
         ids.addAll(List.of(RESIN, HASH, JOINT));
         ids.addAll(ARTICLES);

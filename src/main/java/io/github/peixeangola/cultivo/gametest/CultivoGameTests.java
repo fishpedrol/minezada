@@ -2,7 +2,9 @@ package io.github.peixeangola.cultivo.gametest;
 
 import io.github.peixeangola.cultivo.Cultivo;
 import io.github.peixeangola.cultivo.block.AshtrayBlock;
-import io.github.peixeangola.cultivo.block.GreenhouseDetector;
+import io.github.peixeangola.cultivo.block.BongBlock;
+import io.github.peixeangola.cultivo.block.GrowTentBlock;
+import io.github.peixeangola.cultivo.block.GrowTentBlockEntity;
 import io.github.peixeangola.cultivo.block.JarBlock;
 import io.github.peixeangola.cultivo.block.JarBlockEntity;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlock;
@@ -14,6 +16,8 @@ import io.github.peixeangola.cultivo.core.ArticleRecipes;
 import io.github.peixeangola.cultivo.core.AshtrayRules;
 import io.github.peixeangola.cultivo.core.ContentIds;
 import io.github.peixeangola.cultivo.core.CuringRules;
+import io.github.peixeangola.cultivo.core.GrowTentRules;
+import io.github.peixeangola.cultivo.core.GrowthRules;
 import io.github.peixeangola.cultivo.core.SeedSources;
 import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.core.SmokeRules;
@@ -81,6 +85,7 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.FarmlandBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -105,7 +110,7 @@ public final class CultivoGameTests {
 
     static {
         TESTS.register("outdoor_growth", () -> CultivoGameTests::outdoorGrowth);
-        TESTS.register("greenhouse_quality", () -> CultivoGameTests::greenhouseQuality);
+        TESTS.register("grow_tent_harvest", () -> CultivoGameTests::growTentHarvest);
         TESTS.register("harvest_drops", () -> CultivoGameTests::harvestDrops);
         TESTS.register("drying_station", () -> CultivoGameTests::dryingStation);
         TESTS.register("sieve_station", () -> CultivoGameTests::sieveStation);
@@ -166,6 +171,16 @@ public final class CultivoGameTests {
         TESTS.register("block_states_match_ids", () -> CultivoGameTests::blockStatesMatchIds);
         TESTS.register("tooltips_show_profile_and_marks", () -> CultivoGameTests::tooltipsShowProfileAndMarks);
         TESTS.register("serene_seasons_compat", () -> CultivoGameTests::sereneSeasonsCompat);
+        TESTS.register("grow_tent_places_two_halves", () -> CultivoGameTests::growTentPlacesTwoHalves);
+        TESTS.register("grow_tent_plants_and_grows", () -> CultivoGameTests::growTentPlantsAndGrows);
+        TESTS.register("grow_tent_bone_meal", () -> CultivoGameTests::growTentBoneMeal);
+        TESTS.register("glass_gives_no_bonus", () -> CultivoGameTests::glassGivesNoBonus);
+        TESTS.register("grow_tent_breaks_either_half", () -> CultivoGameTests::growTentBreaksEitherHalf);
+        TESTS.register("grow_tent_creative_break", () -> CultivoGameTests::growTentCreativeBreak);
+        TESTS.register("grow_tent_persists", () -> CultivoGameTests::growTentPersists);
+        TESTS.register("grow_tent_adventure_plant", () -> CultivoGameTests::growTentAdventurePlant);
+        TESTS.register("grow_tent_explosion", () -> CultivoGameTests::growTentExplosion);
+        TESTS.register("bong_placed_on_ground", () -> CultivoGameTests::bongPlacedOnGround);
     }
 
     private static final BlockPos SOIL = new BlockPos(4, 1, 4);
@@ -206,7 +221,10 @@ public final class CultivoGameTests {
         helper.setBlock(PLANT, crop(variety, age));
     }
 
-    /** Teto de vidro 2 blocos acima e paredes de vidro a 2 blocos, na altura da planta. */
+    /**
+     * Teto de vidro 2 blocos acima e paredes de vidro a 2 blocos, na altura da planta: a antiga estufa de vidro, que desde
+     * 25/10/2026 não dá bônus nenhum (glass_gives_no_bonus).
+     */
     private static void buildGreenhouse(GameTestHelper helper) {
         helper.setBlock(PLANT.above(2), Blocks.GLASS.defaultBlockState());
         helper.setBlock(PLANT.east(2), Blocks.GLASS.defaultBlockState());
@@ -258,7 +276,6 @@ public final class CultivoGameTests {
             for (Variety variety : Variety.values()) {
                 plantOnFarmland(helper, variety, 0);
                 check(level.getBlockState(pos).canSurvive(level, pos), variety + " não sobrevive em farmland");
-                check(!GreenhouseDetector.isGreenhouse(level, pos), "céu aberto não é estufa");
                 check(level.getRawBrightness(pos, 0) >= 9, "luz insuficiente no ambiente de teste");
                 int ticks = 0;
                 while (ticks < 20_000 && level.getBlockState(pos).getValue(CropBlock.AGE) < 7) {
@@ -274,36 +291,6 @@ public final class CultivoGameTests {
         });
     }
 
-    /** Estufa produz qualidade 4–5 e outdoor 2–3, na mesma colheita servidor. */
-    public static void greenhouseQuality(GameTestHelper helper) {
-        run(helper, () -> {
-            ServerLevel level = helper.getLevel();
-            for (Variety variety : Variety.values()) {
-                plantOnFarmland(helper, variety, 7);
-                buildGreenhouse(helper);
-                check(GreenhouseDetector.isGreenhouse(level, helper.absolutePos(PLANT)), "estufa não detectada");
-                for (int i = 0; i < 30; i++) {
-                    for (ItemStack drop : harvest(helper)) {
-                        if (drop.is(ModItems.FRESH_FLOWERS.get(variety).get())) {
-                            Integer q = quality(drop);
-                            check(q != null && q >= 4 && q <= 5, "estufa deu qualidade " + q);
-                        }
-                    }
-                }
-                helper.setBlock(PLANT.above(2), Blocks.AIR.defaultBlockState());
-                check(!GreenhouseDetector.isGreenhouse(level, helper.absolutePos(PLANT)), "sem teto ainda é estufa");
-                for (int i = 0; i < 30; i++) {
-                    for (ItemStack drop : harvest(helper)) {
-                        if (drop.is(ModItems.FRESH_FLOWERS.get(variety).get())) {
-                            Integer q = quality(drop);
-                            check(q != null && q >= 2 && q <= 3, "outdoor deu qualidade " + q);
-                        }
-                    }
-                }
-            }
-        });
-    }
-
     /** Madura: flor fresca com qualidade + sementes. Imatura: exatamente 1 semente. */
     public static void harvestDrops(GameTestHelper helper) {
         run(helper, () -> {
@@ -312,7 +299,7 @@ public final class CultivoGameTests {
                 Item seeds = ModItems.SEEDS.get(variety).get();
                 plantOnFarmland(helper, variety, 7);
                 List<ItemStack> mature = harvest(helper);
-                check(count(mature, flower) == 1, variety + " madura sem flor");
+                check(harvestFlowers(count(mature, flower)), variety + " madura com " + count(mature, flower) + " flores");
                 check(count(mature, seeds) >= 1, variety + " madura sem semente");
                 plantOnFarmland(helper, variety, 3);
                 List<ItemStack> young = harvest(helper);
@@ -1366,7 +1353,7 @@ public final class CultivoGameTests {
                     seeds += stack.getCount();
                 }
             }
-            check(flowers == 1, "flores da colheita: " + flowers);
+            check(harvestFlowers(flowers), "flores da colheita: " + flowers);
             check(seeds >= 1, "a colheita madura não deu sementes");
             drops.forEach(ItemEntity::discard);
         });
@@ -1921,7 +1908,7 @@ public final class CultivoGameTests {
             check(Integer.valueOf(2).equals(quality(jar.getItem())) && !jar.getItem().has(ModComponents.CURED.get())
                 && jar.cureProgress() == 0, "resina curou: " + jar.getItem());
 
-            // Variedade do catálogo: estufa 4 → 5
+            // Variedade do catálogo: estufinha 4 → 5
             jar.setItem(withQuality(ModItems.DRIED_FLOWERS.get(Variety.GELATO_AZUL_42).get(), 3, 4));
             jar.setCureProgress(CuringRules.CURE_TICKS - 1);
             jar.serverTick(level);
@@ -2061,13 +2048,13 @@ public final class CultivoGameTests {
     // ------------------------------------------------------------------ sons, partículas e animação (estágio 4)
 
     /**
-     * Os 16 eventos de som do mod estão registrados no servidor, e cada evento vanilla que o sounds.json gerado
+     * Os 18 eventos de som do mod estão registrados no servidor, e cada evento vanilla que o sounds.json gerado
      * reaproveita existe no registro (um nome errado tocaria silêncio no cliente sem erro nenhum). O borbulhar usa o evento
      * do próprio aparelho: o narguilé tem o seu (legenda "Narguilé borbulha"), não o do bong.
      */
     public static void soundEventsRegistered(GameTestHelper helper) {
         run(helper, () -> {
-            check(ContentIds.SOUNDS.size() == 16, "sons: " + ContentIds.SOUNDS.size());
+            check(ContentIds.SOUNDS.size() == 18, "sons: " + ContentIds.SOUNDS.size());
             check(io.github.peixeangola.cultivo.smoke.SmokeEffects.bubbleSound(SmokeDevice.HOOKAH)
                 .equals(Optional.of(ModSounds.HOOKAH_BUBBLE.get())), "o narguilé borbulha com o evento do bong");
             check(io.github.peixeangola.cultivo.smoke.SmokeEffects.bubbleSound(SmokeDevice.BONG)
@@ -2368,6 +2355,14 @@ public final class CultivoGameTests {
                 && success.swingSource() == InteractionResult.SwingSource.NONE, "a recusa da bandeja balançou: " + refused);
             check(RollingTrayBlock.predict(player, InteractionHand.MAIN_HAND, player.getMainHandItem()) == InteractionResult.CONSUME,
                 "o cliente deveria prever a recusa sem balançar");
+
+            // Estufinha: plantar (metade de baixo) e colher (metade de cima)
+            GrowTentBlockEntity tent = placeTent(helper, new BlockPos(4, 1, 7));
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SEEDS.get(Variety.BRISA).get()));
+            checkPredictedSwing(rightClick(helper, player, new BlockPos(4, 2, 7)), "plantar na estufinha");
+            tent.setAge(7);
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            checkPredictedSwing(rightClick(helper, player, new BlockPos(4, 3, 7)), "colher a estufinha");
         });
     }
 
@@ -2725,9 +2720,42 @@ public final class CultivoGameTests {
                     }
                 }
             }
+            // Estufinha: vazia, crescendo e madura × semente, mão vazia, farinha de osso, terra e cachimbo × as duas metades
+            // × sobrevivência e aventura (sem can_place_on: não planta, mas colhe)
+            GrowTentBlockEntity tent = placeTent(helper, new BlockPos(4, 1, 7));
+            record TentCase(boolean planted, int age) {}
+            List<ItemStack> tentHelds = List.of(new ItemStack(ModItems.SEEDS.get(Variety.BRISA).get()), ItemStack.EMPTY,
+                new ItemStack(Items.BONE_MEAL), new ItemStack(Items.DIRT), new ItemStack(ModItems.ARTICLES.get("pipe").get()));
+            for (GameType mode : List.of(GameType.SURVIVAL, GameType.ADVENTURE)) {
+                mode.updatePlayerAbilities(player.getAbilities());
+                for (TentCase tentCase : List.of(new TentCase(false, 0), new TentCase(true, 3), new TentCase(true, 7))) {
+                    for (ItemStack held : tentHelds) {
+                        for (BlockPos half : List.of(new BlockPos(4, 2, 7), new BlockPos(4, 3, 7))) {
+                            tent.clear();
+                            if (tentCase.planted()) {
+                                tent.plant(Variety.AURORA);
+                                tent.setAge(tentCase.age());
+                            }
+                            GrowTentBlockEntity view = tentView(helper, tent);
+                            InteractionResult predicted = GrowTentBlock.predictResult(view, held,
+                                GrowTentBlock.mayPlace(player, held, level, tent.getBlockPos()));
+                            player.getInventory().clearContent();
+                            player.getInventory().setSelectedSlot(8);
+                            InteractionResult actual = serverBlockResult(helper, half, player, InteractionHand.MAIN_HAND, held.copy());
+                            checks++;
+                            if (!predicted.equals(actual)) {
+                                mismatches.add("estufinha " + mode + " " + tentCase + " em " + half + ", mão " + held
+                                    + ": cliente " + predicted + ", servidor " + actual);
+                            }
+                        }
+                    }
+                }
+            }
+            GameType.SURVIVAL.updatePlayerAbilities(player.getAbilities());
             check(mismatches.isEmpty(), mismatches.size() + " previsões erradas: " + mismatches);
-            // Estações: suporte, peneira sem e com dichavador e prensa × 5 conteúdos × 7 mãos; pote 4 × 7; bandeja 7 × 2
-            check(checks == 4 * 5 * 7 + 4 * 7 + 7 * 2, "combinações conferidas: " + checks);
+            // Estações: suporte, peneira sem e com dichavador e prensa × 5 conteúdos × 7 mãos; pote 4 × 7; bandeja 7 × 2;
+            // estufinha 2 × 3 × 5 × 2
+            check(checks == 4 * 5 * 7 + 4 * 7 + 7 * 2 + 2 * 3 * 5 * 2, "combinações conferidas: " + checks);
         });
     }
 
@@ -2892,7 +2920,8 @@ public final class CultivoGameTests {
                 "peneira: " + keysOf(station));
             List<Component> bong = tooltipOf(helper, new ItemStack(ModItems.ARTICLES.get("bong").get()));
             check(keysOf(bong).equals(List.of("tooltip.cultivo.smoke.device.1", "tooltip.cultivo.smoke.device.2",
-                "tooltip.cultivo.smoke.device.3")), "bong: " + keysOf(bong));
+                "tooltip.cultivo.smoke.device.3", "tooltip.cultivo.bong.place.1", "tooltip.cultivo.bong.place.2")),
+                "bong: " + keysOf(bong));
             List<Component> jarTip = tooltipOf(helper, new ItemStack(ModItems.ARTICLES.get(ContentIds.JAR).get()));
             check(keysOf(jarTip).equals(List.of("tooltip.cultivo.jar.1", "tooltip.cultivo.jar.2", "tooltip.cultivo.jar.3",
                 "tooltip.cultivo.jar.4")), "pote: " + keysOf(jarTip));
@@ -2956,6 +2985,7 @@ public final class CultivoGameTests {
                         variety.seedsId() + " na tag de item " + season + "_crops deveria ser " + fertile);
                 }
                 check(!wild.defaultBlockState().is(ssBlockTag(season + "_crops")), "planta silvestre em " + season);
+                check(!ModBlocks.GROW_TENT.get().defaultBlockState().is(ssBlockTag(season + "_crops")), "estufinha em " + season);
             }
             check(!crop(Variety.BRISA, 0).is(ssBlockTag("unbreakable_infertile_crops")), "o trigo não está nessa tag");
 
@@ -3001,6 +3031,11 @@ public final class CultivoGameTests {
                 plantBoth.run();
                 check(tickUntilMature(helper, PLANT, 300) == 0, "Cultivo cresceu fora de estação (primavera)");
                 check(tickUntilMature(helper, wheat, 300) == 0, "trigo cresceu fora de estação (primavera): o Serene Seasons não está ativo");
+                // A estufinha não está em tag nenhuma do Serene Seasons: na mesma primavera ela cresce normalmente
+                GrowTentBlockEntity tent = placeTent(helper, new BlockPos(1, 1, 7));
+                tent.plant(Variety.BRISA);
+                tickTentUntilRipe(helper.getLevel(), tent, helper.getLevel().getRandom(), 2000);
+                check(tent.age() == 7, "a estufinha não cresceu na primavera com o Serene Seasons: idade " + tent.age());
 
                 // Um bloco de vidro até 16 acima é a "estufa" do Serene Seasons: os dois crescem mesmo fora de estação.
                 helper.setBlock(PLANT.above(3), Blocks.GLASS.defaultBlockState());
@@ -3017,6 +3052,706 @@ public final class CultivoGameTests {
             } finally {
                 command(helper, "season set mid_summer");
             }
+        });
+    }
+
+    // ------------------------------------------------------------------ estufinha (pedido do dono de 25/10/2026)
+
+    /** Chão de pedra da estufinha: a metade de baixo fica em y 2 e a de cima em y 3. Nada de farmland nem água. */
+    private static final BlockPos TENT_FLOOR = new BlockPos(4, 1, 4);
+    private static final BlockPos TENT = TENT_FLOOR.above();
+    private static final BlockPos TENT_TOP = TENT.above();
+
+    /** Coloca a estufinha pelo item, pelo caminho real (DoubleHighBlockItem + setPlacedBy), e devolve a BlockEntity. */
+    private static GrowTentBlockEntity placeTent(GameTestHelper helper, BlockPos floorRel) {
+        BlockPos lower = placeWithItem(helper, new ItemStack(ModItems.GROW_TENT.get()), floorRel, 0.0F);
+        BlockEntity be = helper.getLevel().getBlockEntity(helper.absolutePos(lower));
+        check(be instanceof GrowTentBlockEntity, "estufinha sem BlockEntity na metade de baixo: " + be);
+        return (GrowTentBlockEntity) be;
+    }
+
+    /** Jogador de teste num canto, com a mão principal vazia (slot 8). */
+    private static ServerPlayer tentPlayer(GameTestHelper helper, GameType type) {
+        ServerPlayer player = placedPlayer(helper, type, new BlockPos(1, 2, 1));
+        type.updatePlayerAbilities(player.getAbilities());
+        return player;
+    }
+
+    /** Visão do cliente da estufinha: uma BlockEntity nova carregada só com a tag de atualização. */
+    private static GrowTentBlockEntity tentView(GameTestHelper helper, GrowTentBlockEntity tent) {
+        var registries = helper.getLevel().registryAccess();
+        GrowTentBlockEntity view = new GrowTentBlockEntity(tent.getBlockPos(), tent.getBlockState());
+        view.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, registries, tent.getUpdateTag(registries)));
+        return view;
+    }
+
+    private static List<ItemEntity> itemsNear(GameTestHelper helper, BlockPos rel) {
+        return helper.getLevel().getEntitiesOfClass(ItemEntity.class,
+            new AABB(helper.absolutePos(rel)).inflate(2.0D, 3.0D, 2.0D));
+    }
+
+    /** Quantas flores frescas uma colheita madura dá: de 3 a 5 (GrowthRules.HARVEST_FLOWERS_MIN/MAX). */
+    private static boolean harvestFlowers(int flowers) {
+        return flowers >= GrowthRules.HARVEST_FLOWERS_MIN && flowers <= GrowthRules.HARVEST_FLOWERS_MAX;
+    }
+
+    private static int countEntities(List<ItemEntity> items, Item item) {
+        return items.stream().filter(e -> e.getItem().is(item)).mapToInt(e -> e.getItem().getCount()).sum();
+    }
+
+    /** A primeira pilha do item no inventário (vazia se não há). */
+    private static ItemStack findInInventory(Player player, Item item) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (stack.is(item)) {
+                return stack;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /** Random ticks na metade de baixo até a planta madurar (no máximo {@code limit}); devolve quantos foram. */
+    private static int tickTentUntilRipe(ServerLevel level, GrowTentBlockEntity tent, RandomSource random, int limit) {
+        BlockPos pos = tent.getBlockPos();
+        int ticks = 0;
+        while (ticks < limit && tent.age() < 7) {
+            level.getBlockState(pos).randomTick(level, pos, random);
+            ticks++;
+        }
+        return ticks;
+    }
+
+    /**
+     * O item coloca as duas metades (de baixo com a BlockEntity, de cima sem), olhando para quem colocou, gasta 1 item,
+     * e só a metade de cima tem a luz da lâmpada (12). Sem espaço em cima não coloca nem gasta. Tirar o chão derruba a
+     * estufinha inteira, com 1 item e a planta.
+     */
+    public static void growTentPlacesTwoHalves(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            ItemStack stack = new ItemStack(ModItems.GROW_TENT.get());
+            BlockPos lowerRel = placeWithItem(helper, stack, TENT_FLOOR, 0.0F);
+            check(stack.isEmpty(), "colocar não gastou a estufinha: " + stack);
+            BlockPos lowerPos = helper.absolutePos(lowerRel);
+            BlockState lower = level.getBlockState(lowerPos);
+            BlockState upper = level.getBlockState(lowerPos.above());
+            check(lower.is(ModBlocks.GROW_TENT.get()) && lower.getValue(GrowTentBlock.HALF) == DoubleBlockHalf.LOWER,
+                "metade de baixo: " + lower);
+            check(upper.is(ModBlocks.GROW_TENT.get()) && upper.getValue(GrowTentBlock.HALF) == DoubleBlockHalf.UPPER,
+                "metade de cima: " + upper);
+            check(lower.getValue(GrowTentBlock.FACING) == Direction.NORTH && upper.getValue(GrowTentBlock.FACING) == Direction.NORTH,
+                "jogador olhando para o sul deveria deixar a frente para o norte: " + lower + " / " + upper);
+            check(level.getBlockEntity(lowerPos) instanceof GrowTentBlockEntity, "metade de baixo sem BlockEntity");
+            check(level.getBlockEntity(lowerPos.above()) == null, "a metade de cima não deveria ter BlockEntity");
+            check(upper.getLightEmission() == 12 && lower.getLightEmission() == 0,
+                "luz: cima " + upper.getLightEmission() + ", baixo " + lower.getLightEmission());
+            check(lower.isRandomlyTicking() && !upper.isRandomlyTicking(), "só a metade de baixo recebe random ticks");
+
+            // Teto de 1 bloco: não cabe, não gasta e não deixa meia estufinha
+            BlockPos lowFloor = new BlockPos(1, 1, 7);
+            helper.setBlock(lowFloor, Blocks.STONE.defaultBlockState());
+            helper.setBlock(lowFloor.above(2), Blocks.STONE.defaultBlockState());
+            ServerPlayer player = (ServerPlayer) helper.makeMockServerPlayer(GameType.SURVIVAL);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.GROW_TENT.get()));
+            BlockPos floor = helper.absolutePos(lowFloor);
+            BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(floor).add(0.0D, 0.5D, 0.0D), Direction.UP, floor, false);
+            InteractionResult result = player.gameMode.useItemOn(player, level, player.getMainHandItem(),
+                InteractionHand.MAIN_HAND, hit);
+            check(!result.consumesAction(), "colocou sem espaço em cima: " + result);
+            check(player.getMainHandItem().getCount() == 1, "gastou a estufinha sem colocar");
+            check(level.getBlockState(floor.above()).isAir(), "sobrou meia estufinha: " + level.getBlockState(floor.above()));
+
+            // Sem chão firme a metade de baixo cai, e a de cima vai junto: 1 estufinha e a planta madura no chão
+            ((GrowTentBlockEntity) level.getBlockEntity(lowerPos)).plant(Variety.ECLIPSE);
+            ((GrowTentBlockEntity) level.getBlockEntity(lowerPos)).setAge(7);
+            helper.setBlock(TENT_FLOOR, Blocks.AIR.defaultBlockState());
+            check(level.getBlockState(lowerPos).isAir() && level.getBlockState(lowerPos.above()).isAir(),
+                "a estufinha ficou de pé sem chão");
+            List<ItemEntity> items = itemsNear(helper, lowerRel);
+            int seeds = countEntities(items, ModItems.SEEDS.get(Variety.ECLIPSE).get());
+            check(countEntities(items, ModItems.GROW_TENT.get()) == 1
+                && harvestFlowers(countEntities(items, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get())) && seeds >= 1 && seeds <= 4
+                && items.stream().mapToInt(e -> e.getItem().getCount()).sum()
+                    == 1 + countEntities(items, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get()) + seeds, "sem chão derrubou " + items);
+            items.forEach(ItemEntity::discard);
+        });
+    }
+
+    /**
+     * Plantar com uma semente clicando na metade de cima (a planta vai para a BlockEntity de baixo), sem farmland, sem
+     * água e sem céu: cresce até 7 só com random ticks. Com sorteio fixo, a média de random ticks até madurar segue a
+     * regra da estufinha: 7 idades × 5 (rápida), × 6 (média) e × 7 (lenta), com tolerância de 10%.
+     */
+    public static void growTentPlantsAndGrows(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+            BlockPos pos = tent.getBlockPos();
+            ServerPlayer player = tentPlayer(helper, GameType.SURVIVAL);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SEEDS.get(Variety.BRISA).get(), 2));
+            checkPredictedSwing(rightClick(helper, player, TENT_TOP), "plantar na estufinha");
+            check(player.getMainHandItem().getCount() == 1, "plantar gastou " + (2 - player.getMainHandItem().getCount()));
+            check(tent.hasPlant() && tent.variety() == Variety.BRISA && tent.age() == 0,
+                "depois de plantar: " + tent.variety() + " idade " + tent.age());
+            // Outra semente com a estufinha ocupada não planta por cima nem é gasta
+            rightClick(helper, player, TENT);
+            check(player.getMainHandItem().getCount() == 1 && tent.variety() == Variety.BRISA, "replantou por cima");
+
+            // O ambiente do teste: pedra embaixo e nada de farmland ou água por perto
+            check(level.getBlockState(pos.below()).is(Blocks.STONE), "a estufinha deveria estar na pedra");
+            for (BlockPos near : BlockPos.betweenClosed(pos.offset(-4, -1, -4), pos.offset(4, 1, 4))) {
+                BlockState nearby = level.getBlockState(near);
+                check(!(nearby.getBlock() instanceof FarmlandBlock) && !level.getFluidState(near).is(net.minecraft.tags.FluidTags.WATER),
+                    "farmland ou água perto da estufinha em " + near + ": " + nearby);
+            }
+            // Um teto de pedra logo acima: a estufinha não vê o céu (a lâmpada é a luz dela; o crescimento nem lê a luz)
+            helper.setBlock(TENT_TOP.above(), Blocks.STONE.defaultBlockState());
+            check(level.getBlockState(pos.above(2)).isSolidRender(), "a estufinha deveria estar sob um teto de pedra");
+
+            int ticks = tickTentUntilRipe(level, tent, level.getRandom(), 2000);
+            check(tent.age() == 7, "não amadureceu em " + ticks + " random ticks");
+            tickTentUntilRipe(level, tent, level.getRandom(), 10);
+            check(tent.age() == 7, "passou da idade 7");
+
+            RandomSource random = RandomSource.create(20261025L);
+            record Rate(Variety variety, int bound) {}
+            for (Rate rate : List.of(new Rate(Variety.BRISA, 5), new Rate(Variety.AURORA, 6), new Rate(Variety.ECLIPSE, 7))) {
+                check(GrowTentRules.rollBound(rate.variety()) == rate.bound(), "preparo: limite de " + rate.variety());
+                long total = 0;
+                int rounds = 200;
+                for (int round = 0; round < rounds; round++) {
+                    tent.clear();
+                    tent.plant(rate.variety());
+                    total += tickTentUntilRipe(level, tent, random, 2000);
+                }
+                double mean = (double) total / rounds;
+                double expected = 7.0D * rate.bound();
+                check(Math.abs(mean - expected) <= expected * 0.10D,
+                    rate.variety() + ": média de " + mean + " random ticks até madurar, esperado " + expected);
+            }
+        });
+    }
+
+    /**
+     * Farinha de osso pelo clique (na metade de cima) e pelo dispensador (BoneMealItem.applyBonemeal na de baixo): +2 a +5
+     * idades por uso, até 7, gastando 1 por uso; madura em no máximo 4 usos. Na estufinha vazia não faz nada nem é gasta;
+     * na planta madura o clique colhe sem gastar a farinha. Em 200 usos a partir da idade 0 saem 2, 3, 4 e 5, e só eles.
+     */
+    public static void growTentBoneMeal(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+            ServerPlayer player = tentPlayer(helper, GameType.SURVIVAL);
+            player.getInventory().setSelectedSlot(0);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BONE_MEAL, 16));
+            rightClick(helper, player, TENT_TOP);
+            check(player.getMainHandItem().getCount() == 16 && !tent.hasPlant(), "farinha de osso na estufinha vazia");
+
+            tent.plant(Variety.AURORA);
+            int uses = 0;
+            while (tent.age() < 7 && uses < 10) {
+                int before = tent.age();
+                check(rightClick(helper, player, TENT_TOP).consumesAction(), "farinha de osso recusada na idade " + before);
+                uses++;
+                int gained = tent.age() - before;
+                check((gained >= 2 && gained <= 5) || (tent.age() == 7 && gained >= 1),
+                    "farinha de osso deu +" + gained + " (de " + before + ")");
+                check(player.getMainHandItem().getCount() == 16 - uses, "farinha gasta: " + player.getMainHandItem().getCount());
+            }
+            check(tent.age() == 7 && uses <= 4, "madura depois de " + uses + " usos (idade " + tent.age() + ")");
+
+            rightClick(helper, player, TENT_TOP);
+            check(!tent.hasPlant(), "o clique com farinha de osso na planta madura não colheu");
+            check(player.getMainHandItem().getCount() == 16 - uses, "a colheita gastou farinha de osso");
+            check(harvestFlowers(countInInventory(player, ModItems.FRESH_FLOWERS.get(Variety.AURORA).get())), "a colheita não deu as flores");
+
+            Set<Integer> bonuses = new java.util.TreeSet<>();
+            for (int round = 0; round < 200; round++) {
+                tent.clear();
+                tent.plant(Variety.AURORA);
+                ItemStack boneMeal = new ItemStack(Items.BONE_MEAL);
+                check(net.minecraft.world.item.BoneMealItem.applyBonemeal(boneMeal, level, tent.getBlockPos(), null),
+                    "o dispensador não aplicou a farinha de osso");
+                check(boneMeal.isEmpty(), "o dispensador não gastou a farinha de osso");
+                bonuses.add(tent.age());
+            }
+            check(bonuses.equals(Set.of(2, 3, 4, 5)), "idades depois de 1 farinha de osso: " + bonuses);
+        });
+    }
+
+    /**
+     * Colheita pelo clique de mão vazia (nas duas metades, alternando) com qualidade 4–5 em 200 rodadas, numa genética
+     * com 50% de chance do +1 (as duas aparecem): de 3 a 5 flores frescas (uma pilha) e de 1 a 4 sementes, e a estufinha fica vazia. Também 4–5
+     * nas 40 genéticas. Imatura não colhe. Depois da colheita, replanta na hora com uma semente.
+     */
+    public static void growTentHarvest(GameTestHelper helper) {
+        run(helper, () -> {
+            GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+            ServerPlayer player = tentPlayer(helper, GameType.SURVIVAL);
+            check(Variety.ECLIPSE.qualityBonusChance() == 0.5D, "preparo: Eclipse com 50% de chance do +1");
+            Set<Integer> seen = new java.util.TreeSet<>();
+            for (int round = 0; round < 200; round++) {
+                player.getInventory().clearContent();
+                player.getInventory().setSelectedSlot(8);
+                tent.plant(Variety.ECLIPSE);
+                tent.setAge(7);
+                checkPredictedSwing(rightClick(helper, player, round % 2 == 0 ? TENT : TENT_TOP), "colher a estufinha");
+                check(!tent.hasPlant() && tent.age() == 0, "a estufinha não ficou vazia depois da colheita");
+                Item flower = ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get();
+                check(harvestFlowers(countInInventory(player, flower)), "colheita com " + countInInventory(player, flower) + " flores");
+                int seeds = countInInventory(player, ModItems.SEEDS.get(Variety.ECLIPSE).get());
+                check(seeds >= 1 && seeds <= 4, "colheita com " + seeds + " sementes");
+                Integer q = quality(findInInventory(player, flower));
+                check(q != null && (q == 4 || q == 5), "estufinha deu qualidade " + q);
+                seen.add(q);
+            }
+            check(seen.equals(Set.of(4, 5)), "qualidades vistas em 200 colheitas: " + seen);
+
+            for (Variety variety : Variety.values()) {
+                player.getInventory().clearContent();
+                player.getInventory().setSelectedSlot(8);
+                tent.plant(variety);
+                tent.setAge(7);
+                rightClick(helper, player, TENT);
+                Integer q = quality(findInInventory(player, ModItems.FRESH_FLOWERS.get(variety).get()));
+                check(q != null && q >= 4 && q <= 5, variety + " na estufinha deu qualidade " + q);
+            }
+
+            player.getInventory().clearContent();
+            player.getInventory().setSelectedSlot(8);
+            tent.plant(Variety.BRISA);
+            tent.setAge(6);
+            check(!rightClick(helper, player, TENT).consumesAction(), "o clique colheu a planta imatura");
+            check(tent.hasPlant() && tent.age() == 6 && player.getInventory().isEmpty(), "a planta imatura mudou com o clique");
+
+            tent.setAge(7);
+            rightClick(helper, player, TENT_TOP);
+            check(!tent.hasPlant(), "preparo: colher antes de replantar");
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SEEDS.get(Variety.AURORA).get()));
+            checkPredictedSwing(rightClick(helper, player, TENT), "replantar depois da colheita");
+            check(tent.variety() == Variety.AURORA && tent.age() == 0 && player.getMainHandItem().isEmpty(),
+                "não replantou: " + tent.variety() + " idade " + tent.age());
+
+            // Inventário cheio: o que não cabe cai aos pés do jogador, e nada some
+            Item flower = ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get();
+            Item seeds = ModItems.SEEDS.get(Variety.ECLIPSE).get();
+            tent.clear();
+            tent.plant(Variety.ECLIPSE);
+            tent.setAge(7);
+            player.getInventory().clearContent();
+            fillInventory(player, Set.of());
+            check(rightClick(helper, player, TENT).consumesAction(), "não colheu com o inventário cheio");
+            List<ItemEntity> dropped = helper.getLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(3.0D));
+            int flowers = countInInventory(player, flower) + countEntities(dropped, flower);
+            int seedCount = countInInventory(player, seeds) + countEntities(dropped, seeds);
+            check(!tent.hasPlant() && harvestFlowers(flowers) && seedCount >= 1 && seedCount <= 4,
+                "inventário cheio: " + flowers + " flores e " + seedCount + " sementes, estufinha " + tent.variety());
+            check(harvestFlowers(countEntities(dropped, flower)), "as flores que não cabiam não caíram no chão: " + dropped);
+            dropped.forEach(ItemEntity::discard);
+
+            // Com a regra blockDrops desligada a colheita esvazia sem dar nada, como o arbusto de frutas vermelhas
+            var rules = helper.getLevel().getGameRules();
+            rules.set(net.minecraft.world.level.gamerules.GameRules.BLOCK_DROPS, false, helper.getLevel().getServer());
+            try {
+                player.getInventory().clearContent();
+                player.getInventory().setSelectedSlot(8);
+                tent.plant(Variety.ECLIPSE);
+                tent.setAge(7);
+                check(rightClick(helper, player, TENT).consumesAction(), "blockDrops desligada: não colheu");
+                check(!tent.hasPlant() && player.getInventory().isEmpty(), "blockDrops desligada: deu " + player.getInventory().getItem(8));
+                check(helper.getLevel().getEntitiesOfClass(ItemEntity.class, player.getBoundingBox().inflate(3.0D)).isEmpty(),
+                    "blockDrops desligada: caiu item no chão");
+            } finally {
+                rules.set(net.minecraft.world.level.gamerules.GameRules.BLOCK_DROPS, true, helper.getLevel().getServer());
+            }
+        });
+    }
+
+    /**
+     * A estufa de vidro não dá mais bônus (25/10/2026): uma lavoura madura em farmland dentro do vidro dá qualidade 2–3
+     * (as duas aparecem em 200 colheitas), e cresce igual sem o vidro: com o mesmo sorteio fixo, o mesmo número de random
+     * ticks até madurar.
+     */
+    public static void glassGivesNoBonus(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            plantOnFarmland(helper, Variety.ECLIPSE, 7);
+            buildGreenhouse(helper);
+            Set<Integer> seen = new java.util.TreeSet<>();
+            for (int i = 0; i < 200; i++) {
+                for (ItemStack drop : harvest(helper)) {
+                    if (drop.is(ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get())) {
+                        Integer q = quality(drop);
+                        check(q != null && (q == 2 || q == 3), "sob vidro deu qualidade " + q);
+                        seen.add(q);
+                    }
+                }
+            }
+            check(seen.equals(Set.of(2, 3)), "qualidades sob vidro: " + seen);
+
+            BlockPos pos = helper.absolutePos(PLANT);
+            int[] withGlass = new int[5];
+            for (int seed = 0; seed < withGlass.length; seed++) {
+                plantOnFarmland(helper, Variety.ECLIPSE, 0);
+                withGlass[seed] = tickUntilMatureWith(level, pos, RandomSource.create(seed));
+            }
+            for (BlockPos glass : List.of(PLANT.above(2), PLANT.east(2), PLANT.west(2), PLANT.north(2), PLANT.south(2))) {
+                helper.setBlock(glass, Blocks.AIR.defaultBlockState());
+            }
+            for (int seed = 0; seed < withGlass.length; seed++) {
+                plantOnFarmland(helper, Variety.ECLIPSE, 0);
+                int without = tickUntilMatureWith(level, pos, RandomSource.create(seed));
+                check(without == withGlass[seed], "sorteio " + seed + ": " + withGlass[seed] + " ticks no vidro e " + without + " sem");
+            }
+        });
+    }
+
+    /** Random ticks numa lavoura até a idade 7 com um sorteio dado (no máximo 20 000). */
+    private static int tickUntilMatureWith(ServerLevel level, BlockPos pos, RandomSource random) {
+        int ticks = 0;
+        while (ticks < 20_000 && level.getBlockState(pos).getValue(CropBlock.AGE) < 7) {
+            level.getBlockState(pos).randomTick(level, pos, random);
+            ticks++;
+        }
+        check(level.getBlockState(pos).getValue(CropBlock.AGE) == 7, "a lavoura não madurou");
+        return ticks;
+    }
+
+    /**
+     * Quebrar qualquer metade (Level#destroyBlock e jogador de sobrevivência) derruba exatamente 1 estufinha, as duas
+     * metades somem, e a planta cai uma vez: madura, de 3 a 5 flores com qualidade 4–5 e de 1 a 4 sementes; imatura, 1 semente;
+     * vazia, nada além da estufinha. Nada some e nada duplica. /setblock destroy e replace nas duas metades, e pistões
+     * não movem nenhuma delas. Explosões: growTentExplosion.
+     */
+    public static void growTentBreaksEitherHalf(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            record Case(String what, boolean planted, int age, boolean breakUpper, boolean byPlayer) {}
+            List<Case> cases = List.of(
+                new Case("madura, metade de baixo", true, 7, false, false),
+                new Case("madura, metade de cima", true, 7, true, false),
+                new Case("imatura, metade de cima", true, 3, true, false),
+                new Case("vazia, metade de baixo", false, 0, false, false),
+                new Case("vazia, metade de cima", false, 0, true, false),
+                new Case("madura, jogador quebra a de cima", true, 7, true, true),
+                new Case("imatura, jogador quebra a de baixo", true, 3, false, true));
+            Item tentItem = ModItems.GROW_TENT.get();
+            Item flower = ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get();
+            Item seeds = ModItems.SEEDS.get(Variety.ECLIPSE).get();
+            for (Case c : cases) {
+                GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+                if (c.planted()) {
+                    tent.plant(Variety.ECLIPSE);
+                    tent.setAge(c.age());
+                }
+                BlockPos target = helper.absolutePos(c.breakUpper() ? TENT_TOP : TENT);
+                if (c.byPlayer()) {
+                    ServerPlayer player = tentPlayer(helper, GameType.SURVIVAL);
+                    check(player.gameMode.destroyBlock(target), c.what() + ": o jogador não quebrou");
+                } else {
+                    level.destroyBlock(target, true);
+                }
+                check(level.getBlockState(helper.absolutePos(TENT)).isAir() && level.getBlockState(helper.absolutePos(TENT_TOP)).isAir(),
+                    c.what() + ": sobrou uma metade");
+                List<ItemEntity> items = itemsNear(helper, TENT);
+                int tents = countEntities(items, tentItem);
+                int flowers = countEntities(items, flower);
+                int seedCount = countEntities(items, seeds);
+                int others = items.stream().mapToInt(e -> e.getItem().getCount()).sum() - tents - flowers - seedCount;
+                check(tents == 1, c.what() + ": " + tents + " estufinhas");
+                check(others == 0, c.what() + ": itens a mais " + items);
+                if (c.planted() && c.age() == 7) {
+                    check(harvestFlowers(flowers) && seedCount >= 1 && seedCount <= 4, c.what() + ": " + flowers + " flores e " + seedCount + " sementes");
+                    for (ItemEntity e : items) {
+                        if (e.getItem().is(flower)) {
+                            Integer q = quality(e.getItem());
+                            check(q != null && q >= 4 && q <= 5, c.what() + ": qualidade " + q);
+                        }
+                    }
+                } else if (c.planted()) {
+                    check(flowers == 0 && seedCount == 1, c.what() + ": " + flowers + " flores e " + seedCount + " sementes");
+                } else {
+                    check(flowers == 0 && seedCount == 0, c.what() + ": planta numa estufinha vazia");
+                }
+                items.forEach(ItemEntity::discard);
+            }
+
+            // /setblock … destroy quebra como o jogador (1 estufinha e a planta); /setblock … replace apaga sem drop
+            // nenhum (flag 256: nem a planta sai), e a outra metade some junto
+            for (boolean upper : List.of(true, false)) {
+                for (String mode : List.of("destroy", "replace")) {
+                    GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+                    tent.plant(Variety.ECLIPSE);
+                    tent.setAge(7);
+                    BlockPos target = helper.absolutePos(upper ? TENT_TOP : TENT);
+                    command(helper, "setblock " + target.getX() + " " + target.getY() + " " + target.getZ() + " air " + mode);
+                    String what = "/setblock " + mode + (upper ? " na metade de cima" : " na metade de baixo");
+                    check(level.getBlockState(helper.absolutePos(TENT)).isAir() && level.getBlockState(helper.absolutePos(TENT_TOP)).isAir(),
+                        what + ": sobrou uma metade");
+                    List<ItemEntity> items = itemsNear(helper, TENT);
+                    int tents = countEntities(items, tentItem);
+                    int flowers = countEntities(items, flower);
+                    if (mode.equals("destroy")) {
+                        check(tents == 1 && harvestFlowers(flowers), what + ": " + tents + " estufinhas e " + flowers + " flores");
+                    } else if (upper) {
+                        // A de baixo sai pela atualização de forma (como a porta), com drop: 1 estufinha e a planta
+                        check(tents == 1 && harvestFlowers(flowers), what + ": " + tents + " estufinhas e " + flowers + " flores");
+                    } else {
+                        check(tents == 0 && flowers == 0 && countEntities(items, seeds) == 0, what + ": derrubou " + items);
+                    }
+                    items.forEach(ItemEntity::discard);
+                }
+            }
+
+            // Pistões não movem nem estouram nenhuma das metades (as duas são imóveis)
+            placeTent(helper, TENT_FLOOR);
+            for (BlockPos half : List.of(TENT, TENT_TOP)) {
+                BlockPos abs = helper.absolutePos(half);
+                check(level.getBlockState(abs).getPistonPushReaction() == net.minecraft.world.level.material.PushReaction.IMMOVEABLE,
+                    "a estufinha deveria ser imóvel em " + half);
+                for (Direction dir : Direction.Plane.HORIZONTAL) {
+                    var push = new net.minecraft.world.level.block.piston.PistonStructureResolver(level, abs.relative(dir.getOpposite()), dir, true);
+                    var pull = new net.minecraft.world.level.block.piston.PistonStructureResolver(level, abs.relative(dir, 2), dir.getOpposite(), false);
+                    check(!push.resolve() && !pull.resolve(), "um pistão moveria a estufinha em " + half + " para " + dir);
+                }
+            }
+            helper.setBlock(TENT, Blocks.AIR.defaultBlockState());
+            itemsNear(helper, TENT).forEach(ItemEntity::discard);
+        });
+    }
+
+    /**
+     * No criativo, quebrar a metade de cima ou a de baixo não derruba nada: nem a estufinha (como a porta vanilla) nem a
+     * planta (como a lavoura quebrada no criativo), e as duas metades somem.
+     */
+    public static void growTentCreativeBreak(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            for (boolean upper : List.of(true, false)) {
+                GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+                tent.plant(Variety.ECLIPSE);
+                tent.setAge(7);
+                ServerPlayer creative = tentPlayer(helper, GameType.CREATIVE);
+                check(creative.preventsBlockDrops(), "preparo: jogador criativo");
+                check(creative.gameMode.destroyBlock(helper.absolutePos(upper ? TENT_TOP : TENT)), "o criativo não quebrou");
+                String where = upper ? "metade de cima" : "metade de baixo";
+                check(level.getBlockState(helper.absolutePos(TENT)).isAir() && level.getBlockState(helper.absolutePos(TENT_TOP)).isAir(),
+                    where + ": sobrou uma metade");
+                List<ItemEntity> items = itemsNear(helper, TENT);
+                check(items.isEmpty(), where + ": o criativo derrubou " + items);
+                items.forEach(ItemEntity::discard);
+            }
+        });
+    }
+
+    /**
+     * Salvar e carregar como no load de chunk (BlockEntity.loadStatic + Level#setBlockEntity): a variedade e a idade
+     * voltam e a planta continua crescendo. A visão do cliente (tag de atualização) tem as duas, e vazia fica vazia; setAge
+     * numa estufinha vazia não faz nada. Um id de variedade desconhecido carrega inerte: guarda o id e a idade, não cresce,
+     * não colhe, não replanta (também na previsão do cliente) e quebrar devolve só a estufinha. Uma idade fora de 0–7 é
+     * cortada.
+     */
+    public static void growTentPersists(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            var registries = level.registryAccess();
+            GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+            BlockPos pos = tent.getBlockPos();
+            tent.plant(Variety.AURORA);
+            tent.setAge(5);
+            CompoundTag saved = tent.saveWithFullMetadata(registries);
+            level.removeBlockEntity(pos);
+            BlockEntity loaded = BlockEntity.loadStatic(pos, level.getBlockState(pos), saved, registries);
+            check(loaded instanceof GrowTentBlockEntity, "a estufinha não recarregou: " + loaded);
+            level.setBlockEntity(loaded);
+            GrowTentBlockEntity after = (GrowTentBlockEntity) loaded;
+            check(after != tent && level.getBlockEntity(pos) == after, "a estufinha recarregada não está no mundo");
+            check(after.variety() == Variety.AURORA && after.age() == 5, "recarregou " + after.variety() + " idade " + after.age());
+            tickTentUntilRipe(level, after, level.getRandom(), 2000);
+            check(after.age() == 7, "não cresceu depois de recarregar");
+
+            GrowTentBlockEntity view = tentView(helper, after);
+            check(view.variety() == Variety.AURORA && view.age() == 7, "o cliente vê " + view.variety() + " idade " + view.age());
+            after.clear();
+            check(!tentView(helper, after).hasPlant(), "o cliente vê planta numa estufinha vazia");
+            after.setAge(9);
+            check(!after.hasPlant() && after.age() == 0, "setAge numa estufinha vazia mudou a idade: " + after.age());
+
+            // Id desconhecido (genética renomeada, mod mais antigo): estufinha inerte, que guarda o id e a idade
+            CompoundTag unknown = saved.copy();
+            unknown.putString("variety", "nao_existe");
+            unknown.putInt("age", 7);
+            BlockEntity bogus = BlockEntity.loadStatic(pos, level.getBlockState(pos), unknown, registries);
+            check(bogus instanceof GrowTentBlockEntity t && t.occupied() && !t.hasPlant() && t.age() == 7,
+                "variedade desconhecida não carregou inerte: " + bogus);
+            level.setBlockEntity(bogus);
+            GrowTentBlockEntity inert = (GrowTentBlockEntity) bogus;
+            CompoundTag resaved = inert.saveWithoutMetadata(registries);
+            check(resaved.getStringOr("variety", "").equals("nao_existe") && resaved.getIntOr("age", -1) == 7,
+                "a estufinha inerte não salvou o id de volta: " + resaved);
+            GrowTentBlockEntity inertView = tentView(helper, inert);
+            check(inertView.occupied() && !inertView.hasPlant(), "o cliente não vê a estufinha inerte");
+            for (ItemStack held : List.of(ItemStack.EMPTY, new ItemStack(ModItems.SEEDS.get(Variety.BRISA).get()))) {
+                check(GrowTentBlock.predictResult(inertView, held, true) == InteractionResult.PASS,
+                    "o cliente prevê uso na estufinha inerte com " + held);
+            }
+            ServerPlayer player = tentPlayer(helper, GameType.SURVIVAL);
+            check(!rightClick(helper, player, TENT).consumesAction() && player.getInventory().isEmpty(), "a estufinha inerte colheu");
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SEEDS.get(Variety.BRISA).get()));
+            rightClick(helper, player, TENT_TOP);
+            check(player.getMainHandItem().getCount() == 1 && !inert.hasPlant(), "replantou a estufinha inerte");
+            inert.plant(Variety.BRISA);
+            check(!inert.hasPlant(), "plant() plantou por cima da estufinha inerte");
+            helper.getLevel().getBlockState(pos).randomTick(level, pos, level.getRandom());
+            check(inert.age() == 7 && !inert.hasPlant(), "a estufinha inerte mudou com o random tick");
+            level.destroyBlock(pos, true);
+            List<ItemEntity> items = itemsNear(helper, TENT);
+            check(countEntities(items, ModItems.GROW_TENT.get()) == 1 && items.size() == 1, "a estufinha inerte derrubou " + items);
+            items.forEach(ItemEntity::discard);
+            placeTent(helper, TENT_FLOOR);
+
+            CompoundTag old = saved.copy();
+            old.putInt("age", 99);
+            BlockEntity clamped = BlockEntity.loadStatic(pos, level.getBlockState(pos), old, registries);
+            check(clamped instanceof GrowTentBlockEntity t && t.age() == 7, "idade 99 não foi cortada para 7");
+        });
+    }
+
+    /**
+     * Bong no chão (pedido do dono de 25/10/2026): agachado, o clique direito em cima de uma pedra põe o bong em pé, com
+     * a frente para quem pôs, e gasta o item (nada no criativo). Sem agachar, o mesmo clique não põe nada (o item segue
+     * para fumar). Quebrar devolve 1 bong; sem chão embaixo ele cai e devolve 1 bong; o botão do meio dá o bong. No
+     * modo aventura não põe.
+     */
+    public static void bongPlacedOnGround(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            Item bongItem = ModItems.ARTICLES.get(ContentIds.BONG).get();
+            BlockPos floor = new BlockPos(4, 1, 4);
+            BlockPos spot = floor.above();
+            helper.setBlock(floor, Blocks.STONE.defaultBlockState());
+            BlockPos floorAbs = helper.absolutePos(floor);
+            BlockPos spotAbs = helper.absolutePos(spot);
+            BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(floorAbs).add(0.0D, 0.5D, 0.0D), Direction.UP, floorAbs, false);
+
+            ServerPlayer player = tentPlayer(helper, GameType.SURVIVAL);
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(bongItem));
+            // Sem agachar: o clique num bloco não põe o bong (segue para fumar, que aqui recusa por falta de isqueiro)
+            player.setShiftKeyDown(false);
+            player.gameMode.useItemOn(player, level, player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
+            check(level.getBlockState(spotAbs).isAir() && player.getMainHandItem().is(bongItem), "pôs o bong sem agachar");
+
+            player.setShiftKeyDown(true);
+            InteractionResult placed = player.gameMode.useItemOn(player, level, player.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
+            player.setShiftKeyDown(false);
+            BlockState state = level.getBlockState(spotAbs);
+            check(placed.consumesAction() && state.is(ModBlocks.BONG.get()), "agachado não pôs o bong: " + placed + " " + state);
+            check(player.getMainHandItem().isEmpty(), "pôr o bong não gastou o item: " + player.getMainHandItem());
+            check(state.getValue(BongBlock.FACING) == player.getDirection().getOpposite(), "frente do bong: " + state);
+            check(state.getCloneItemStack(level, spotAbs, false).is(bongItem), "o botão do meio não dá o bong");
+
+            check(player.gameMode.destroyBlock(spotAbs), "o jogador não quebrou o bong");
+            List<ItemEntity> items = itemsNear(helper, spot);
+            check(level.getBlockState(spotAbs).isAir() && countEntities(items, bongItem) == 1 && items.size() == 1,
+                "quebrar o bong derrubou " + items);
+            items.forEach(ItemEntity::discard);
+
+            // Sem chão embaixo o bong cai e vira item
+            level.setBlock(spotAbs, ModBlocks.BONG.get().defaultBlockState(), Block.UPDATE_ALL);
+            helper.setBlock(floor, Blocks.AIR.defaultBlockState());
+            items = itemsNear(helper, spot);
+            check(level.getBlockState(spotAbs).isAir() && countEntities(items, bongItem) == 1, "sem chão: " + items);
+            items.forEach(ItemEntity::discard);
+            helper.setBlock(floor, Blocks.STONE.defaultBlockState());
+
+            // Criativo não gasta; aventura não põe
+            ServerPlayer creative = tentPlayer(helper, GameType.CREATIVE);
+            creative.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(bongItem));
+            creative.setShiftKeyDown(true);
+            check(creative.gameMode.useItemOn(creative, level, creative.getMainHandItem(), InteractionHand.MAIN_HAND, hit).consumesAction()
+                && level.getBlockState(spotAbs).is(ModBlocks.BONG.get()) && creative.getMainHandItem().is(bongItem),
+                "criativo: não pôs ou gastou o bong");
+            level.setBlock(spotAbs, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            ServerPlayer adventure = tentPlayer(helper, GameType.ADVENTURE);
+            adventure.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(bongItem));
+            adventure.setShiftKeyDown(true);
+            adventure.gameMode.useItemOn(adventure, level, adventure.getMainHandItem(), InteractionHand.MAIN_HAND, hit);
+            check(level.getBlockState(spotAbs).isAir() && adventure.getMainHandItem().is(bongItem), "aventura pôs o bong");
+        });
+    }
+
+    /**
+     * No modo aventura a semente sem {@code can_place_on} não planta (como o uso de item vanilla) nem é gasta, nas duas
+     * metades; colher a planta madura ainda vale, como o arbusto de frutas vermelhas.
+     */
+    public static void growTentAdventurePlant(GameTestHelper helper) {
+        run(helper, () -> {
+            GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+            ServerPlayer player = tentPlayer(helper, GameType.ADVENTURE);
+            check(!player.mayBuild(), "preparo: jogador no modo aventura");
+            Item seed = ModItems.SEEDS.get(Variety.BRISA).get();
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(seed, 3));
+            for (BlockPos half : List.of(TENT, TENT_TOP)) {
+                check(!rightClick(helper, player, half).consumesAction(), "aventura plantou pela " + half);
+            }
+            check(player.getMainHandItem().getCount() == 3 && !tent.occupied(), "aventura: semente gasta ou estufinha plantada");
+
+            tent.plant(Variety.ECLIPSE);
+            tent.setAge(7);
+            player.getInventory().clearContent();
+            player.getInventory().setSelectedSlot(8);
+            check(rightClick(helper, player, TENT_TOP).consumesAction() && !tent.hasPlant(), "aventura não colheu a madura");
+            check(harvestFlowers(countInInventory(player, ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get())), "aventura: a colheita não deu as flores");
+        });
+    }
+
+    /**
+     * Uma explosão (com decaimento, como TNT e creeper) em qualquer metade tira as duas, derruba no máximo 1 estufinha e
+     * a planta no máximo uma vez: madura, até 5 flores com qualidade 4–5 e até 4 sementes. Nada duplica. Uma explosão que
+     * só aciona blocos (carga de vento) não mexe na estufinha.
+     */
+    public static void growTentExplosion(GameTestHelper helper) {
+        run(helper, () -> {
+            ServerLevel level = helper.getLevel();
+            Item tentItem = ModItems.GROW_TENT.get();
+            Item flower = ModItems.FRESH_FLOWERS.get(Variety.ECLIPSE).get();
+            Item seeds = ModItems.SEEDS.get(Variety.ECLIPSE).get();
+            for (int round = 0; round < 10; round++) {
+                boolean upper = round % 2 == 0;
+                helper.setBlock(TENT_FLOOR, Blocks.STONE.defaultBlockState());
+                GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+                tent.plant(Variety.ECLIPSE);
+                tent.setAge(7);
+                Vec3 centre = Vec3.atCenterOf(helper.absolutePos(upper ? TENT_TOP : TENT));
+                level.explode(null, centre.x, centre.y, centre.z, 1.5F, net.minecraft.world.level.Level.ExplosionInteraction.BLOCK);
+                String what = "explosão " + round + (upper ? " na metade de cima" : " na metade de baixo");
+                check(level.getBlockState(helper.absolutePos(TENT)).isAir() && level.getBlockState(helper.absolutePos(TENT_TOP)).isAir(),
+                    what + ": sobrou uma metade");
+                List<ItemEntity> items = itemsNear(helper, TENT);
+                int tents = countEntities(items, tentItem);
+                int flowers = countEntities(items, flower);
+                int seedCount = countEntities(items, seeds);
+                check(tents <= 1 && flowers <= GrowthRules.HARVEST_FLOWERS_MAX && seedCount <= 4, what + ": " + tents + " estufinhas, " + flowers + " flores e "
+                    + seedCount + " sementes");
+                check(items.stream().mapToInt(e -> e.getItem().getCount()).sum() == tents + flowers + seedCount, what + ": itens a mais " + items);
+                for (ItemEntity e : items) {
+                    if (e.getItem().is(flower)) {
+                        Integer q = quality(e.getItem());
+                        check(q != null && q >= 4 && q <= 5, what + ": qualidade " + q);
+                    }
+                }
+                items.forEach(ItemEntity::discard);
+            }
+
+            helper.setBlock(TENT_FLOOR, Blocks.STONE.defaultBlockState());
+            GrowTentBlockEntity tent = placeTent(helper, TENT_FLOOR);
+            tent.plant(Variety.ECLIPSE);
+            tent.setAge(7);
+            Vec3 centre = Vec3.atCenterOf(helper.absolutePos(TENT_TOP));
+            level.explode(null, null, null, centre.x, centre.y, centre.z, 1.5F, false,
+                net.minecraft.world.level.Level.ExplosionInteraction.TRIGGER);
+            check(tent.isRipe() && level.getBlockState(helper.absolutePos(TENT_TOP)).is(ModBlocks.GROW_TENT.get())
+                && itemsNear(helper, TENT).isEmpty(), "a carga de vento mexeu na estufinha");
         });
     }
 }

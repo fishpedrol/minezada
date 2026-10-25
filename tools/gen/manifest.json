@@ -2,6 +2,8 @@
   "_comment": "Manifesto único do conteúdo do Cultivo. tools/gen/generate.mjs gera blockstates, modelos, definições de item, lang, sons, loot, receitas, tags, worldgen e test_instance a partir dele. Os testes JUnit conferem o resultado contra as classes puras em core/.",
   "_portuguese_comment": "Pedido do dono: o mod aparece todo em português em qualquer idioma do cliente. Com portuguese_everywhere = true o gerador escreve os textos pt_br também no en_us.json (o fallback de todos os idiomas). Os textos em inglês continuam aqui como fonte (lang.en_us, campos en e name_patterns.*.en): com false o en_us.json volta a sair em inglês. O gerador confere que toda chave tem as duas línguas.",
   "portuguese_everywhere": true,
+  "_harvest_flowers_comment": "Pedido do dono de 25/10/2026 (\"quero que venha mais buds quando pegar o pé\"): a planta madura dá de min a max flores frescas (sorteio uniforme), todas numa pilha com a mesma qualidade; vale na lavoura e na estufinha. Os números batem com GrowthRules.HARVEST_FLOWERS_MIN/MAX.",
+  "harvest_flowers": { "min": 3, "max": 5 },
   "compat": {
     "serene_seasons": {
       "_comment": "Serene Seasons (mod de estações de terceiros): as lavouras do Cultivo seguem as estações do trigo. No Serene Seasons 26.1.2.0.7, minecraft:wheat está em block/summer_crops e block/autumn_crops, e minecraft:wheat_seeds em item/summer_crops e item/autumn_crops. Entradas com required:false; a planta silvestre fica fora (não tem random tick). Sem o Serene Seasons, as tags sereneseasons:* ficam sem leitor (inofensivas). Veja DECISIONS.md, 'Compatibilidade: Serene Seasons'.",
@@ -64,7 +66,7 @@
     { "id": "joint", "en": "Joint", "pt": "Baseado" }
   ],
   "articles": [
-    { "id": "bong", "en": "Bong", "pt": "Bong" },
+    { "id": "bong", "en": "Bong", "pt": "Bong", "placed_device": true },
     { "id": "pipe", "en": "Pipe", "pt": "Cachimbo" },
     { "id": "hookah", "en": "Hookah", "pt": "Narguilé" },
     { "id": "chillum", "en": "Chillum", "pt": "Chillum" },
@@ -77,6 +79,7 @@
     { "id": "ashtray", "en": "Ashtray", "pt": "Cinzeiro", "placeable": true }
   ],
   "_placeable_comment": "Artigos com \"placeable\": true viram bloco (mesmo ID do item, que mantém o ícone plano): blockstate, modelos (tools/gen/models.mjs), loot que derruba o próprio item e o nome block.cultivo.<id>. Espelho de ContentIds.PLACEABLE_ARTICLES.",
+  "_placed_device_comment": "Aparelhos com \"placed_device\": true (o bong, pedido do dono de 25/10/2026) continuam fumando com o clique direito e, agachado, o clique num bloco põe o aparelho no chão. O gerador escreve o mesmo que para os colocáveis (blockstate, modelo, loot e block.cultivo.<id>). Espelho de ContentIds.PLACED_DEVICES.",
   "jar_storable": ["#cultivo:dried_flowers", "cultivo:resin", "cultivo:hash", "cultivo:joint"],
   "mineable": {
     "_comment": "Tags vanilla minecraft:mineable/<ferramenta>: a ferramenta certa acelera a quebra. Estações de madeira (cópia das tábuas) no machado; bandeja de metal e cinzeiro de terracota na picareta. O pote de vidro fica sem tag, como o vidro vanilla.",
@@ -89,6 +92,8 @@
     { "id": "press", "type": "pressing", "en": "Hand Press", "pt": "Prensa Manual" }
   ],
   "wild_plant": { "id": "wild_plant", "en": "Wild Plant", "pt": "Planta Silvestre" },
+  "_grow_tent_comment": "Estufinha (pedido do dono de 25/10/2026, docs/ESTUFINHA_PLANO.md): bloco de 2 de altura com luz roxa e um pé de planta dentro, sem farmland nem água; colhe com qualidade 4–5 e fica vazia. Espelho de ContentIds.GROW_TENT. O gerador escreve o blockstate (metade e facing), os modelos das metades (tools/gen/models.mjs), o ícone plano, o loot (o item só sai da metade de baixo), item.cultivo.grow_tent e block.cultivo.grow_tent.",
+  "grow_tent": { "id": "grow_tent", "en": "Grow Tent", "pt": "Estufinha" },
   "effects": [
     { "id": "high", "en": "High", "pt": "Chapado" }
   ],
@@ -109,7 +114,9 @@
     { "id": "jar.cured", "event": "minecraft:block.amethyst_block.chime", "volume": 1.0, "pitch": 1.2, "en": "Flowers cured", "pt": "Flores curadas" },
     { "id": "grinder.grind", "event": "minecraft:block.grindstone.use", "volume": 0.8, "pitch": 1.5, "en": "Grinder grinds", "pt": "Dichavador mói" },
     { "id": "ashtray.ash", "event": "minecraft:block.composter.fill", "volume": 1.0, "pitch": 1.4, "en": "Ash falls into ashtray", "pt": "Cinza cai no cinzeiro" },
-    { "id": "ashtray.empty", "event": "minecraft:block.composter.empty", "volume": 0.8, "pitch": 1.3, "en": "Ashtray emptied", "pt": "Cinzeiro esvaziado" }
+    { "id": "ashtray.empty", "event": "minecraft:block.composter.empty", "volume": 0.8, "pitch": 1.3, "en": "Ashtray emptied", "pt": "Cinzeiro esvaziado" },
+    { "id": "grow_tent.plant", "event": "minecraft:item.crop.plant", "volume": 0.8, "pitch": 1.1, "en": "Seed planted in tent", "pt": "Semente plantada na estufinha" },
+    { "id": "grow_tent.harvest", "event": "minecraft:block.sweet_berry_bush.pick_berries", "volume": 1.0, "pitch": 1.1, "en": "Tent harvested", "pt": "Estufinha colhida" }
   ],
   "_smoke_animation_comment": "Animação de fumar na 3ª pessoa (espelho de core/SmokeAnimation.java). arm/support_arm: xRot e yRot (radianos) do braço que segura e do que apoia (bong e narguilé, com a outra mão vazia) no fim da subida, com a cabeça reta. O gerador acha a translação que leva mouth_point (1/16 do modelo na mão) até target (px do modelo do jogador; padrão: a boca) com essa pose, e gera <aparelho>_in_hand_lit (na boca) e os quadros _k0.._k(keyframes-1), interpolados entre o jeito de segurar e a boca, um por tick (range_dispatch em minecraft:use_duration). Na 1ª pessoa o modelo aceso usa a exibição de quem segura e o cliente anima até a boca.",
   "smoke_animation": {
@@ -143,6 +150,7 @@
     { "result": "drying_rack", "count": 1, "pattern": ["SSS", "T T", "SSS"], "key": { "S": "minecraft:stick", "T": "minecraft:string" } },
     { "result": "sieve", "count": 1, "pattern": ["PTP", "P P"], "key": { "P": "#minecraft:planks", "T": "minecraft:string" } },
     { "result": "press", "count": 1, "pattern": ["III", " S ", "PPP"], "key": { "I": "minecraft:iron_ingot", "S": "minecraft:stick", "P": "#minecraft:planks" } },
+    { "result": "grow_tent", "count": 1, "pattern": ["WAW", "WLW", "WPW"], "key": { "W": "minecraft:purple_wool", "A": "minecraft:amethyst_shard", "L": "minecraft:torch", "P": "minecraft:flower_pot" } },
     { "id": "joint_filtered", "result": "joint", "count": 1, "transmute": { "input": "cultivo:joint", "material": "cultivo:filter_tip", "group": "cultivo_joint", "components": { "cultivo:filtered": {} } } }
   ],
   "joint_recipe": { "_comment": "Um crafting_transmute joint_<variedade> por variedade: flor seca + material; grava cultivo:strain.", "material": "cultivo:rolling_paper", "group": "cultivo_joint" },
@@ -180,24 +188,9 @@
       "plains": ["minecraft:plains", "minecraft:meadow"]
     }
   },
-  "greenhouse_glass": [
-    "minecraft:glass", "minecraft:tinted_glass", "minecraft:glass_pane",
-    "minecraft:white_stained_glass", "minecraft:orange_stained_glass", "minecraft:magenta_stained_glass",
-    "minecraft:light_blue_stained_glass", "minecraft:yellow_stained_glass", "minecraft:lime_stained_glass",
-    "minecraft:pink_stained_glass", "minecraft:gray_stained_glass", "minecraft:light_gray_stained_glass",
-    "minecraft:cyan_stained_glass", "minecraft:purple_stained_glass", "minecraft:blue_stained_glass",
-    "minecraft:brown_stained_glass", "minecraft:green_stained_glass", "minecraft:red_stained_glass",
-    "minecraft:black_stained_glass",
-    "minecraft:white_stained_glass_pane", "minecraft:orange_stained_glass_pane", "minecraft:magenta_stained_glass_pane",
-    "minecraft:light_blue_stained_glass_pane", "minecraft:yellow_stained_glass_pane", "minecraft:lime_stained_glass_pane",
-    "minecraft:pink_stained_glass_pane", "minecraft:gray_stained_glass_pane", "minecraft:light_gray_stained_glass_pane",
-    "minecraft:cyan_stained_glass_pane", "minecraft:purple_stained_glass_pane", "minecraft:blue_stained_glass_pane",
-    "minecraft:brown_stained_glass_pane", "minecraft:green_stained_glass_pane", "minecraft:red_stained_glass_pane",
-    "minecraft:black_stained_glass_pane"
-  ],
   "game_tests": [
     { "name": "outdoor_growth", "max_ticks": 100 },
-    { "name": "greenhouse_quality", "max_ticks": 100 },
+    { "name": "grow_tent_harvest", "max_ticks": 100 },
     { "name": "harvest_drops", "max_ticks": 100 },
     { "name": "drying_station", "max_ticks": 100 },
     { "name": "sieve_station", "max_ticks": 100 },
@@ -257,7 +250,17 @@
     { "name": "ashtray_search_edges", "max_ticks": 100 },
     { "name": "block_states_match_ids", "max_ticks": 100 },
     { "name": "tooltips_show_profile_and_marks", "max_ticks": 100 },
-    { "name": "serene_seasons_compat", "max_ticks": 100, "sky_access": true }
+    { "name": "serene_seasons_compat", "max_ticks": 100, "sky_access": true },
+    { "name": "grow_tent_places_two_halves", "max_ticks": 100 },
+    { "name": "grow_tent_plants_and_grows", "max_ticks": 100 },
+    { "name": "grow_tent_bone_meal", "max_ticks": 100 },
+    { "name": "glass_gives_no_bonus", "max_ticks": 100 },
+    { "name": "grow_tent_breaks_either_half", "max_ticks": 100 },
+    { "name": "grow_tent_creative_break", "max_ticks": 100 },
+    { "name": "grow_tent_persists", "max_ticks": 100 },
+    { "name": "grow_tent_adventure_plant", "max_ticks": 100 },
+    { "name": "grow_tent_explosion", "max_ticks": 100 },
+    { "name": "bong_placed_on_ground", "max_ticks": 100 }
   ],
   "lang": {
     "en_us": {
@@ -302,7 +305,9 @@
       "tooltip.cultivo.cured": "Cured",
       "tooltip.cultivo.ashtray": ["Catches ash when someone smokes nearby", "When full, right-click with an empty", "hand to take bone meal"],
       "message.cultivo.tray_need_flowers": "You need 2 identical dried flowers in hand",
-      "message.cultivo.tray_need_papers": "You need 3 rolling papers in your inventory"
+      "message.cultivo.tray_need_papers": "You need 3 rolling papers in your inventory",
+      "tooltip.cultivo.grow_tent": ["Right-click:", "with a seed, plants it without soil or water", "with an empty hand, harvests when ripe", "Purple light: quality 4 to 5"],
+      "tooltip.cultivo.bong.place": ["Sneak and right-click a block", "to put it down"]
     },
     "pt_br": {
       "itemGroup.cultivo": "Cultivo",
@@ -346,7 +351,9 @@
       "tooltip.cultivo.cured": "Cura concluída",
       "tooltip.cultivo.ashtray": ["Junta a cinza de quem fuma por perto", "Cheio, clique com o botão direito de", "mão vazia para tirar farinha de osso"],
       "message.cultivo.tray_need_flowers": "Você precisa de 2 flores secas iguais na mão",
-      "message.cultivo.tray_need_papers": "Você precisa de 3 folhas de seda no inventário"
+      "message.cultivo.tray_need_papers": "Você precisa de 3 folhas de seda no inventário",
+      "tooltip.cultivo.grow_tent": ["Clique com o botão direito:", "com semente, planta sem terra nem água", "de mão vazia, colhe a planta madura", "Luz roxa: qualidade 4 a 5"],
+      "tooltip.cultivo.bong.place": ["Agachado, clique direito num bloco", "para pôr o bong no chão"]
     }
   }
 }

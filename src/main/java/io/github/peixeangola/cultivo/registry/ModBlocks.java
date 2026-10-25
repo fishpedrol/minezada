@@ -2,13 +2,16 @@ package io.github.peixeangola.cultivo.registry;
 
 import io.github.peixeangola.cultivo.Cultivo;
 import io.github.peixeangola.cultivo.block.AshtrayBlock;
+import io.github.peixeangola.cultivo.block.BongBlock;
 import io.github.peixeangola.cultivo.block.CannabisCropBlock;
+import io.github.peixeangola.cultivo.block.GrowTentBlock;
 import io.github.peixeangola.cultivo.block.JarBlock;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlock;
 import io.github.peixeangola.cultivo.block.RollingTrayBlock;
 import io.github.peixeangola.cultivo.block.SieveBlock;
 import io.github.peixeangola.cultivo.block.WildPlantBlock;
 import io.github.peixeangola.cultivo.core.ContentIds;
+import io.github.peixeangola.cultivo.core.GrowTentRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
 import java.util.EnumMap;
@@ -17,6 +20,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraftforge.registries.DeferredRegister;
@@ -71,6 +75,31 @@ public final class ModBlocks {
         () -> new AshtrayBlock(BlockBehaviour.Properties.of()
             .mapColor(MapColor.TERRACOTTA_ORANGE).strength(0.5F).sound(SoundType.DECORATED_POT).noOcclusion()
             .pushReaction(PushReaction.POPPED).setId(BLOCKS.key(ContentIds.ASHTRAY))));
+
+    /**
+     * Estufinha: tecido, 2 de altura, luz roxa na metade de cima. Pistões não a movem nem a estouram: fica de pé, como a
+     * mesa de encantamento, em vez de virar item com a planta junto a cada máquina de redstone por perto.
+     */
+    public static final RegistryObject<GrowTentBlock> GROW_TENT = BLOCKS.register(ContentIds.GROW_TENT,
+        () -> new GrowTentBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE).strength(0.8F).sound(SoundType.WOOL).noOcclusion()
+            .pushReaction(PushReaction.IMMOVEABLE)
+            .lightLevel(state -> state.getValue(GrowTentBlock.HALF) == DoubleBlockHalf.UPPER ? GrowTentRules.LAMP_LIGHT : 0)
+            .isRedstoneConductor((state, level, pos) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .setId(BLOCKS.key(ContentIds.GROW_TENT))));
+
+    /**
+     * Bong no chão (pedido do dono de 25/10/2026): vidro, posto agachado com o item, que continua fumando; estourado por
+     * pistão como os artigos colocáveis.
+     */
+    public static final RegistryObject<BongBlock> BONG = BLOCKS.register(ContentIds.BONG,
+        () -> new BongBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.NONE).strength(0.3F).sound(SoundType.GLASS).noOcclusion().pushReaction(PushReaction.POPPED)
+            .setId(BLOCKS.key(ContentIds.BONG))));
+
+    /** Bloco de cada aparelho que vai para o chão, pelo ID (o mesmo do item). */
+    public static final Map<String, RegistryObject<? extends Block>> PLACED_DEVICES = Map.of(ContentIds.BONG, BONG);
 
     /** Bloco de cada artigo colocável, pelo ID (o mesmo do item). */
     public static final Map<String, RegistryObject<? extends Block>> PLACEABLE_ARTICLES = Map.of(

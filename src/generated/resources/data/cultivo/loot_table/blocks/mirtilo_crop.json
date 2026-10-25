@@ -20,9 +20,19 @@
                   "age": "7"
                 }
               },
-              "modifier": {
-                "type": "cultivo:set_harvest_quality"
-              }
+              "modifier": [
+                {
+                  "type": "minecraft:set_count",
+                  "count": {
+                    "type": "minecraft:uniform",
+                    "min": 3,
+                    "max": 5
+                  }
+                },
+                {
+                  "type": "cultivo:set_harvest_quality"
+                }
+              ]
             },
             {
               "type": "minecraft:item",

@@ -11,12 +11,12 @@ Você vai continuar o "Cultivo": um mod privado de Minecraft Java 26.3 para Forg
 ## Estado em 25/10/2026
 - Implementado:
   - 40 genéticas: 3 nativas e 37 do catálogo High THC da Santa Semente BR, com nomes de paródia;
-  - lavoura de 8 estágios, estufa com qualidade maior, planta silvestre;
+  - lavoura de 8 estágios, estufinha (grow tent) com qualidade maior, planta silvestre;
   - sementes em baús de aldeia, lavouras de planície e no mascate;
   - suporte de secagem, peneira (com dichavador) e prensa por ticks, com estados visuais e animação;
   - baseado com piteira, bandeja de enrolar, pote que cura flores e cinzeiro;
   - a mecânica fictícia de fumar, com animação própria;
-  - 16 eventos de som;
+  - 18 eventos de som;
   - todo o texto em português em qualquer idioma;
   - compatibilidade com o Serene Seasons: as 40 lavouras e as 40 sementes estão nas tags de verão e outono dele, como o trigo.
 - No PC do dono (Windows 11), com o código de `f515cb9`:

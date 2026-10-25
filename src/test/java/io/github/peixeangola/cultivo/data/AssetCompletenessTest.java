@@ -59,6 +59,28 @@ class AssetCompletenessTest {
         }
     }
 
+    /**
+     * Regressão (bong no chão, 25/10/2026): o 26.3 recusa um modelo de bloco com sprites do atlas de itens ("Rejecting
+     * block model … outside of supported atlas") e o bloco aparece sem modelo. Todo modelo de bloco do mod usa só
+     * texturas block/ (do mod ou vanilla).
+     */
+    @Test
+    void blockModelsUseOnlyBlockTextures() throws IOException {
+        try (var files = Files.list(Resources.assets("models/block"))) {
+            for (Path file : files.toList()) {
+                JsonObject textures = Resources.json(file).getAsJsonObject("textures");
+                if (textures == null) {
+                    continue;
+                }
+                for (var entry : textures.entrySet()) {
+                    String texture = entry.getValue().getAsString();
+                    assertTrue(texture.startsWith("#") || texture.startsWith("cultivo:block/") || texture.startsWith("minecraft:block/"),
+                        file.getFileName() + ": " + entry.getKey() + " = " + texture);
+                }
+            }
+        }
+    }
+
     @Test
     void cropsMapEightAgesToEightStages() {
         for (Variety v : Variety.values()) {
@@ -211,6 +233,61 @@ class AssetCompletenessTest {
             assertEquals("cultivo:block/rolling_tray", v.get("model").getAsString());
             assertEquals(FACING_Y.get(facing), v.has("y") ? v.get("y").getAsInt() : 0, facing);
         }
+    }
+
+    /**
+     * Estufinha: uma variante para cada um dos 8 estados (half × facing), com o modelo da metade e girada como as
+     * estações; a metade de cima tem o painel de LEDs virado para baixo com light_emission 15 (do 26.3) e o mylar das
+     * duas metades brilha. O item continua com o ícone plano.
+     */
+    @Test
+    void growTentBlockstateCoversEveryState() {
+        JsonObject variants = Resources.json(Resources.assets("blockstates/grow_tent.json")).getAsJsonObject("variants");
+        Map<String, List<String>> properties = ContentIds.stateProperties(ContentIds.GROW_TENT);
+        assertEquals(List.of("upper", "lower"), properties.get("half"));
+        assertEquals(8, variants.size());
+        for (Map<String, String> state : allStates(properties)) {
+            JsonObject v = variants.getAsJsonObject("facing=" + state.get("facing") + ",half=" + state.get("half"));
+            assertTrue(v != null, "sem variante para " + state);
+            assertEquals("cultivo:block/grow_tent_" + state.get("half"), v.get("model").getAsString(), state.toString());
+            assertEquals(FACING_Y.get(state.get("facing")), v.has("y") ? v.get("y").getAsInt() : 0, state.toString());
+        }
+        assertTrue(ledPanels("grow_tent_upper") >= 1, "a metade de cima sem o painel de LEDs aceso");
+        assertEquals(0, ledPanels("grow_tent_lower"), "a metade de baixo não tem lâmpada");
+        assertTrue(glowingMylar("grow_tent_lower") >= 3 && glowingMylar("grow_tent_upper") >= 4, "mylar sem brilho");
+        JsonObject item = Resources.json(Resources.assets("models/item/grow_tent.json"));
+        assertEquals("minecraft:item/generated", item.get("parent").getAsString());
+        assertEquals("cultivo:item/grow_tent", item.getAsJsonObject("textures").get("layer0").getAsString());
+    }
+
+    /** Elementos com a face de baixo na textura da lâmpada e brilho 15 (o painel de LEDs). */
+    private static long ledPanels(String model) {
+        return emissive(model).stream().filter(el -> el.get("light_emission").getAsInt() == 15
+            && el.getAsJsonObject("faces").has("down")
+            && el.getAsJsonObject("faces").getAsJsonObject("down").get("texture").getAsString().equals("#lamp")).count();
+    }
+
+    /** Planos de mylar que brilham (as paredes e o teto por dentro). */
+    private static long glowingMylar(String model) {
+        return emissive(model).stream().filter(el -> el.getAsJsonObject("faces").entrySet().stream()
+            .allMatch(f -> f.getValue().getAsJsonObject().get("texture").getAsString().equals("#mylar"))).count();
+    }
+
+    /** Elementos com light_emission, todos entre 1 e 15 (o CuboidModelElement do 26.3 recusa fora de 0–15); nenhum com "shade". */
+    private static List<JsonObject> emissive(String model) {
+        JsonArray elements = Resources.json(Resources.assets("models/block/" + model + ".json")).getAsJsonArray("elements");
+        List<JsonObject> out = new ArrayList<>();
+        for (JsonElement e : elements) {
+            JsonObject el = e.getAsJsonObject();
+            // O 26.3 não tem a chave "shade" (só shade_direction_override): o deserializador a ignoraria em silêncio
+            assertFalse(el.has("shade"), model + " com a chave shade, que o 26.3 não lê");
+            if (el.has("light_emission")) {
+                int glow = el.get("light_emission").getAsInt();
+                assertTrue(glow >= 1 && glow <= 15, model + " light_emission " + glow);
+                out.add(el);
+            }
+        }
+        return out;
     }
 
     /** Pote: o conteúdo atrás do vidro só com filled=true. Cinzeiro: uma camada de cinza por nível, nada no 0. */
