@@ -1,0 +1,34 @@
+# Sonda de estações (precisa do Serene Seasons + GlitchCore na pasta de mods extras).
+# Fase 1, início da primavera (o trigo está fora de estação: o Serene Seasons deixa passar 1 de cada 6 random ticks):
+#   lavoura do Cultivo e trigo ao ar livre (z=0) e sob um bloco de vidro (z=4), que o Serene Seasons conta como estufa.
+# Fase 2, meio do verão (trigo na estação): replanta ao ar livre e confere de novo.
+# Com random_tick_speed 300, na estação o trigo leva cerca de 15 s; fora dela, cerca de 6 vezes mais. Esperamos 30 s.
+forceload add -16 -16 15 15
+gamerule random_tick_speed 300
+season set early_spring
+fill -6 -61 -6 6 -61 6 minecraft:farmland[moisture=7]
+setblock 0 -61 0 minecraft:water
+setblock 0 -61 4 minecraft:water
+setblock -3 -60 0 cultivo:brisa_crop
+setblock 3 -60 0 minecraft:wheat
+setblock -3 -60 4 cultivo:brisa_crop
+setblock 3 -60 4 minecraft:wheat
+setblock -3 -57 4 minecraft:glass
+setblock 3 -57 4 minecraft:glass
+@wait 30
+execute if block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre=madura
+execute unless block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre=imatura
+execute if block 3 -60 0 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre=maduro
+execute unless block 3 -60 0 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre=imaturo
+execute if block -3 -60 4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro=madura
+execute unless block -3 -60 4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro=imatura
+execute if block 3 -60 4 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro=maduro
+execute unless block 3 -60 4 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro=imaturo
+season set mid_summer
+setblock -3 -60 0 cultivo:brisa_crop
+setblock 3 -60 0 minecraft:wheat
+@wait 30
+execute if block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre=madura
+execute unless block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre=imatura
+execute if block 3 -60 0 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre=maduro
+execute unless block 3 -60 0 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre=imaturo

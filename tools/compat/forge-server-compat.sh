@@ -1,25 +1,35 @@
 #!/usr/bin/env bash
 # Teste de compatibilidade em PRODUÇÃO (Linux/macOS, sem tela): instala o servidor oficial do Forge na versão pedida,
-# coloca nele o jar do Cultivo já buildado (build/libs) e, se pedido, outros mods, sobe o servidor dedicado e roda
-# todos os GameTests do Cultivo pelo console com "/test run cultivo:*". É o mais perto do launcher do dono que dá
-# para chegar sem tela: o mesmo jar que vai para a pasta mods, no Forge do launcher, junto com os outros mods.
+# coloca nele o jar do Cultivo já buildado (build/libs) e, se pedido, outros mods (ex.: Serene Seasons + GlitchCore),
+# sobe o servidor dedicado e roda uma "sonda": comandos de console de tools/compat/probes/*.txt que plantam lavouras,
+# aceleram os random ticks e dizem, com "say SONDA ...", o que cresceu. É o mais perto do launcher do dono que dá
+# para chegar sem tela: o mesmo jar da pasta mods, no Forge do launcher, junto com os outros mods.
+#
+# Por que não os GameTests: em produção o Forge não avança o GameTestTicker
+# (ForgeGameTestHooks.isGametestEnabled() exige !FMLLoader.isProduction()), então "/test run" monta as estruturas e
+# nunca termina. Os GameTests rodam no ambiente de desenvolvimento (runGameTestServer, inclusive com
+# -Pcultivo_forge_version); aqui só comandos de console.
 #
 # Uso:
-#   ./gradlew build                                   # gera build/libs/cultivo-0.1.0.jar (Forge da matriz)
-#   bash tools/compat/forge-server-compat.sh 26.3-66.0.2                       # só o Cultivo
-#   bash tools/compat/forge-server-compat.sh 26.3-66.0.2 pasta/com/jars/extras # Cultivo + os .jar da pasta
+#   ./gradlew build                                                   # gera build/libs/cultivo-0.1.0.jar
+#   bash tools/compat/forge-server-compat.sh 26.3-66.0.2                          # só o Cultivo, sonda padrão
+#   bash tools/compat/forge-server-compat.sh 26.3-66.0.2 pasta/dos/jars           # + os .jar da pasta
+#   bash tools/compat/forge-server-compat.sh 26.3-66.0.2 pasta/dos/jars tools/compat/probes/seasons.txt
 #
-# Saída: a pasta run-compat-prod-<versão>[-extras]/ (ignorada pelo git) com logs/latest.log. O script termina com
-# código 0 só se o servidor subir e o resumo do /test disser que todos os testes obrigatórios passaram.
+# Formato da sonda: uma linha por comando de console (sem "/"); "@wait N" espera N segundos; "#" é comentário.
+# Saída: a pasta run-compat-prod-<versão>[-extras]/ (ignorada pelo git), com console.out. O script termina com
+# código 0 se o servidor subir, a sonda rodar até o fim e o servidor desligar; as linhas "SONDA" são o resultado.
 # Precisa de rede para maven.minecraftforge.net, piston-meta/piston-data.mojang.com e libraries.minecraft.net.
 set -euo pipefail
 
 FORGE_VERSION=${1:?informe a versão do Forge, ex.: 26.3-66.0.2}
 EXTRA_DIR=${2:-}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+PROBE=${3:-$ROOT/tools/compat/probes/growth.txt}
 JAVA_BIN=${JAVA_HOME:+$JAVA_HOME/bin/}java
 MOD_JAR=$(ls "$ROOT"/build/libs/cultivo-*.jar 2>/dev/null | grep -v -- '-sources' | head -1 || true)
 [ -n "$MOD_JAR" ] || { echo "jar do Cultivo não encontrado em build/libs: rode ./gradlew build antes" >&2; exit 2; }
+[ -f "$PROBE" ] || { echo "sonda não encontrada: $PROBE" >&2; exit 2; }
 
 SUFFIX=""
 [ -n "$EXTRA_DIR" ] && SUFFIX="-extras"
@@ -32,28 +42,28 @@ if [ ! -f "$INSTALLER" ]; then
     "https://maven.minecraftforge.net/net/minecraftforge/forge/$FORGE_VERSION/forge-$FORGE_VERSION-installer.jar"
 fi
 
-# Instala o servidor uma vez; os mods e o mundo são refeitos a cada execução.
+# Instala o servidor uma vez; mods, mundo, config e logs são refeitos a cada execução.
 if [ ! -f "$SERVER/.installed" ]; then
   rm -rf "$SERVER" && mkdir -p "$SERVER"
   (cd "$SERVER" && "$JAVA_BIN" -jar "$INSTALLER" --installServer > installer.log 2>&1)
   touch "$SERVER/.installed"
 fi
-rm -rf "$SERVER/mods" "$SERVER/world" "$SERVER/logs"
+rm -rf "$SERVER/mods" "$SERVER/world" "$SERVER/logs" "$SERVER/config"
 mkdir -p "$SERVER/mods"
 cp "$MOD_JAR" "$SERVER/mods/"
 if [ -n "$EXTRA_DIR" ]; then
   cp "$EXTRA_DIR"/*.jar "$SERVER/mods/"
 fi
 echo "eula=true" > "$SERVER/eula.txt"
-# Mundo plano e sem estruturas: o teste não depende de onde cai a área dos GameTests.
+# Mundo plano (grama em y=-61) e sem estruturas: a sonda planta perto de 0,0.
 cat > "$SERVER/server.properties" <<'EOF'
 level-type=minecraft\:flat
 generate-structures=false
 spawn-protection=0
-max-tick-time=-1
 EOF
 
-echo "Mods em $SERVER/mods:"; ls -1 "$SERVER/mods"
+echo "Forge $FORGE_VERSION; mods em $SERVER/mods:"; ls -1 "$SERVER/mods"
+echo "Sonda: $PROBE"
 
 # O instalador do Forge cria run.sh (que lê user_jvm_args.txt). Comandos entram pelo stdin do servidor.
 FIFO="$SERVER/console.in"
@@ -74,18 +84,21 @@ wait_for() { # padrão, segundos
 
 STATUS=1
 if wait_for 'Done \([0-9.]+s\)!' 600; then
-  echo "test run cultivo:*" >&3
-  # O resumo sai em inglês no console do servidor (commands.test.summary*).
-  if wait_for 'All required tests passed|required test\(s\) failed|No tests found' 900; then
-    sleep 2
-    grep -qE 'All required tests passed' "$LOG" && STATUS=0
-  fi
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ''|'#'*) ;;
+      '@wait '*) sleep "${line#@wait }" ;;
+      *) echo "$line" >&3 ;;
+    esac
+  done < "$PROBE"
+  sleep 2
+  STATUS=0
 fi
 echo "stop" >&3 || true
 exec 3>&-
-wait "$SERVER_PID" 2>/dev/null || true
+wait "$SERVER_PID" 2>/dev/null || STATUS=1
 rm -f "$FIFO"
 
-echo "---- resumo ($SERVER/console.out)"
-grep -E 'Forge mod loading, version|Done \(|Running [0-9]+ test|Game Test complete|All required tests passed|required test\(s\) failed|failed at|No tests found|Exception' "$LOG" | head -60 || true
+echo "---- resultado ($LOG)"
+grep -E 'Forge mod loading, version|Done \([0-9.]+s\)!|SONDA|Unknown or incomplete command|Incorrect argument|Unknown block|Could not set the block' "$LOG" || true
 exit "$STATUS"

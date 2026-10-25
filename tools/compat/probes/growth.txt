@@ -1,0 +1,13 @@
+# Sonda de crescimento em produção: uma lavoura do Cultivo e um trigo de controle, lado a lado, em farmland molhada.
+# Com random_tick_speed 300, o trigo leva cerca de 15 s para amadurecer; esperamos 30 s.
+forceload add -16 -16 15 15
+gamerule random_tick_speed 300
+fill -6 -61 -6 6 -61 6 minecraft:farmland[moisture=7]
+setblock 0 -61 0 minecraft:water
+setblock -3 -60 0 cultivo:brisa_crop
+setblock 3 -60 0 minecraft:wheat
+@wait 30
+execute if block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA cultivo=madura
+execute unless block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA cultivo=imatura
+execute if block 3 -60 0 minecraft:wheat[age=7] run say SONDA trigo=maduro
+execute unless block 3 -60 0 minecraft:wheat[age=7] run say SONDA trigo=imaturo
