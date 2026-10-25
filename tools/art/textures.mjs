@@ -874,6 +874,30 @@ const ITEMS = {
     ],
     palette: { c: '#7a3a1c', T: '#b5653a', t: '#8e4a28', a: '#8a8a86', A: '#c4c4be' },
   },
+  // Estufinha: tenda escura de frente aberta, a lâmpada roxa no alto, mylar iluminado por dentro e uma muda no vaso
+  grow_tent: {
+    grid: [
+      E,
+      '..kkkkkkkkkkkk..',
+      '..kcLLLLLLLLck..',
+      '..kcmPPPPPPmck..',
+      '..kcmmmggmmmck..',
+      '..kcmmgGGgmmck..',
+      '..kcmgGgGGgmck..',
+      '..kcmgGGgGgmck..',
+      '..kcmmgGGgmmck..',
+      '..kcmmmgGmmmck..',
+      '..kcmmmoommmck..',
+      '..kcmoooooomck..',
+      '..kcmoooooomck..',
+      '..kcccccccccck..',
+      '..kkkkkkkkkkkk..',
+      E,
+    ],
+    palette: {
+      k: '#1e1e22', c: '#34343a', L: '#e0a8ff', P: '#b04dff', m: '#8e8a9e', g: '#5aa874', G: '#3d6b2c', o: '#2a2a2e',
+    },
+  },
 };
 
 // Haxixe: placa marrom-escura em 3/4, bisel de 1 px e uma folha de 5 folíolos carimbada (a cor do carimbo muda
@@ -1136,7 +1160,69 @@ const BLOCKS = {
     grid: material(55, 'a', [['A', 0.3], ['d', 0.16]]),
     palette: { a: '#8a8a86', A: '#b4b4ae', d: '#5c5c58' },
   },
+  // Estufinha (grow tent). Lona: tecido grafite em trama, com uma costura vertical pespontada de roxo
+  grow_tent_canvas: { grid: tentCanvasGrid(), palette: { C: '#2b2b30', c: '#34343a', s: '#1f1f24', p: '#6a3fa0' } },
+  // Mylar por dentro: prata em losangos com reflexos lilás da lâmpada
+  grow_tent_mylar: { grid: tentMylarGrid(), palette: { M: '#c8c8d0', m: '#a9a9b6', l: '#d9c2ff' } },
+  // Postes de metal escuro
+  grow_tent_frame: { grid: grainGrid(71, 'F', 'f', 'h'), palette: { F: '#55555e', f: '#44444b', h: '#6e6e78' } },
+  // Aba enrolada: dobras horizontais da lona e o puxador dourado do zíper no meio (linhas 3–6)
+  grow_tent_flap: { grid: tentFlapGrid(), palette: { C: '#34343a', c: '#2b2b30', d: '#1f1f24', z: '#c9b037', Z: '#8a7a22' } },
+  // Lâmpada: caixa preta com aletas (linhas 0–3) e a grade de LEDs roxos (linhas 4–15; o ponto 7,7 é um LED aceso)
+  grow_tent_lamp: { grid: tentLampGrid(), palette: { k: '#1e1e22', K: '#2c2c33', d: '#7a1fd1', p: '#b04dff', w: '#e0a8ff' } },
+  // Vaso de tecido: substrato escuro em cima (linhas 0–5) e tecido preto costurado nas laterais (linhas 6–15)
+  grow_tent_pot: { grid: tentPotGrid(), palette: { s: '#4a3222', S: '#3a2618', b: '#6a4a30', k: '#202024', K: '#2c2c32', t: '#44444c' } },
 };
+
+/** Lona da estufinha: trama em xadrez fino e a costura nas colunas 7–8, com ponto roxo a cada 2 linhas. */
+function tentCanvasGrid() {
+  return Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
+    if (x === 7) return 's';
+    if (x === 8) return y % 2 === 0 ? 'p' : 's';
+    return (x + y) % 2 === 0 ? 'C' : 'c';
+  }).join(''));
+}
+
+/** Mylar: losangos de 4 px (as diagonais escuras) e um reflexo lilás no meio de alguns losangos. */
+function tentMylarGrid() {
+  return Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
+    if ((x + y) % 4 === 0 || (x - y + 16) % 4 === 0) return 'm';
+    if (x % 8 === 2 && y % 8 === 0) return 'l';
+    if (x % 8 === 6 && y % 8 === 4) return 'l';
+    return 'M';
+  }).join(''));
+}
+
+/** Aba enrolada: faixas de dobra a cada 3 linhas e o puxador do zíper nas colunas 7–8, linhas 3–6. */
+function tentFlapGrid() {
+  return Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
+    if ((x === 7 || x === 8) && y >= 3 && y <= 6) return y === 6 ? 'Z' : 'z';
+    if (y % 3 === 2) return 'd';
+    return y % 3 === 0 ? 'C' : 'c';
+  }).join(''));
+}
+
+/** Lâmpada: aletas da caixa nas linhas 0–3 e LEDs nas linhas 4–15 (aceso no centro de cada célula de 2 px). */
+function tentLampGrid() {
+  return Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
+    if (y < 4) return x % 2 === 0 && y % 2 === 1 ? 'K' : 'k';
+    if (x % 2 === 0 || y % 2 === 0) return 'd';
+    return (x + y) % 4 === 2 ? 'w' : 'p';
+  }).join(''));
+}
+
+/** Vaso: substrato com pedrinhas nas linhas 0–5 e tecido com uma costura clara na linha 12. */
+function tentPotGrid() {
+  const rand = lcg(73);
+  return Array.from({ length: 16 }, (_, y) => [...Array(16)].map((__, x) => {
+    if (y < 6) {
+      const r = rand();
+      return r < 0.25 ? 'S' : r < 0.35 ? 'b' : 's';
+    }
+    if (y === 12) return x % 2 === 0 ? 't' : 'k';
+    return (x + y) % 3 === 0 ? 'K' : 'k';
+  }).join(''));
+}
 
 // ---------------------------------------------------------------- texturas dos modelos 3D na mão
 // Cada aparelho de fumo tem um modelo de elementos para a mão (o ícone plano continua no inventário). Os modelos

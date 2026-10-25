@@ -163,7 +163,7 @@ class StrainCatalogTest {
         assertEquals(List.of("brisa_seeds", "brisa_fresh_flower", "brisa_dried_flower"), strainTab.subList(0, 3));
         assertEquals("manga_gelada_seeds", strainTab.get(9));
         assertEquals("bananona_dried_flower", strainTab.get(119));
-        assertEquals(List.of("drying_rack", "sieve", "press", "wild_plant", "resin", "hash", "joint",
+        assertEquals(List.of("drying_rack", "sieve", "press", "grow_tent", "wild_plant", "resin", "hash", "joint",
             "bong", "pipe", "hookah", "chillum", "rolling_paper", "filter_tip", "grinder", "lighter", "rolling_tray",
             "jar", "ashtray"), ContentIds.mainTabItems());
         List<String> both = new ArrayList<>(ContentIds.mainTabItems());

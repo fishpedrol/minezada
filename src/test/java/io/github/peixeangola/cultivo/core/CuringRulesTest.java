@@ -28,9 +28,9 @@ class CuringRulesTest {
         assertEquals(3, CuringRules.curedQuality(null));
     }
 
-    /** O outdoor (2–3) vai a 3–4 e a estufa (4–5) a 5: a estufa continua melhor. */
+    /** O outdoor (2–3) vai a 3–4 e a estufinha (4–5) a 5: a estufinha continua melhor. */
     @Test
-    void greenhouseStaysAheadAfterCuring() {
+    void growTentStaysAheadAfterCuring() {
         int bestOutdoor = CuringRules.curedQuality(3);
         int worstGreenhouse = CuringRules.curedQuality(4);
         assertEquals(4, bestOutdoor);

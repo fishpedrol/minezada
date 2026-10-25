@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:survives_explosion"
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "condition": {
+            "type": "minecraft:match_block",
+            "blocks": "cultivo:grow_tent",
+            "state": {
+              "half": "lower"
+            }
+          },
+          "name": "cultivo:grow_tent"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "cultivo:blocks/grow_tent"
+}

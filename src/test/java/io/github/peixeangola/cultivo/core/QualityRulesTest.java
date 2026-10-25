@@ -13,6 +13,8 @@ class QualityRulesTest {
     void basesDifferByRoute() {
         assertEquals(2, QualityRules.baseQuality(false));
         assertEquals(4, QualityRules.baseQuality(true));
+        assertEquals(2, QualityRules.OUTDOOR_BASE);
+        assertEquals(4, QualityRules.TENT_BASE);
     }
 
     @Test
@@ -54,10 +56,10 @@ class QualityRulesTest {
         Random random = new Random(42);
         for (int i = 0; i < 10_000; i++) {
             int outdoor = QualityRules.harvestQuality(variety, false, random.nextDouble());
-            int greenhouse = QualityRules.harvestQuality(variety, true, random.nextDouble());
-            assertTrue(outdoor >= 2 && outdoor <= 3, "outdoor " + outdoor);
-            assertTrue(greenhouse >= 4 && greenhouse <= 5, "greenhouse " + greenhouse);
-            assertTrue(greenhouse > outdoor);
+            int tent = QualityRules.harvestQuality(variety, true, random.nextDouble());
+            assertTrue(outdoor >= 2 && outdoor <= 3, "fora da estufinha " + outdoor);
+            assertTrue(tent >= 4 && tent <= 5, "estufinha " + tent);
+            assertTrue(tent > outdoor);
         }
     }
 

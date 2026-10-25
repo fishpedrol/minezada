@@ -1,6 +1,7 @@
 package io.github.peixeangola.cultivo.registry;
 
 import io.github.peixeangola.cultivo.Cultivo;
+import io.github.peixeangola.cultivo.block.GrowTentBlockEntity;
 import io.github.peixeangola.cultivo.block.JarBlockEntity;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlockEntity;
 import io.github.peixeangola.cultivo.core.StationKind;
@@ -27,6 +28,11 @@ public final class ModBlockEntities {
     /** Pote: uma pilha e o contador da cura. */
     public static final RegistryObject<BlockEntityType<JarBlockEntity>> JAR =
         BLOCK_ENTITIES.register("jar", () -> new BlockEntityType<>(JarBlockEntity::new, Set.of(ModBlocks.JAR.get())));
+
+    /** Estufinha: a planta (variedade e idade), só na metade de baixo. */
+    public static final RegistryObject<BlockEntityType<GrowTentBlockEntity>> GROW_TENT =
+        BLOCK_ENTITIES.register("grow_tent", () -> new BlockEntityType<>(GrowTentBlockEntity::new,
+            Set.of(ModBlocks.GROW_TENT.get())));
 
     private ModBlockEntities() {}
 }

@@ -174,5 +174,27 @@
         "pitch": 1.3
       }
     ]
+  },
+  "grow_tent.plant": {
+    "subtitle": "subtitles.cultivo.grow_tent.plant",
+    "sounds": [
+      {
+        "name": "minecraft:item.crop.plant",
+        "type": "event",
+        "volume": 0.8,
+        "pitch": 1.1
+      }
+    ]
+  },
+  "grow_tent.harvest": {
+    "subtitle": "subtitles.cultivo.grow_tent.harvest",
+    "sounds": [
+      {
+        "name": "minecraft:block.sweet_berry_bush.pick_berries",
+        "type": "event",
+        "volume": 1,
+        "pitch": 1.1
+      }
+    ]
   }
 }

@@ -3,5 +3,6 @@
 # are changed when only line endings change.
 src/generated/**/.cache/cache text eol=lf
 src/generated/**/*.json text eol=lf
+src/generated/**/*.mcmeta text eol=lf
 # Datapack do teste visual: o validate.mjs exige LF (sem CR)
 tools/visual-probe/datapack/** text eol=lf

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WAW",
+    "WLW",
+    "WPW"
+  ],
+  "key": {
+    "W": "minecraft:purple_wool",
+    "A": "minecraft:amethyst_shard",
+    "L": "minecraft:torch",
+    "P": "minecraft:flower_pot"
+  },
+  "result": {
+    "id": "cultivo:grow_tent",
+    "count": 1
+  }
+}

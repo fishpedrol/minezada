@@ -72,13 +72,14 @@ class DataConsistencyTest {
         Set<String> expected = new HashSet<>(ContentIds.ARTICLES);
         expected.addAll(ContentIds.STATIONS);
         expected.add(ContentIds.JOINT);
+        expected.addAll(ContentIds.CULTIVATION_BLOCKS);
         Set<String> actual = new HashSet<>();
         ArticleRecipes.ALL.forEach(r -> actual.add(r.result()));
         assertEquals(expected, actual);
         Set<String> ids = new HashSet<>();
         ArticleRecipes.ALL.forEach(r -> assertTrue(ids.add(r.id()), "id repetido " + r.id()));
-        // 11 artigos + 3 estações + 1 baseado por variedade + o baseado com piteira
-        assertEquals(11 + 3 + 40 + 1, ArticleRecipes.ALL.size());
+        // 11 artigos + 3 estações + 1 baseado por variedade + o baseado com piteira + a estufinha
+        assertEquals(11 + 3 + 40 + 1 + 1, ArticleRecipes.ALL.size());
         assertEquals(41, ArticleRecipes.ALL.stream().filter(r -> r.result().equals(ContentIds.JOINT)).count());
     }
 
@@ -367,14 +368,35 @@ class DataConsistencyTest {
         }
     }
 
+    /** A estufa de vidro saiu (25/10/2026): nem a tag cultivo:greenhouse_glass nem a lista no manifesto existem mais. */
     @Test
-    void greenhouseGlassTagHasGlassAndPanes() {
-        Set<String> glass = values(Resources.data("cultivo", "tags/block/greenhouse_glass.json"));
-        assertTrue(glass.contains("minecraft:glass"));
-        assertTrue(glass.contains("minecraft:glass_pane"));
-        assertTrue(glass.contains("minecraft:lime_stained_glass"));
-        assertTrue(glass.contains("minecraft:lime_stained_glass_pane"));
-        assertEquals(35, glass.size(), "vidro, vidro fumê, painel, 16 tingidos e 16 painéis tingidos");
+    void greenhouseGlassTagIsGone() {
+        assertFalse(Files.exists(Resources.data("cultivo", "tags/block/greenhouse_glass.json")), "a tag do vidro voltou");
+        assertFalse(Resources.json(StrainColumns.MANIFEST).has("greenhouse_glass"), "a lista de vidros voltou ao manifesto");
+    }
+
+    /**
+     * Estufinha: um pool só, que sobrevive à explosão como a porta vanilla, com o item condicionado a half=lower, então
+     * quebrar qualquer metade dá 1 estufinha. Fora das tags de lavoura (abelhas, farmland) e do Serene Seasons.
+     */
+    @Test
+    void growTentLootDropsOnlyFromLowerHalf() {
+        JsonObject table = Resources.json(Resources.data("cultivo", "loot_table/blocks/grow_tent.json"));
+        JsonArray pools = table.getAsJsonArray("pools");
+        assertEquals(1, pools.size());
+        JsonObject pool = pools.get(0).getAsJsonObject();
+        assertEquals("minecraft:survives_explosion", pool.getAsJsonObject("condition").get("type").getAsString());
+        JsonArray entries = pool.getAsJsonArray("entries");
+        assertEquals(1, entries.size());
+        JsonObject entry = entries.get(0).getAsJsonObject();
+        assertEquals("cultivo:grow_tent", entry.get("name").getAsString());
+        JsonObject condition = entry.getAsJsonObject("condition");
+        assertEquals("minecraft:match_block", condition.get("type").getAsString());
+        assertEquals("cultivo:grow_tent", condition.get("blocks").getAsString());
+        assertEquals("lower", condition.getAsJsonObject("state").get("half").getAsString());
+        for (String tag : List.of("crops", "maintains_farmland", "bee_growables")) {
+            assertFalse(values(Resources.GENERATED.resolve("data/minecraft/tags/block/" + tag + ".json")).contains("cultivo:grow_tent"), tag);
+        }
     }
 
     @Test

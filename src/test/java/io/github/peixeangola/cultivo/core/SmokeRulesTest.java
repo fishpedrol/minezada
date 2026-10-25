@@ -70,8 +70,8 @@ class SmokeRulesTest {
     }
 
     @Test
-    void greenhouseQualityBeatsOutdoor() {
-        // Estufa dá 4–5 e outdoor 2–3: a pior estufa ainda rende mais que o melhor outdoor
+    void growTentQualityBeatsOutdoor() {
+        // Estufinha dá 4–5 e outdoor 2–3: a pior estufinha ainda rende mais que o melhor outdoor
         assertTrue(SmokeRules.sessionTicks(SmokeDevice.JOINT, new Material(Variety.ECLIPSE, 4, false))
             > SmokeRules.sessionTicks(SmokeDevice.JOINT, new Material(Variety.ECLIPSE, 3, false)));
     }

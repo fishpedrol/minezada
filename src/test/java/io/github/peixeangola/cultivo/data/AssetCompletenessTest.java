@@ -213,6 +213,43 @@ class AssetCompletenessTest {
         }
     }
 
+    /**
+     * Estufinha: uma variante para cada um dos 8 estados (half × facing), com o modelo da metade e girada como as
+     * estações; a metade de cima tem a luz roxa (light_emission 15, do 26.3) e a de baixo não brilha. O item continua com
+     * o ícone plano.
+     */
+    @Test
+    void growTentBlockstateCoversEveryState() {
+        JsonObject variants = Resources.json(Resources.assets("blockstates/grow_tent.json")).getAsJsonObject("variants");
+        Map<String, List<String>> properties = ContentIds.stateProperties(ContentIds.GROW_TENT);
+        assertEquals(List.of("upper", "lower"), properties.get("half"));
+        assertEquals(8, variants.size());
+        for (Map<String, String> state : allStates(properties)) {
+            JsonObject v = variants.getAsJsonObject("facing=" + state.get("facing") + ",half=" + state.get("half"));
+            assertTrue(v != null, "sem variante para " + state);
+            assertEquals("cultivo:block/grow_tent_" + state.get("half"), v.get("model").getAsString(), state.toString());
+            assertEquals(FACING_Y.get(state.get("facing")), v.has("y") ? v.get("y").getAsInt() : 0, state.toString());
+        }
+        assertTrue(emissiveElements("grow_tent_upper") >= 1, "a metade de cima sem luz roxa");
+        assertEquals(0, emissiveElements("grow_tent_lower"), "a metade de baixo não tem lâmpada");
+        JsonObject item = Resources.json(Resources.assets("models/item/grow_tent.json"));
+        assertEquals("minecraft:item/generated", item.get("parent").getAsString());
+        assertEquals("cultivo:item/grow_tent", item.getAsJsonObject("textures").get("layer0").getAsString());
+    }
+
+    private static long emissiveElements(String model) {
+        JsonArray elements = Resources.json(Resources.assets("models/block/" + model + ".json")).getAsJsonArray("elements");
+        long count = 0;
+        for (JsonElement e : elements) {
+            JsonObject el = e.getAsJsonObject();
+            if (el.has("light_emission")) {
+                assertEquals(15, el.get("light_emission").getAsInt(), model);
+                count++;
+            }
+        }
+        return count;
+    }
+
     /** Pote: o conteúdo atrás do vidro só com filled=true. Cinzeiro: uma camada de cinza por nível, nada no 0. */
     @Test
     void jarAndAshtrayPartsFollowTheirState() {

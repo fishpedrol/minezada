@@ -3,12 +3,14 @@ package io.github.peixeangola.cultivo.registry;
 import io.github.peixeangola.cultivo.Cultivo;
 import io.github.peixeangola.cultivo.block.AshtrayBlock;
 import io.github.peixeangola.cultivo.block.CannabisCropBlock;
+import io.github.peixeangola.cultivo.block.GrowTentBlock;
 import io.github.peixeangola.cultivo.block.JarBlock;
 import io.github.peixeangola.cultivo.block.ProcessingStationBlock;
 import io.github.peixeangola.cultivo.block.RollingTrayBlock;
 import io.github.peixeangola.cultivo.block.SieveBlock;
 import io.github.peixeangola.cultivo.block.WildPlantBlock;
 import io.github.peixeangola.cultivo.core.ContentIds;
+import io.github.peixeangola.cultivo.core.GrowTentRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
 import java.util.EnumMap;
@@ -17,6 +19,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraftforge.registries.DeferredRegister;
@@ -71,6 +74,19 @@ public final class ModBlocks {
         () -> new AshtrayBlock(BlockBehaviour.Properties.of()
             .mapColor(MapColor.TERRACOTTA_ORANGE).strength(0.5F).sound(SoundType.DECORATED_POT).noOcclusion()
             .pushReaction(PushReaction.POPPED).setId(BLOCKS.key(ContentIds.ASHTRAY))));
+
+    /**
+     * Estufinha: tecido, 2 de altura, luz roxa na metade de cima. Pistões não a movem (a de cima não tem BlockEntity e
+     * se separaria da de baixo).
+     */
+    public static final RegistryObject<GrowTentBlock> GROW_TENT = BLOCKS.register(ContentIds.GROW_TENT,
+        () -> new GrowTentBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE).strength(0.8F).sound(SoundType.WOOL).noOcclusion()
+            .pushReaction(PushReaction.IMMOVEABLE)
+            .lightLevel(state -> state.getValue(GrowTentBlock.HALF) == DoubleBlockHalf.UPPER ? GrowTentRules.LAMP_LIGHT : 0)
+            .isRedstoneConductor((state, level, pos) -> false)
+            .isSuffocating((state, level, pos) -> false)
+            .setId(BLOCKS.key(ContentIds.GROW_TENT))));
 
     /** Bloco de cada artigo colocável, pelo ID (o mesmo do item). */
     public static final Map<String, RegistryObject<? extends Block>> PLACEABLE_ARTICLES = Map.of(

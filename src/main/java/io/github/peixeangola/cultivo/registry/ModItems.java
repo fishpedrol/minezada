@@ -8,6 +8,7 @@ import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.item.ArticleBlockItem;
 import io.github.peixeangola.cultivo.item.FlowerItem;
+import io.github.peixeangola.cultivo.item.GrowTentItem;
 import io.github.peixeangola.cultivo.item.LighterItem;
 import io.github.peixeangola.cultivo.item.QualityItem;
 import io.github.peixeangola.cultivo.item.SeedItem;
@@ -67,6 +68,10 @@ public final class ModItems {
     public static final RegistryObject<Item> WILD_PLANT = ITEMS.register(ContentIds.WILD_PLANT,
         () -> new BlockItem(ModBlocks.WILD_PLANT.get(),
             new Item.Properties().setId(ITEMS.key(ContentIds.WILD_PLANT)).useBlockDescriptionPrefix()));
+
+    /** Estufinha: coloca as duas metades e tem o ícone plano; empilha 64, como as portas. */
+    public static final RegistryObject<Item> GROW_TENT = ITEMS.register(ContentIds.GROW_TENT,
+        () -> new GrowTentItem(ModBlocks.GROW_TENT.get(), new Item.Properties().setId(ITEMS.key(ContentIds.GROW_TENT))));
 
     private ModItems() {}
 

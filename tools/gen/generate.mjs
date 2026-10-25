@@ -6,8 +6,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artFamilies, CROP_STAGE_COUNT, generateAll as generateTextures } from '../art/textures.mjs';
 import {
-  articleBlockstate, articleModels, filteredHandModels, handModels, LIT_DEVICES, LIT_TEXTURES, pressPlatenBlockstate,
-  pressPlatenModel, smokeDisplays, stationBlockstate, stationModels,
+  articleBlockstate, articleModels, filteredHandModels, growTentBlockstate, growTentModels, handModels, LIT_DEVICES,
+  LIT_TEXTURES, pressPlatenBlockstate, pressPlatenModel, smokeDisplays, stationBlockstate, stationModels,
 } from './models.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -31,6 +31,8 @@ const ingredient = (s) => s; // 26.3: ingrediente é string "ns:item" ou "#ns:ta
 const strains = M.strains;
 const stations = M.stations;
 const wild = M.wild_plant;
+// Estufinha: bloco de 2 de altura com ícone plano (item/grow_tent), como os artigos colocáveis
+const tent = M.grow_tent;
 const qualityItems = [
   ...strains.flatMap((v) => [`${v.id}_fresh_flower`, `${v.id}_dried_flower`]),
   'resin', 'hash',
@@ -40,6 +42,7 @@ const flatItems = [
   ...qualityItems,
   'joint',
   ...M.articles.map((a) => a.id),
+  tent.id,
 ];
 const blockItems = [...stations.map((s) => s.id), wild.id];
 // Artigos que viram bloco (bandeja, pote, cinzeiro): o item continua plano, o bloco tem modelo próprio
@@ -91,6 +94,10 @@ for (const a of placeables) {
   for (const [part, p] of Object.entries(def.parts)) write(`assets/${NS}/models/block/${a.id}_${part}.json`, p.model);
   write(`assets/${NS}/blockstates/${a.id}.json`, articleBlockstate(a.id, def));
 }
+
+// Estufinha: uma variante por metade e facing, modelo próprio por metade (a planta dentro é desenhada pelo cliente)
+for (const [name, m] of Object.entries(growTentModels())) write(`assets/${NS}/models/block/${name}.json`, m);
+write(`assets/${NS}/blockstates/${tent.id}.json`, growTentBlockstate());
 
 // Itens planos (ícone gerado da textura)
 const flatModel = (item, texture = item) => write(`assets/${NS}/models/item/${item}.json`, {
@@ -231,9 +238,9 @@ function langTable(lang) {
     // Nome da variedade gravada em cultivo:strain (baseado, resina, haxixe)
     t[`tooltip.${NS}.variety.${v.id}`] = name;
   }
-  for (const g of [...M.generic_items, ...M.articles]) t[`item.${NS}.${g.id}`] = g[lang];
-  // Artigos colocáveis: o bloco tem o mesmo nome do item
-  for (const b of [...stations, wild, ...placeables]) t[`block.${NS}.${b.id}`] = b[lang];
+  for (const g of [...M.generic_items, ...M.articles, tent]) t[`item.${NS}.${g.id}`] = g[lang];
+  // Artigos colocáveis e estufinha: o bloco tem o mesmo nome do item
+  for (const b of [...stations, wild, ...placeables, tent]) t[`block.${NS}.${b.id}`] = b[lang];
   for (const e of M.effects) t[`effect.${NS}.${e.id}`] = e[lang];
   for (const s of M.sounds) t[`subtitles.${NS}.${s.id}`] = s[lang];
   return t;
@@ -338,6 +345,21 @@ for (const s of stations) {
 for (const a of placeables) {
   write(`data/${NS}/loot_table/blocks/${a.id}.json`, { type: 'minecraft:block', pools: [dropsSelf(a.id)], random_sequence: id(`blocks/${a.id}`) });
 }
+// Estufinha: o item só sai da metade de baixo (como loot_table/blocks/oak_door.json do 26.3), então quebrar qualquer
+// metade dá 1 estufinha. A planta de dentro cai pela BlockEntity (GrowTentBlockEntity#preRemoveSideEffects).
+write(`data/${NS}/loot_table/blocks/${tent.id}.json`, {
+  type: 'minecraft:block',
+  pools: [{
+    rolls: 1,
+    condition: { type: 'minecraft:survives_explosion' },
+    entries: [{
+      type: 'minecraft:item',
+      condition: { type: 'minecraft:match_block', blocks: id(tent.id), state: { half: 'lower' } },
+      name: id(tent.id),
+    }],
+  }],
+  random_sequence: id(`blocks/${tent.id}`),
+});
 const ss = M.seed_sources;
 // Baús de aldeia: uma entrada por variedade com peso e quantidades da raridade; vazio = soma dos pesos (50% rola semente)
 const chestEntries = strains.map((v) => {
@@ -460,7 +482,6 @@ write(`data/${NS}/recipe/pressing/hash.json`, {
 
 // ------------------------------------------------------------------ data: tags
 const crops = strains.map((v) => id(`${v.id}_crop`));
-write(`data/${NS}/tags/block/greenhouse_glass.json`, { replace: false, values: M.greenhouse_glass });
 write(`data/${NS}/tags/item/dried_flowers.json`, { replace: false, values: strains.map((v) => id(`${v.id}_dried_flower`)) });
 write(`data/${NS}/tags/item/fresh_flowers.json`, { replace: false, values: strains.map((v) => id(`${v.id}_fresh_flower`)) });
 write(`data/${NS}/tags/item/seeds.json`, { replace: false, values: strains.map((v) => id(`${v.id}_seeds`)) });
