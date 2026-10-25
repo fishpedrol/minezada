@@ -21,7 +21,7 @@ Tudo é ficção de jogo, e todo o texto do mod aparece em português.
 | Comando | Para que serve | Como é o sucesso |
 |---|---|---|
 | `.\gradlew.bat build` | Compila, roda os testes automáticos rápidos (JUnit; hoje são 317) e gera `build\libs\cultivo-0.1.0.jar` | `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 70) | `All 70 required tests passed :)` |
+| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 72) | `All 72 required tests passed :)` |
 | `.\gradlew.bat runClient` | Abre o Minecraft de teste já com o mod | a janela do jogo abre |
 
 - **As quantidades de testes mudam** quando alguém acrescenta testes. O que importa é aparecer `BUILD SUCCESSFUL` e `All N required tests passed :)` (com o número que for), sem `FAILED`.
@@ -294,7 +294,7 @@ Rode tudo **no terminal, na pasta do projeto** (`C:\dev\minezada`, seção 2.8).
 |---|---|---|
 | `.\gradlew.bat build` | Compila, roda os testes JUnit (hoje 317) e gera o .jar | `BUILD SUCCESSFUL in ...` |
 | `.\gradlew.bat test` | Só os testes JUnit | linhas `... PASSED` e `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 70 required tests passed :)` (o número muda se entrarem testes novos) |
+| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 72 required tests passed :)` (o número muda se entrarem testes novos) |
 | `.\gradlew.bat runClient` | Abre o Minecraft de desenvolvimento já com o mod | a janela do jogo abre |
 | `.\gradlew.bat runServer` | Liga um servidor dedicado na pasta `run\` | `Done (...)! For help, type "help"` |
 | `.\gradlew.bat --stop` | Desliga os processos do Gradle que ficam rodando em segundo plano ("daemons") | útil quando algo trava |
@@ -347,7 +347,7 @@ O terminal só mostra o arquivo e a linha. A mensagem completa fica no relatóri
 ### 3.3 `runGameTestServer`
 
 - Não abre janela e **não pede a EULA**: esse servidor de teste não lê o `eula.txt` (só o servidor dedicado da seção 3.5 lê).
-- Sucesso: `All 70 required tests passed :)`. Hoje, 70 é o **total** de testes: os 69 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
+- Sucesso: `All 72 required tests passed :)`. Hoje, 72 é o **total** de testes: os 71 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
 - Falha: o log lista o nome de cada teste obrigatório que falhou e a mensagem dele. Estas linhas são de uma rodada real que falhou durante o desenvolvimento:
   ```
   3 required tests failed :(
@@ -776,7 +776,10 @@ Vista de frente (a frente é aberta)
 
 **O que mais é bom saber:**
 - Antes de madura, o clique **não colhe**. Se quiser tirar uma planta que ainda não está pronta, quebre a estufinha: ela devolve **1 semente** (e a estufinha).
-- **Quebrar** qualquer metade derruba **1 estufinha** e o que estava plantado (madura: a flor 4–5 e as sementes). No **Criativo**, a estufinha não cai (como a porta), mas a planta cai.
+- **Quebrar** qualquer metade derruba **1 estufinha** e o que estava plantado (madura: a flor 4–5 e as sementes). No **Criativo** não cai nada, nem a estufinha (como a porta) nem a planta (como a lavoura quebrada no Criativo).
+- **Explosão** (TNT, creeper): a estufinha some inteira; ela e a planta podem cair, como qualquer bloco explodido (algumas sementes podem se perder).
+- **Modo aventura** (mapas de aventura): dá para colher, mas não para plantar, igual a colocar um bloco nesse modo.
+- **Regra `blockDrops` desligada** (`/gamerule block_drops false`): a colheita esvazia a estufinha sem dar nada, como os outros blocos.
 - Fortuna (na ferramenta da mão principal) dá mais sementes na colheita, como na lavoura.
 - A luz da lâmpada ilumina em volta (luz 12 no alto, uns 11 embaixo): monstros não nascem colados nela.
 - Pistões não empurram a estufinha. Aldeões não mexem nela.
@@ -1106,7 +1109,7 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
 - [ ] **Estufinha** (seção 5.5), no Sobrevivência:
   1. **Fazer:** na mesa de trabalho, 6 lãs roxas nas colunas da esquerda e da direita, e no meio, de cima para baixo, fragmento de ametista, tocha e vaso de flor. Sai 1 Estufinha.
   2. **Colocar:** num chão de pedra ou madeira (sem terra arada nem água por perto). Ela fica com 2 blocos de altura e a frente aberta virada para você. Tente também debaixo de um teto baixo (1 bloco livre só): ela não deve ser colocada nem gastar o item.
-  3. **Olhar:** lona escura, prateado por dentro, um painel de LEDs roxos aceso no teto, um pontinho roxo no poste da frente e pó roxo caindo da lâmpada. À noite ou numa sala fechada, a luz roxa deve aparecer bem e iluminar o chão em volta.
+  3. **Olhar:** lona escura, mylar lilás brilhando por dentro, um painel de LEDs roxos aceso no teto, um pontinho roxo no poste da frente e pó roxo caindo da lâmpada. À noite ou numa sala fechada, a luz roxa deve aparecer bem e iluminar o chão em volta.
   4. **Plantar:** clique com o botão direito segurando uma semente. Gasta 1 semente, aparece a mudinha **dentro do vaso** e a legenda "Semente plantada na estufinha". Clicar de novo com outra semente não planta por cima.
   5. **Crescer:** use farinha de osso (de 2 a 5 estágios por uso) ou espere. A planta deve ficar dentro da barraca, sem atravessar a lona. Monte uma num porão fechado, sem céu: ela cresce do mesmo jeito.
   6. **Colher:** madura, clique de **mão vazia**. Devem vir 1 flor fresca com **qualidade 4 (Ótima) ou 5 (Excepcional)** e algumas sementes, a legenda "Estufinha colhida", e a estufinha fica vazia. Colha várias vezes e veja as duas qualidades aparecerem.
@@ -1114,6 +1117,7 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
   8. **Quebrar:** com uma planta madura dentro, quebre a metade **de cima** de uma estufinha e a metade **de baixo** de outra. Cada uma deve dar **1 estufinha** e a flor (4 ou 5) com as sementes, sem duplicar nada. Uma estufinha vazia dá só ela mesma; uma com planta verde dá ela e 1 semente.
   9. **Salvar e voltar:** saia do mundo com uma planta pela metade dentro, entre de novo: ela deve estar lá, no mesmo tamanho.
   10. **Vidro não dá bônus:** uma planta na terra arada dentro de uma caixa de vidro deve dar 2 ou 3, como ao ar livre.
+  11. **Criativo** (opcional): quebre uma estufinha com planta madura no Criativo. Não deve cair nada, nem a estufinha nem a planta.
 
 **Estações**
 - [ ] **Colocar:** a frente de cada estação fica virada para você. Com o machado elas quebram mais rápido.
@@ -1762,7 +1766,7 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 
 **Estufinha, verificada no PC do dono em 25/10/2026** (branch `claude/estufinha`, commit `afa87eb`; detalhes no `docs/TODO.md`, seção 3f):
 
-- `node tools/gen/generate.mjs` gera 292 texturas e 805 arquivos JSON; `build` passa com 317 testes JUnit; `runGameTestServer` passa 70 de 70 (69 do Cultivo + 1 do Minecraft), também com o Serene Seasons carregado, no Forge 66.0.13 e no 66.0.2.
+- `node tools/gen/generate.mjs` gera 292 texturas e 807 arquivos JSON; `build` passa com 317 testes JUnit; `runGameTestServer` passa 72 de 72 (71 do Cultivo + 1 do Minecraft), também com o Serene Seasons carregado (antes do alinhamento com o plano revisado, 70 de 70 também no Forge 66.0.2).
 - **Cliente:** o teste visual automático passou pelas 50 cenas sem erro de modelo, textura ou som, viu as estufinhas com a planta dentro e a luz lilás, e colheu e replantou de verdade.
 - **Falta:** você jogar com ela (seção 6.1, "Plantas e estufinha").
 

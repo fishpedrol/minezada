@@ -7,7 +7,7 @@ Pedido do dono em 25/10/2026: trocar a estufa de vidro por uma **estufinha** cra
 - **Colheita:** colhe e esvazia. Clique direito na planta madura entrega flores e sementes como a lavoura, e a estufinha fica vazia para replantar.
 - **Qualidade:** 4–5, como a estufa de hoje.
 
-O dono aprovou este plano em 25/10/2026 ("aprovo o plano"). **Nada dele foi implementado ainda.**
+O dono aprovou este plano em 25/10/2026 ("aprovo o plano"). Implementado em 25/10/2026 na branch `claude/estufinha`; o que ficou diferente está na seção "Implementação", no fim.
 
 **Situação deste documento:** é o projeto gerado na nuvem a partir de 5 leituras do código e das fontes do Minecraft/Forge 26.3. Ele passou por crítica adversarial em 3 frentes (APIs do 26.3, exploits/conservação de itens, encaixe no código) e foi revisado; o apêndice do fim lista as críticas aceitas e as rejeitadas. Antes de codar, mesmo assim:
 
@@ -746,3 +746,26 @@ Closed by evidence in this revision:
 - **C1.B2, "remove both halves with flags 35 and skip super".** Narrowed. The spec delegates to `super.onExplosionHit` on the lower state instead. That keeps the vanilla `survives_explosion` roll, `spawnAfterBreak` and Forge's `onBlockExploded` (`IForgeBlock.java:663-666`), and still drops each item at most once.
 - **C1.B3, "keep the jar-like creative drops".** Not kept. The owner's request treats the tent as a crop route, so vanilla crop behaviour wins. DECISIONS keeps a note that this can be reverted.
 - **C2.14 exact `docs/` line numbers.** Treated as approximate only, because another workflow is editing `docs/*.md` right now.
+
+---
+
+## Implementação (25/10/2026, PC do dono, branch `claude/estufinha`)
+
+A estufinha foi implementada a partir da versão anterior deste plano, com uma revisão própria das fontes do Forge 26.3-66.0.13. Quando este plano revisado entrou na `main` (PR #7), o código foi comparado seção por seção com ele, cada diferença foi conferida por um segundo leitor, e o código foi alinhado. Evidências em TODO.md, seção 3f.
+
+**Adotado do plano revisado:**
+- `GrowTentRules.use(occupied, hasPlant, age, holdingSeed, mayPlace)` com a tabela da §6.1; o portão do modo aventura (`GrowTentBlock.mayPlace`), calculado igual no cliente e no servidor.
+- Estufinha **inerte** para um id desconhecido (`rawVariety`, `occupied()`), com o id e a idade de volta no save; o aviso no log só no servidor.
+- `tentAt` confere o estado da metade de baixo (regra da metade órfã) em todas as entradas, também nas partículas e no random tick.
+- Regra `blockDrops` na colheita; nada cai no criativo; `onExplosionHit` sobrescrito (planta pelo `onHit`, com o raio da explosão); campos limpos direto na remoção (`forget()`).
+- GameTests novos `grow_tent_adventure_plant` e `grow_tent_explosion`; `grow_tent_harvest` com inventário cheio e `blockDrops` desligada; `grow_tent_breaks_either_half` com `/setblock destroy/replace` e pistões; `grow_tent_persists` com a estufinha inerte e o `setAge` vazio; a previsão do cliente também no modo aventura; o `validate.mjs` do teste visual confere a variedade e a idade da estufinha.
+
+**Mantido diferente, de propósito:**
+- **`PushReaction.IMMOVEABLE`** em vez de `POPPED`: o pistão não move nem estoura a estufinha (fica de pé, como a mesa de encantamento). Com `POPPED` também não sobraria metade órfã (o pistão põe `MOVING_PISTON` com atualização de forma), mas uma máquina de redstone por perto viraria a estufinha e a planta em itens.
+- **Item sem `useBlockDescriptionPrefix`** e a estufinha em `flatItems()`, com um objeto `grow_tent` próprio no manifesto em vez de uma lista `cultivation_blocks`: o ícone é plano (`textures/item/grow_tent`), como os artigos colocáveis, e o gerador escreve `item.` e `block.`.
+- **Planta 4 px acima** (`GrowTentRenderer.LIFT = 4/16`), não 5: a base fica 1 px dentro da terra do vaso, para parecer plantada; conferido no teste visual. Madura, chega a y 19.
+- **Mylar lilás e emissivo** (`light_emission` 11): o painel de LEDs aponta para baixo e, só com ele, a luz roxa quase não aparecia nos prints.
+- **`/setblock … replace` na metade de cima** derruba 1 estufinha e a planta (a de baixo sai pela atualização de forma, com drop); só na metade de baixo ele apaga sem drop. A tabela da §1.6 dizia "0" para os dois; o GameTest confere o comportamento real.
+- `isViewBlocking` não é chamado (no 26.3 recebe um `StateArgumentPredicate<AABB>`; o bloco já é `noOcclusion`); `box()` do gerador sem a opção `light` (os elementos emissivos são escritos à mão); o nome `grow_tent_breaks_either_half` em vez de `grow_tent_breaks`; `rollPlantDrops` recebe `ItemStack` (que é um `ItemInstance`).
+
+**Fica para depois (cosmético):** a aba enrolada da frente (`models.mjs`, x 1,5..14,5) encosta 0,5 px nos postes da frente; não apareceu cintilação nos prints.
