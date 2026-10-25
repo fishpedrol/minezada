@@ -1,34 +1,242 @@
-# Sonda de estações (precisa do Serene Seasons + GlitchCore na pasta de mods extras).
-# Fase 1, início da primavera (o trigo está fora de estação: o Serene Seasons deixa passar 1 de cada 6 random ticks):
-#   lavoura do Cultivo e trigo ao ar livre (z=0) e sob um bloco de vidro (z=4), que o Serene Seasons conta como estufa.
-# Fase 2, meio do verão (trigo na estação): replanta ao ar livre e confere de novo.
-# Com random_tick_speed 300, na estação o trigo leva cerca de 15 s; fora dela, cerca de 6 vezes mais. Esperamos 30 s.
+# Sonda de estações em produção (gerada por tools/compat/gen-probes.mjs; não edite à mão).
+# Precisa do Serene Seasons + GlitchCore na pasta de mods extras. Plataforma a céu aberto em y=120 (acima do
+# limite de 48 em que o Serene Seasons considera tudo fértil no subsolo), bioma plains forçado (temperado).
+# Fase 1, início da primavera: o trigo está fora de estação. Fileiras ao ar livre e sob vidro (3 blocos acima).
+# Fase 2, meio do verão: o trigo está na estação; replanta as fileiras ao ar livre.
+# Com out_of_season_crop_behavior = 1 (CULTIVO_COMPAT_CONFIG=tools/compat/config-cant-grow), uma lavoura
+# listada e fora de estação NÃO cresce: se o Serene Seasons estiver ativo, o trigo ao ar livre fica em idade 0.
 forceload add -16 -16 15 15
 gamerule random_tick_speed 300
+fill -10 112 -10 10 130 10 minecraft:air
+fillbiome -16 112 -16 15 135 15 minecraft:plains
+fill -8 120 -8 8 120 8 minecraft:farmland[moisture=7]
+execute if biome 0 121 0 minecraft:plains run say SONDA diagnostico bioma=plains
+execute unless biome 0 121 0 minecraft:plains run say SONDA diagnostico bioma=OUTRO
 season set early_spring
-fill -6 -61 -6 6 -61 6 minecraft:farmland[moisture=7]
-setblock 0 -61 0 minecraft:water
-setblock 0 -61 4 minecraft:water
-setblock -3 -60 0 cultivo:brisa_crop
-setblock 3 -60 0 minecraft:wheat
-setblock -3 -60 4 cultivo:brisa_crop
-setblock 3 -60 4 minecraft:wheat
-setblock -3 -57 4 minecraft:glass
-setblock 3 -57 4 minecraft:glass
+fill -6 120 -3 -3 120 -3 minecraft:water
+setblock -6 121 -4 cultivo:brisa_crop
+setblock -5 121 -4 cultivo:brisa_crop
+setblock -4 121 -4 cultivo:brisa_crop
+setblock -3 121 -4 cultivo:brisa_crop
+fill 2 120 -3 5 120 -3 minecraft:water
+setblock 2 121 -4 minecraft:wheat
+setblock 3 121 -4 minecraft:wheat
+setblock 4 121 -4 minecraft:wheat
+setblock 5 121 -4 minecraft:wheat
+fill -6 120 4 -3 120 4 minecraft:water
+setblock -6 121 3 cultivo:brisa_crop
+setblock -5 121 3 cultivo:brisa_crop
+setblock -4 121 3 cultivo:brisa_crop
+setblock -3 121 3 cultivo:brisa_crop
+fill 2 120 4 5 120 4 minecraft:water
+setblock 2 121 3 minecraft:wheat
+setblock 3 121 3 minecraft:wheat
+setblock 4 121 3 minecraft:wheat
+setblock 5 121 3 minecraft:wheat
+fill -6 124 3 -3 124 3 minecraft:glass
+fill 2 124 3 5 124 3 minecraft:glass
 @wait 30
-execute if block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre=madura
-execute unless block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre=imatura
-execute if block 3 -60 0 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre=maduro
-execute unless block 3 -60 0 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre=imaturo
-execute if block -3 -60 4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro=madura
-execute unless block -3 -60 4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro=imatura
-execute if block 3 -60 4 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro=maduro
-execute unless block 3 -60 4 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro=imaturo
+execute if block -6 121 -4 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_ar_livre 1 idade=0
+execute if block -6 121 -4 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_ar_livre 1 idade=1
+execute if block -6 121 -4 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_ar_livre 1 idade=2
+execute if block -6 121 -4 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_ar_livre 1 idade=3
+execute if block -6 121 -4 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_ar_livre 1 idade=4
+execute if block -6 121 -4 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_ar_livre 1 idade=5
+execute if block -6 121 -4 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_ar_livre 1 idade=6
+execute if block -6 121 -4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre 1 idade=7
+execute if block -5 121 -4 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_ar_livre 2 idade=0
+execute if block -5 121 -4 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_ar_livre 2 idade=1
+execute if block -5 121 -4 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_ar_livre 2 idade=2
+execute if block -5 121 -4 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_ar_livre 2 idade=3
+execute if block -5 121 -4 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_ar_livre 2 idade=4
+execute if block -5 121 -4 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_ar_livre 2 idade=5
+execute if block -5 121 -4 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_ar_livre 2 idade=6
+execute if block -5 121 -4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre 2 idade=7
+execute if block -4 121 -4 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_ar_livre 3 idade=0
+execute if block -4 121 -4 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_ar_livre 3 idade=1
+execute if block -4 121 -4 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_ar_livre 3 idade=2
+execute if block -4 121 -4 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_ar_livre 3 idade=3
+execute if block -4 121 -4 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_ar_livre 3 idade=4
+execute if block -4 121 -4 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_ar_livre 3 idade=5
+execute if block -4 121 -4 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_ar_livre 3 idade=6
+execute if block -4 121 -4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre 3 idade=7
+execute if block -3 121 -4 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_ar_livre 4 idade=0
+execute if block -3 121 -4 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_ar_livre 4 idade=1
+execute if block -3 121 -4 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_ar_livre 4 idade=2
+execute if block -3 121 -4 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_ar_livre 4 idade=3
+execute if block -3 121 -4 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_ar_livre 4 idade=4
+execute if block -3 121 -4 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_ar_livre 4 idade=5
+execute if block -3 121 -4 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_ar_livre 4 idade=6
+execute if block -3 121 -4 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_ar_livre 4 idade=7
+execute if block 2 121 -4 minecraft:wheat[age=0] run say SONDA primavera trigo_ar_livre 1 idade=0
+execute if block 2 121 -4 minecraft:wheat[age=1] run say SONDA primavera trigo_ar_livre 1 idade=1
+execute if block 2 121 -4 minecraft:wheat[age=2] run say SONDA primavera trigo_ar_livre 1 idade=2
+execute if block 2 121 -4 minecraft:wheat[age=3] run say SONDA primavera trigo_ar_livre 1 idade=3
+execute if block 2 121 -4 minecraft:wheat[age=4] run say SONDA primavera trigo_ar_livre 1 idade=4
+execute if block 2 121 -4 minecraft:wheat[age=5] run say SONDA primavera trigo_ar_livre 1 idade=5
+execute if block 2 121 -4 minecraft:wheat[age=6] run say SONDA primavera trigo_ar_livre 1 idade=6
+execute if block 2 121 -4 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre 1 idade=7
+execute if block 3 121 -4 minecraft:wheat[age=0] run say SONDA primavera trigo_ar_livre 2 idade=0
+execute if block 3 121 -4 minecraft:wheat[age=1] run say SONDA primavera trigo_ar_livre 2 idade=1
+execute if block 3 121 -4 minecraft:wheat[age=2] run say SONDA primavera trigo_ar_livre 2 idade=2
+execute if block 3 121 -4 minecraft:wheat[age=3] run say SONDA primavera trigo_ar_livre 2 idade=3
+execute if block 3 121 -4 minecraft:wheat[age=4] run say SONDA primavera trigo_ar_livre 2 idade=4
+execute if block 3 121 -4 minecraft:wheat[age=5] run say SONDA primavera trigo_ar_livre 2 idade=5
+execute if block 3 121 -4 minecraft:wheat[age=6] run say SONDA primavera trigo_ar_livre 2 idade=6
+execute if block 3 121 -4 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre 2 idade=7
+execute if block 4 121 -4 minecraft:wheat[age=0] run say SONDA primavera trigo_ar_livre 3 idade=0
+execute if block 4 121 -4 minecraft:wheat[age=1] run say SONDA primavera trigo_ar_livre 3 idade=1
+execute if block 4 121 -4 minecraft:wheat[age=2] run say SONDA primavera trigo_ar_livre 3 idade=2
+execute if block 4 121 -4 minecraft:wheat[age=3] run say SONDA primavera trigo_ar_livre 3 idade=3
+execute if block 4 121 -4 minecraft:wheat[age=4] run say SONDA primavera trigo_ar_livre 3 idade=4
+execute if block 4 121 -4 minecraft:wheat[age=5] run say SONDA primavera trigo_ar_livre 3 idade=5
+execute if block 4 121 -4 minecraft:wheat[age=6] run say SONDA primavera trigo_ar_livre 3 idade=6
+execute if block 4 121 -4 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre 3 idade=7
+execute if block 5 121 -4 minecraft:wheat[age=0] run say SONDA primavera trigo_ar_livre 4 idade=0
+execute if block 5 121 -4 minecraft:wheat[age=1] run say SONDA primavera trigo_ar_livre 4 idade=1
+execute if block 5 121 -4 minecraft:wheat[age=2] run say SONDA primavera trigo_ar_livre 4 idade=2
+execute if block 5 121 -4 minecraft:wheat[age=3] run say SONDA primavera trigo_ar_livre 4 idade=3
+execute if block 5 121 -4 minecraft:wheat[age=4] run say SONDA primavera trigo_ar_livre 4 idade=4
+execute if block 5 121 -4 minecraft:wheat[age=5] run say SONDA primavera trigo_ar_livre 4 idade=5
+execute if block 5 121 -4 minecraft:wheat[age=6] run say SONDA primavera trigo_ar_livre 4 idade=6
+execute if block 5 121 -4 minecraft:wheat[age=7] run say SONDA primavera trigo_ar_livre 4 idade=7
+execute if block -6 121 3 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_sob_vidro 1 idade=0
+execute if block -6 121 3 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_sob_vidro 1 idade=1
+execute if block -6 121 3 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_sob_vidro 1 idade=2
+execute if block -6 121 3 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_sob_vidro 1 idade=3
+execute if block -6 121 3 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_sob_vidro 1 idade=4
+execute if block -6 121 3 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_sob_vidro 1 idade=5
+execute if block -6 121 3 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_sob_vidro 1 idade=6
+execute if block -6 121 3 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro 1 idade=7
+execute if block -5 121 3 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_sob_vidro 2 idade=0
+execute if block -5 121 3 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_sob_vidro 2 idade=1
+execute if block -5 121 3 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_sob_vidro 2 idade=2
+execute if block -5 121 3 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_sob_vidro 2 idade=3
+execute if block -5 121 3 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_sob_vidro 2 idade=4
+execute if block -5 121 3 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_sob_vidro 2 idade=5
+execute if block -5 121 3 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_sob_vidro 2 idade=6
+execute if block -5 121 3 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro 2 idade=7
+execute if block -4 121 3 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_sob_vidro 3 idade=0
+execute if block -4 121 3 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_sob_vidro 3 idade=1
+execute if block -4 121 3 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_sob_vidro 3 idade=2
+execute if block -4 121 3 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_sob_vidro 3 idade=3
+execute if block -4 121 3 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_sob_vidro 3 idade=4
+execute if block -4 121 3 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_sob_vidro 3 idade=5
+execute if block -4 121 3 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_sob_vidro 3 idade=6
+execute if block -4 121 3 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro 3 idade=7
+execute if block -3 121 3 cultivo:brisa_crop[age=0] run say SONDA primavera cultivo_sob_vidro 4 idade=0
+execute if block -3 121 3 cultivo:brisa_crop[age=1] run say SONDA primavera cultivo_sob_vidro 4 idade=1
+execute if block -3 121 3 cultivo:brisa_crop[age=2] run say SONDA primavera cultivo_sob_vidro 4 idade=2
+execute if block -3 121 3 cultivo:brisa_crop[age=3] run say SONDA primavera cultivo_sob_vidro 4 idade=3
+execute if block -3 121 3 cultivo:brisa_crop[age=4] run say SONDA primavera cultivo_sob_vidro 4 idade=4
+execute if block -3 121 3 cultivo:brisa_crop[age=5] run say SONDA primavera cultivo_sob_vidro 4 idade=5
+execute if block -3 121 3 cultivo:brisa_crop[age=6] run say SONDA primavera cultivo_sob_vidro 4 idade=6
+execute if block -3 121 3 cultivo:brisa_crop[age=7] run say SONDA primavera cultivo_sob_vidro 4 idade=7
+execute if block 2 121 3 minecraft:wheat[age=0] run say SONDA primavera trigo_sob_vidro 1 idade=0
+execute if block 2 121 3 minecraft:wheat[age=1] run say SONDA primavera trigo_sob_vidro 1 idade=1
+execute if block 2 121 3 minecraft:wheat[age=2] run say SONDA primavera trigo_sob_vidro 1 idade=2
+execute if block 2 121 3 minecraft:wheat[age=3] run say SONDA primavera trigo_sob_vidro 1 idade=3
+execute if block 2 121 3 minecraft:wheat[age=4] run say SONDA primavera trigo_sob_vidro 1 idade=4
+execute if block 2 121 3 minecraft:wheat[age=5] run say SONDA primavera trigo_sob_vidro 1 idade=5
+execute if block 2 121 3 minecraft:wheat[age=6] run say SONDA primavera trigo_sob_vidro 1 idade=6
+execute if block 2 121 3 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro 1 idade=7
+execute if block 3 121 3 minecraft:wheat[age=0] run say SONDA primavera trigo_sob_vidro 2 idade=0
+execute if block 3 121 3 minecraft:wheat[age=1] run say SONDA primavera trigo_sob_vidro 2 idade=1
+execute if block 3 121 3 minecraft:wheat[age=2] run say SONDA primavera trigo_sob_vidro 2 idade=2
+execute if block 3 121 3 minecraft:wheat[age=3] run say SONDA primavera trigo_sob_vidro 2 idade=3
+execute if block 3 121 3 minecraft:wheat[age=4] run say SONDA primavera trigo_sob_vidro 2 idade=4
+execute if block 3 121 3 minecraft:wheat[age=5] run say SONDA primavera trigo_sob_vidro 2 idade=5
+execute if block 3 121 3 minecraft:wheat[age=6] run say SONDA primavera trigo_sob_vidro 2 idade=6
+execute if block 3 121 3 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro 2 idade=7
+execute if block 4 121 3 minecraft:wheat[age=0] run say SONDA primavera trigo_sob_vidro 3 idade=0
+execute if block 4 121 3 minecraft:wheat[age=1] run say SONDA primavera trigo_sob_vidro 3 idade=1
+execute if block 4 121 3 minecraft:wheat[age=2] run say SONDA primavera trigo_sob_vidro 3 idade=2
+execute if block 4 121 3 minecraft:wheat[age=3] run say SONDA primavera trigo_sob_vidro 3 idade=3
+execute if block 4 121 3 minecraft:wheat[age=4] run say SONDA primavera trigo_sob_vidro 3 idade=4
+execute if block 4 121 3 minecraft:wheat[age=5] run say SONDA primavera trigo_sob_vidro 3 idade=5
+execute if block 4 121 3 minecraft:wheat[age=6] run say SONDA primavera trigo_sob_vidro 3 idade=6
+execute if block 4 121 3 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro 3 idade=7
+execute if block 5 121 3 minecraft:wheat[age=0] run say SONDA primavera trigo_sob_vidro 4 idade=0
+execute if block 5 121 3 minecraft:wheat[age=1] run say SONDA primavera trigo_sob_vidro 4 idade=1
+execute if block 5 121 3 minecraft:wheat[age=2] run say SONDA primavera trigo_sob_vidro 4 idade=2
+execute if block 5 121 3 minecraft:wheat[age=3] run say SONDA primavera trigo_sob_vidro 4 idade=3
+execute if block 5 121 3 minecraft:wheat[age=4] run say SONDA primavera trigo_sob_vidro 4 idade=4
+execute if block 5 121 3 minecraft:wheat[age=5] run say SONDA primavera trigo_sob_vidro 4 idade=5
+execute if block 5 121 3 minecraft:wheat[age=6] run say SONDA primavera trigo_sob_vidro 4 idade=6
+execute if block 5 121 3 minecraft:wheat[age=7] run say SONDA primavera trigo_sob_vidro 4 idade=7
 season set mid_summer
-setblock -3 -60 0 cultivo:brisa_crop
-setblock 3 -60 0 minecraft:wheat
+fill -6 120 -3 -3 120 -3 minecraft:water
+setblock -6 121 -4 cultivo:brisa_crop
+setblock -5 121 -4 cultivo:brisa_crop
+setblock -4 121 -4 cultivo:brisa_crop
+setblock -3 121 -4 cultivo:brisa_crop
+fill 2 120 -3 5 120 -3 minecraft:water
+setblock 2 121 -4 minecraft:wheat
+setblock 3 121 -4 minecraft:wheat
+setblock 4 121 -4 minecraft:wheat
+setblock 5 121 -4 minecraft:wheat
 @wait 30
-execute if block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre=madura
-execute unless block -3 -60 0 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre=imatura
-execute if block 3 -60 0 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre=maduro
-execute unless block 3 -60 0 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre=imaturo
+execute if block -6 121 -4 cultivo:brisa_crop[age=0] run say SONDA verao cultivo_ar_livre 1 idade=0
+execute if block -6 121 -4 cultivo:brisa_crop[age=1] run say SONDA verao cultivo_ar_livre 1 idade=1
+execute if block -6 121 -4 cultivo:brisa_crop[age=2] run say SONDA verao cultivo_ar_livre 1 idade=2
+execute if block -6 121 -4 cultivo:brisa_crop[age=3] run say SONDA verao cultivo_ar_livre 1 idade=3
+execute if block -6 121 -4 cultivo:brisa_crop[age=4] run say SONDA verao cultivo_ar_livre 1 idade=4
+execute if block -6 121 -4 cultivo:brisa_crop[age=5] run say SONDA verao cultivo_ar_livre 1 idade=5
+execute if block -6 121 -4 cultivo:brisa_crop[age=6] run say SONDA verao cultivo_ar_livre 1 idade=6
+execute if block -6 121 -4 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre 1 idade=7
+execute if block -5 121 -4 cultivo:brisa_crop[age=0] run say SONDA verao cultivo_ar_livre 2 idade=0
+execute if block -5 121 -4 cultivo:brisa_crop[age=1] run say SONDA verao cultivo_ar_livre 2 idade=1
+execute if block -5 121 -4 cultivo:brisa_crop[age=2] run say SONDA verao cultivo_ar_livre 2 idade=2
+execute if block -5 121 -4 cultivo:brisa_crop[age=3] run say SONDA verao cultivo_ar_livre 2 idade=3
+execute if block -5 121 -4 cultivo:brisa_crop[age=4] run say SONDA verao cultivo_ar_livre 2 idade=4
+execute if block -5 121 -4 cultivo:brisa_crop[age=5] run say SONDA verao cultivo_ar_livre 2 idade=5
+execute if block -5 121 -4 cultivo:brisa_crop[age=6] run say SONDA verao cultivo_ar_livre 2 idade=6
+execute if block -5 121 -4 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre 2 idade=7
+execute if block -4 121 -4 cultivo:brisa_crop[age=0] run say SONDA verao cultivo_ar_livre 3 idade=0
+execute if block -4 121 -4 cultivo:brisa_crop[age=1] run say SONDA verao cultivo_ar_livre 3 idade=1
+execute if block -4 121 -4 cultivo:brisa_crop[age=2] run say SONDA verao cultivo_ar_livre 3 idade=2
+execute if block -4 121 -4 cultivo:brisa_crop[age=3] run say SONDA verao cultivo_ar_livre 3 idade=3
+execute if block -4 121 -4 cultivo:brisa_crop[age=4] run say SONDA verao cultivo_ar_livre 3 idade=4
+execute if block -4 121 -4 cultivo:brisa_crop[age=5] run say SONDA verao cultivo_ar_livre 3 idade=5
+execute if block -4 121 -4 cultivo:brisa_crop[age=6] run say SONDA verao cultivo_ar_livre 3 idade=6
+execute if block -4 121 -4 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre 3 idade=7
+execute if block -3 121 -4 cultivo:brisa_crop[age=0] run say SONDA verao cultivo_ar_livre 4 idade=0
+execute if block -3 121 -4 cultivo:brisa_crop[age=1] run say SONDA verao cultivo_ar_livre 4 idade=1
+execute if block -3 121 -4 cultivo:brisa_crop[age=2] run say SONDA verao cultivo_ar_livre 4 idade=2
+execute if block -3 121 -4 cultivo:brisa_crop[age=3] run say SONDA verao cultivo_ar_livre 4 idade=3
+execute if block -3 121 -4 cultivo:brisa_crop[age=4] run say SONDA verao cultivo_ar_livre 4 idade=4
+execute if block -3 121 -4 cultivo:brisa_crop[age=5] run say SONDA verao cultivo_ar_livre 4 idade=5
+execute if block -3 121 -4 cultivo:brisa_crop[age=6] run say SONDA verao cultivo_ar_livre 4 idade=6
+execute if block -3 121 -4 cultivo:brisa_crop[age=7] run say SONDA verao cultivo_ar_livre 4 idade=7
+execute if block 2 121 -4 minecraft:wheat[age=0] run say SONDA verao trigo_ar_livre 1 idade=0
+execute if block 2 121 -4 minecraft:wheat[age=1] run say SONDA verao trigo_ar_livre 1 idade=1
+execute if block 2 121 -4 minecraft:wheat[age=2] run say SONDA verao trigo_ar_livre 1 idade=2
+execute if block 2 121 -4 minecraft:wheat[age=3] run say SONDA verao trigo_ar_livre 1 idade=3
+execute if block 2 121 -4 minecraft:wheat[age=4] run say SONDA verao trigo_ar_livre 1 idade=4
+execute if block 2 121 -4 minecraft:wheat[age=5] run say SONDA verao trigo_ar_livre 1 idade=5
+execute if block 2 121 -4 minecraft:wheat[age=6] run say SONDA verao trigo_ar_livre 1 idade=6
+execute if block 2 121 -4 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre 1 idade=7
+execute if block 3 121 -4 minecraft:wheat[age=0] run say SONDA verao trigo_ar_livre 2 idade=0
+execute if block 3 121 -4 minecraft:wheat[age=1] run say SONDA verao trigo_ar_livre 2 idade=1
+execute if block 3 121 -4 minecraft:wheat[age=2] run say SONDA verao trigo_ar_livre 2 idade=2
+execute if block 3 121 -4 minecraft:wheat[age=3] run say SONDA verao trigo_ar_livre 2 idade=3
+execute if block 3 121 -4 minecraft:wheat[age=4] run say SONDA verao trigo_ar_livre 2 idade=4
+execute if block 3 121 -4 minecraft:wheat[age=5] run say SONDA verao trigo_ar_livre 2 idade=5
+execute if block 3 121 -4 minecraft:wheat[age=6] run say SONDA verao trigo_ar_livre 2 idade=6
+execute if block 3 121 -4 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre 2 idade=7
+execute if block 4 121 -4 minecraft:wheat[age=0] run say SONDA verao trigo_ar_livre 3 idade=0
+execute if block 4 121 -4 minecraft:wheat[age=1] run say SONDA verao trigo_ar_livre 3 idade=1
+execute if block 4 121 -4 minecraft:wheat[age=2] run say SONDA verao trigo_ar_livre 3 idade=2
+execute if block 4 121 -4 minecraft:wheat[age=3] run say SONDA verao trigo_ar_livre 3 idade=3
+execute if block 4 121 -4 minecraft:wheat[age=4] run say SONDA verao trigo_ar_livre 3 idade=4
+execute if block 4 121 -4 minecraft:wheat[age=5] run say SONDA verao trigo_ar_livre 3 idade=5
+execute if block 4 121 -4 minecraft:wheat[age=6] run say SONDA verao trigo_ar_livre 3 idade=6
+execute if block 4 121 -4 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre 3 idade=7
+execute if block 5 121 -4 minecraft:wheat[age=0] run say SONDA verao trigo_ar_livre 4 idade=0
+execute if block 5 121 -4 minecraft:wheat[age=1] run say SONDA verao trigo_ar_livre 4 idade=1
+execute if block 5 121 -4 minecraft:wheat[age=2] run say SONDA verao trigo_ar_livre 4 idade=2
+execute if block 5 121 -4 minecraft:wheat[age=3] run say SONDA verao trigo_ar_livre 4 idade=3
+execute if block 5 121 -4 minecraft:wheat[age=4] run say SONDA verao trigo_ar_livre 4 idade=4
+execute if block 5 121 -4 minecraft:wheat[age=5] run say SONDA verao trigo_ar_livre 4 idade=5
+execute if block 5 121 -4 minecraft:wheat[age=6] run say SONDA verao trigo_ar_livre 4 idade=6
+execute if block 5 121 -4 minecraft:wheat[age=7] run say SONDA verao trigo_ar_livre 4 idade=7

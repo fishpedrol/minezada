@@ -2,6 +2,12 @@
   "_comment": "Manifesto único do conteúdo do Cultivo. tools/gen/generate.mjs gera blockstates, modelos, definições de item, lang, sons, loot, receitas, tags, worldgen e test_instance a partir dele. Os testes JUnit conferem o resultado contra as classes puras em core/.",
   "_portuguese_comment": "Pedido do dono: o mod aparece todo em português em qualquer idioma do cliente. Com portuguese_everywhere = true o gerador escreve os textos pt_br também no en_us.json (o fallback de todos os idiomas). Os textos em inglês continuam aqui como fonte (lang.en_us, campos en e name_patterns.*.en): com false o en_us.json volta a sair em inglês. O gerador confere que toda chave tem as duas línguas.",
   "portuguese_everywhere": true,
+  "compat": {
+    "serene_seasons": {
+      "_comment": "Serene Seasons (mod de estações de terceiros): as lavouras do Cultivo seguem as estações do trigo. No Serene Seasons 26.1.2.0.7, minecraft:wheat está em block/summer_crops e block/autumn_crops, e minecraft:wheat_seeds em item/summer_crops e item/autumn_crops. Entradas com required:false; a planta silvestre fica fora (não tem random tick). Sem o Serene Seasons, as tags sereneseasons:* ficam sem leitor (inofensivas). Veja DECISIONS.md, 'Compatibilidade: Serene Seasons'.",
+      "seasons": ["summer", "autumn"]
+    }
+  },
   "name_patterns": {
     "_comment": "Nomes gerados por variedade; %s é o nome da variedade (pt ou en). Plantio segue o vanilla pt_br (Plantio de Trigo).",
     "seeds": { "en": "%s Seeds", "pt": "Sementes de %s" },
@@ -250,7 +256,8 @@
     { "name": "sieve_grinder_shape", "max_ticks": 100 },
     { "name": "ashtray_search_edges", "max_ticks": 100 },
     { "name": "block_states_match_ids", "max_ticks": 100 },
-    { "name": "tooltips_show_profile_and_marks", "max_ticks": 100 }
+    { "name": "tooltips_show_profile_and_marks", "max_ticks": 100 },
+    { "name": "serene_seasons_compat", "max_ticks": 100, "sky_access": true }
   ],
   "lang": {
     "en_us": {

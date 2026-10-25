@@ -17,6 +17,7 @@
 #   bash tools/compat/forge-server-compat.sh 26.3-66.0.2 pasta/dos/jars tools/compat/probes/seasons.txt
 #
 # Formato da sonda: uma linha por comando de console (sem "/"); "@wait N" espera N segundos; "#" é comentário.
+# Variável opcional CULTIVO_COMPAT_CONFIG: pasta copiada para config/ do servidor antes de subir.
 # Saída: a pasta run-compat-prod-<versão>[-extras]/ (ignorada pelo git), com console.out. O script termina com
 # código 0 se o servidor subir, a sonda rodar até o fim e o servidor desligar; as linhas "SONDA" são o resultado.
 # Precisa de rede para maven.minecraftforge.net, piston-meta/piston-data.mojang.com e libraries.minecraft.net.
@@ -50,16 +51,22 @@ if [ ! -f "$SERVER/.installed" ]; then
 fi
 rm -rf "$SERVER/mods" "$SERVER/world" "$SERVER/logs" "$SERVER/config"
 mkdir -p "$SERVER/mods"
+# Configs opcionais (ex.: config/sereneseasons/fertility.toml) copiadas antes de subir o servidor.
+if [ -n "${CULTIVO_COMPAT_CONFIG:-}" ]; then
+  mkdir -p "$SERVER/config" && cp -r "$CULTIVO_COMPAT_CONFIG"/. "$SERVER/config/"
+fi
 cp "$MOD_JAR" "$SERVER/mods/"
 if [ -n "$EXTRA_DIR" ]; then
   cp "$EXTRA_DIR"/*.jar "$SERVER/mods/"
 fi
 echo "eula=true" > "$SERVER/eula.txt"
-# Mundo plano (grama em y=-61) e sem estruturas: a sonda planta perto de 0,0.
+# Mundo normal sem estruturas. A sonda monta a própria plataforma no alto (y=120), com o bioma forçado por
+# fillbiome, para não depender do relevo nem do bioma sorteado perto de 0,0.
+# pause-when-empty-seconds=0: o 26.3 pausa o servidor vazio depois de 60 s, o que congelaria a sonda.
 cat > "$SERVER/server.properties" <<'EOF'
-level-type=minecraft\:flat
 generate-structures=false
 spawn-protection=0
+pause-when-empty-seconds=0
 EOF
 
 echo "Forge $FORGE_VERSION; mods em $SERVER/mods:"; ls -1 "$SERVER/mods"

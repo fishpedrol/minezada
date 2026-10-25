@@ -479,6 +479,16 @@ for (const s of stations) {
 for (const tag of ['crops', 'maintains_farmland', 'bee_growables']) {
   write(`data/minecraft/tags/block/${tag}.json`, { replace: false, values: crops });
 }
+// Compatibilidade com o Serene Seasons (opcional): as lavouras e as sementes do Cultivo entram nas mesmas tags de
+// estação do trigo. required:false para uma entrada nunca derrubar a tag inteira do Serene Seasons (e o trigo junto).
+const optionalEntry = (entry) => ({ id: entry, required: false });
+for (const season of M.compat.serene_seasons.seasons) {
+  write(`data/sereneseasons/tags/block/${season}_crops.json`, { replace: false, values: crops.map(optionalEntry) });
+  write(`data/sereneseasons/tags/item/${season}_crops.json`, {
+    replace: false,
+    values: strains.map((v) => optionalEntry(id(`${v.id}_seeds`))),
+  });
+}
 // Ferramenta certa acelera a quebra (como tábuas e composteira no machado, terracota e lanterna na picareta): as
 // estações de madeira no machado, a bandeja de metal e o cinzeiro de terracota na picareta. O pote é vidro (sem tag,
 // como o vidro vanilla); lavouras e planta silvestre quebram na hora.
@@ -558,6 +568,7 @@ for (const t of M.game_tests) {
     environment: 'minecraft:default',
     structure: 'forge:empty9x9x9',
     max_ticks: t.max_ticks,
+    ...(t.sky_access ? { sky_access: true } : {}),
   });
 }
 
