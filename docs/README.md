@@ -1,6 +1,6 @@
 # Documentação
 
-Projeto: mod privado de cultivo e crafting para Minecraft Java 26.3 com Forge 26.3-66.0.13, para jogar com amigos. Estado em 24/10/2026: 40 genéticas, estufa, estações animadas, artigos com uso e a mecânica fictícia de fumar, tudo em português; `build` (311 testes JUnit) e `runGameTestServer` (62 GameTests) passam. Falta a checagem visual no cliente gráfico e o teste em multiplayer (veja [TODO.md](TODO.md)).
+Projeto: mod privado de cultivo e crafting para Minecraft Java 26.3 com Forge 26.3-66.0.13, para jogar com amigos. Estado em 25/10/2026: 40 genéticas, estufa, estações animadas, artigos com uso e a mecânica fictícia de fumar, tudo em português; `build` (311 testes JUnit) e `runGameTestServer` (62 GameTests) passam, e o teste visual automático conferiu o cliente gráfico (47 cenas). Falta o teste em multiplayer do começo ao fim (veja [TODO.md](TODO.md)).
 
 - [Orientação para a próxima sessão](NEXT_SESSION.md): estado, ambiente, verificação, mapa do código, armadilhas da API 26.3 e pendências. Comece por aqui.
 - [Guia do iniciante](GUIA_INICIANTE.md): passo a passo para o dono (preparar o Windows, compilar, jogar, testar à mão, mudar números).

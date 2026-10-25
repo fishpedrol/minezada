@@ -1,6 +1,6 @@
 # Prompt para a próxima sessão na nuvem
 
-**Atualizado em 24/10/2026, com o código do commit `319cf0b`.** Copie tudo o que está abaixo da linha e cole como primeira mensagem de uma sessão nova do Claude na nuvem aberta neste repositório (`claude --cloud` ou Claude Code na web). Antes de colar, troque o texto da linha "Tarefa desta sessão". O prompt antigo, de 21/10/2026, já foi executado e fica no histórico do Git: `git show 319cf0b:docs/CLOUD_PROMPT.md`.
+**Atualizado em 25/10/2026, com o código do commit `f515cb9`.** Copie tudo o que está abaixo da linha e cole como primeira mensagem de uma sessão nova do Claude na nuvem aberta neste repositório (`claude --cloud` ou Claude Code na web). Antes de colar, troque o texto da linha "Tarefa desta sessão". O prompt antigo, de 21/10/2026, já foi executado e fica no histórico do Git: `git show 319cf0b:docs/CLOUD_PROMPT.md`.
 
 ---
 
@@ -8,7 +8,7 @@ Você vai continuar o "Cultivo": um mod privado de Minecraft Java 26.3 para Forg
 
 **Tarefa desta sessão:** <escreva aqui o que você quer>. Se esta linha ficou sem tarefa, faça o primeiro item de "Pendências" que der para fazer sem tela.
 
-## Estado em 24/10/2026
+## Estado em 25/10/2026
 - Implementado:
   - 40 genéticas: 3 nativas e 37 do catálogo High THC da Santa Semente BR, com nomes de paródia;
   - lavoura de 8 estágios, estufa com qualidade maior, planta silvestre;
@@ -18,11 +18,13 @@ Você vai continuar o "Cultivo": um mod privado de Minecraft Java 26.3 para Forg
   - a mecânica fictícia de fumar, com animação própria;
   - 16 eventos de som;
   - todo o texto em português em qualquer idioma.
-- No PC do dono (Windows 11), com o código de `319cf0b`:
+- No PC do dono (Windows 11), com o código de `f515cb9`:
   - `build` passa com 311 testes JUnit;
   - `runGameTestServer` passa com `All 62 required tests passed :)` (61 do Cultivo + `minecraft:always_pass`);
-  - `node tools/gen/generate.mjs` gera `285 texturas e 786 arquivos JSON`.
-- Nunca visto num cliente de verdade depois do polimento de 24/10: modelos de item e de bloco, texturas animadas, a placa da prensa, as poses de fumar, as partículas e os sons. O `runClient` só tinha aberto antes, com o código de `5bded22`.
+  - `node tools/gen/generate.mjs` gera `285 texturas e 786 arquivos JSON`;
+  - o teste visual automático (`tools/visual-probe/run-probe.ps1`) abriu o cliente real e passou pelas 47 cenas sem erro de modelo, textura ou som no log; achou e corrigiu a fumaça cobrindo a tela em 1ª pessoa;
+  - multiplayer local só parcial: o cliente entrou no servidor dedicado e sincronizou 2 cenas, e o teste foi parado por falta de memória.
+- Ainda não visto no cliente: mão esquerda, os artigos de todos os lados, os sons tocando (só as legendas) e o multiplayer do começo ao fim.
 
 ## Branch e entrega
 1. `git fetch origin`. Se o PR da branch `claude/polish-visual-uses` já foi mesclado, parta da `main`; senão, parta de `claude/polish-visual-uses`. Para saber se já foi mesclado: `git cat-file -e origin/main:docs/strains-catalog.json && echo mesclado`.
@@ -56,8 +58,8 @@ O primeiro jar tem as fontes completas do Minecraft e do Forge (nomes oficiais);
 
 ## Verificar (nesta ordem, um comando do Gradle por vez)
 1. `node tools/gen/generate.mjs`: termina com `... texturas e ... arquivos JSON gerados em ...`. Sem mudança no gerador, `git status` fica limpo.
-2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (311 testes, 0 falhas em `319cf0b`).
-3. `./gradlew runGameTestServer --console=plain`: `All N required tests passed :)` (62 em `319cf0b`).
+2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (311 testes, 0 falhas em `f515cb9`).
+3. `./gradlew runGameTestServer --console=plain`: `All N required tests passed :)` (62 em `f515cb9`).
 4. Se mexer em dados ou worldgen: `./gradlew runServer --console=plain`. Aceite a EULA em `run/eula.txt`; o servidor está de pé quando aparece `Done (...)!`; desligue com `stop`.
 
 ## O que esta sessão não consegue fazer
@@ -87,13 +89,13 @@ O primeiro jar tem as fontes completas do Minecraft e do Forge (nomes oficiais);
   - as pendências.
 
 ## Pendências (detalhes em docs/NEXT_SESSION.md, seção 8)
-1. Checagem visual no `runClient` e teste visual automático (só o dono, no Windows).
-2. Multiplayer com cliente de verdade, e `runServer` com o código atual.
+1. Multiplayer completo: `run-probe.ps1 -Multiplayer` com memória livre e depois com amigos (só o dono, no Windows).
+2. O que o teste visual não cobre: mão esquerda, artigos de todos os lados, ouvir os sons (só o dono).
 3. Ambiente do dono:
    - o launcher dele usa Forge 26.3-66.0.2 com outros mods, entre eles o Serene Seasons, que mexe no crescimento das plantações;
    - testar ou documentar a compatibilidade;
    - decidir se o `mods.toml` passa a exigir `[66.0.13,)`.
-4. Estender a cena do teste visual automático para as genéticas do catálogo e os artigos colocados.
+4. Se mexer em genéticas, regere o datapack do teste visual (`node tools/visual-probe/gen-datapack.mjs . tools/visual-probe/datapack`) e confira com `validate.mjs`.
 5. Completar o catálogo se o dono colar a página da loja (cerca de 58 produtos High THC num snapshot antigo; entraram 37).
 6. Balanceamento depois de jogar.
 7. Opcionais: o pote com funil; áudio próprio; limpar a sobra `GrowthRules.visualStage`.

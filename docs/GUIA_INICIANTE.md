@@ -449,28 +449,29 @@ powershell -ExecutionPolicy Bypass -File tools\visual-probe\run-probe.ps1 -OutDi
 **O que acontece:**
 - O script copia `run\world` para `run\saves\cultivo_probe`, instala o datapack da cena e ajusta o `run\options.txt` (devolve o original no fim).
 - Ele abre o jogo direto nesse mundo e responde sozinho ao aviso de "ajustes experimentais".
-- **Não mexa no mouse nem no teclado enquanto ele roda:** o script aperta teclas na janela do jogo (F1, F2, F5, E, Esc e o botão direito). Leva alguns minutos.
+- **Não mexa no mouse nem no teclado enquanto ele roda:** o script aperta teclas e move o mouse na janela do jogo (F1, F2, F5, E, Esc, Shift, 1, 2 e os botões do mouse). Leva uns 5 minutos depois que o jogo abre.
 - No fim, ele fecha o jogo.
 
-**O resultado**, na pasta do `-OutDir`, são 11 prints e dois logs (`gradle-client.log` e `client-latest.log`, para procurar erros como na seção 3.7):
+**O resultado**, na pasta do `-OutDir`, são 47 prints, os logs (`gradle-client.log` e `client-latest.log`) e o `log-problems.txt`, que separa os avisos ligados ao Cultivo dos avisos normais do jogo. Os avisos `Object did not get ID it asked for` vêm do mundo de teste antigo e são normais.
 
-| Print | Mostra |
+| Prints | Mostram |
 |---|---|
-| `01_plantas` | as lavouras das 3 nativas, nas 8 idades |
-| `02_estacoes` | as três estações, vazias |
-| `03_estufa` | uma estufa com as 3 nativas maduras |
-| `04_vitrine_itens` | itens das 3 nativas, resina, haxixe, baseado, artigos e estações |
-| `05_inventario` | o inventário cheio de itens do Cultivo |
-| `06_bong_primeira_pessoa` e `07_bong_terceira_pessoa` | o bong na mão |
-| `08_fumando`, `09_efeito_chapado` e `10_fumaca_terceira_pessoa` | fumando um baseado |
-| `11_inventario_efeitos` | os efeitos no inventário |
+| `01` e `02` | as 3 nativas nas 8 idades e uma planta de cada família de cor |
+| `03` a `07` | suporte, peneira e prensa vazios, trabalhando e prontos (a placa da prensa em 3 momentos) |
+| `08` a `11` | bandeja, pote, cinzeiro de 0 a 4, o pote terminando a cura e a estufa |
+| `12` a `15` | as 40 genéticas (semente, flor fresca e seca), produtos, artigos e modelos na mão |
+| `16` a `26` | inventário e as dicas (tooltips) de sementes, flor curada, haxixe, baseado, isqueiro, dichavador e estações |
+| `27` a `29` | as duas abas do modo criativo |
+| `30` a `34` | cliques de verdade: enrolar na bandeja, recusa sem folhas, pôr e tirar (agachado) do suporte, instalar o dichavador |
+| `35` a `47` | fumar cada aparelho em 1ª e 3ª pessoa, o efeito "Chapado" e a recusa sem material |
 
-**Limites de hoje:**
-- A cena só tem as 3 nativas e as estações vazias.
-- Ela ainda não mostra as genéticas do catálogo, a bandeja, o pote e o cinzeiro colocados, o dichavador na peneira nem o baseado com piteira.
+**Olhe os prints um por um:** o script só tira as fotos; quem diz se está certo é você. O que cada print deve mostrar, e o que seria bug, está em `tools\visual-probe\PRINTS.md`.
 
-Para esses, use a checklist da seção 6.1.
+**Multiplayer automático:** com `-Multiplayer` no fim do comando, o script sobe também o servidor dedicado e o jogo entra nele por 127.0.0.1, com as mesmas cenas. Durante o teste, o `run\server.properties` fica em modo offline (o jogador de teste não tem conta), só aceita conexão do próprio PC e sem whitelist; o original volta no fim. São dois Minecraft e dois Gradle ao mesmo tempo, então **feche o navegador e outros programas antes**. Em 25/10/2026 ele foi parado por falta de memória depois de 2 cenas.
 
+**Se mudar genéticas** no `manifest.json`, regere a cena: `node tools/visual-probe/gen-datapack.mjs . tools/visual-probe/datapack` e confira com `node tools/visual-probe/validate.mjs . tools/visual-probe/datapack tools/visual-probe/run-probe.ps1` (deve dizer `OK: nenhum erro`).
+
+**Não cobre:** a mão esquerda, os artigos de todos os lados e o som (as legendas aparecem, mas ninguém ouve). Para esses, use a checklist da seção 6.1.
 ---
 
 ## 4. Jogar com os amigos

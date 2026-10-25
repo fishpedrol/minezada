@@ -345,6 +345,7 @@ O dono pediu: "deixe tudo no mod em português, também crie as animações".
 - **Partículas ao fumar** (desenhadas pelo cliente de cada jogador que está vendo, também para os outros jogadores):
   - chaminha do isqueiro no 1º tick;
   - com o item na boca: brasa e fiapos de fumaça (baseado, cachimbo, chillum), bolhas e fumaça (bong), lufadas de fumaça branca e bolhas (narguilé).
+  - **na própria câmera em 1ª pessoa não saem os fiapos de fumaça** (25/10/2026): nascem a meio bloco do olho e, no cliente real, cobriam a tela com uma mancha preta. Brasa, bolhas, chama e a nuvem final continuam, e quem olha de fora vê tudo. O código comum não importa classes do cliente: o cliente registra no setup um `Predicate` em `SmokeEffects.setFirstPersonViewer` (no servidor fica sempre falso).
 - **Sons e nuvem final, mandados pelo servidor:**
   - estalo do isqueiro ao começar;
   - som de tragar no 5º tick;
@@ -366,7 +367,7 @@ O dono pediu: "deixe tudo no mod em português, também crie as animações".
 - **Isolamento do cliente:** todo código só do cliente fica no pacote `client/`, e o código comum só chega lá por `SmokingItem.initializeClient`, que o Forge chama apenas no cliente físico. `ClientIsolationTest` confere as fontes e o bytecode, e o `runGameTestServer` (servidor dedicado) passa.
 
 ## Em aberto
-- **Checagem visual no cliente:** tudo o que é só do cliente desde o polimento de 24/10 ainda não foi visto num jogo aberto: modelos, multipart, texturas animadas, a placa da prensa, as poses, os sons e as partículas. Também falta o multiplayer com cliente de verdade. Checklist: GUIA_INICIANTE.md, seção 6.
+- **Checagem visual no cliente:** feita pelo teste visual automático em 25/10/2026 (47 cenas, TODO.md). Faltam a mão esquerda, os artigos de todos os lados, ouvir os sons e o multiplayer do começo ao fim (o de 25/10 parou por falta de memória). Checklist: GUIA_INICIANTE.md, seção 6.
 - **Ambiente do dono:**
   - o launcher usa Forge 26.3-66.0.2, e o `mods.toml` aceita `[66,)`, então o jar tenta carregar nessa versão não testada;
   - os outros mods dele incluem o Serene Seasons, que mexe no crescimento das plantações e tem a própria ideia de estufa;

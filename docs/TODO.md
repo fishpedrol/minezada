@@ -1,6 +1,6 @@
 # Plano do mod
 
-**Estado em 24/10/2026, com o código do commit `319cf0b` (branch `claude/polish-visual-uses`).**
+**Estado em 25/10/2026, com o código do commit `f515cb9` (branch `claude/polish-visual-uses`).**
 
 Compilam e passam no PC do dono:
 - o MVP;
@@ -9,7 +9,7 @@ Compilam e passam no PC do dono:
 
 Resultados: `build` com 311 testes JUnit e `runGameTestServer` com `All 62 required tests passed :)` (61 do Cultivo + `minecraft:always_pass`).
 
-O cliente gráfico abriu sem erros de recurso no Windows, mas com o código de `5bded22`, antes do polimento. A checagem visual e o teste multiplayer continuam pendentes (checklist em [GUIA_INICIANTE.md](GUIA_INICIANTE.md), seção 6).
+O cliente gráfico com o código atual passou pelo teste visual automático no Windows (25/10/2026): 47 prints conferidos um a um e log sem erro de modelo, textura ou som. O teste achou e corrigiu 1 bug (fumaça cobrindo a tela em 1ª pessoa). O multiplayer local (servidor dedicado + cliente) só rodou em parte: o cliente entrou e as duas primeiras cenas sincronizaram, mas o teste foi parado por falta de memória no PC. Falta repetir o multiplayer e o teste com amigos (checklist em [GUIA_INICIANTE.md](GUIA_INICIANTE.md), seção 6).
 
 ## Evidências registradas
 
@@ -48,10 +48,14 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 | 24/10/2026 | PC local, usos dos artigos (commit `9cd902c`): os mesmos três comandos | **`BUILD SUCCESSFUL in 7s`**, 256 testes, 0 falhas / **`All 47 required tests passed :)`** / 281 texturas e 733 JSONs. Testes negativos: quebrar o bônus do dichavador, a metade da náusea, o gancho do cinzeiro, a marca de cura e o consumo da bandeja derruba exatamente `sieve_grinder`, `smoke_filtered_joint`, `ashtray_collects_ash`, `jar_cures_flowers` e `tray_rolls_joints`; quebrar a receita gerada `joint_filtered` e o loot do pote derruba `joint_filter_recipe`, `smoke_filtered_joint`, `jar_cures_flowers` e `placeable_articles_drop_self`. Restaurado e regerado. |
 | 24/10/2026 | PC local, português em tudo, animações e sons (commit `16c7d3c`): os mesmos três comandos | **`BUILD SUCCESSFUL in 7s`**, 295 testes, 0 falhas / **`All 50 required tests passed :)`** / 283 texturas e 769 JSONs. Testes negativos: a flag desligada, 4 quadros-chave e frametime 0 derrubam 8 testes visados; um import de pacote de cliente no código comum, uma constante de braço trocada e um som vanilla no `AshtrayBlock` derrubam 6. Restaurado; o gerador dá o mesmo hash numa 2ª rodada. |
 | 24/10/2026 | PC local, correções da revisão (commit `319cf0b`): os mesmos três comandos | **`BUILD SUCCESSFUL in 12s`** (`5 actionable tasks: 4 executed, 1 up-to-date`); XML do JUnit: 311 testes, 0 skipped, 0 falhas, 0 erros / **`All 62 required tests passed :)`** (`62 GAME TESTS COMPLETE IN 2.020 s`) / 285 texturas e 786 JSONs. Teste negativo: com os bugs originais reinjetados de uma vez, os 16 GameTests visados falham com as mensagens esperadas; fontes restauradas byte a byte. |
-
+| 25/10/2026 | PC local, conferência própria do código `dbe06a4` (fim do workflow): `node tools/gen/generate.mjs` / `.\gradlew.bat test --rerun --console=plain` / `.\gradlew.bat runGameTestServer --console=plain` | 285 texturas e 786 JSONs, `git status` sem diferença / **`BUILD SUCCESSFUL in 8s`**, XML do JUnit: 311 testes, 0 falhas / **`All 62 required tests passed :)`** (`62 GAME TESTS COMPLETE IN 2.062 s`) |
+| 25/10/2026 | PC local: teste visual automático, 1ª rodada (`tools\visual-probe\run-probe.ps1`, 47 cenas, código `dbe06a4`) | 47 prints. `log-problems.txt`: nenhum WARN/ERROR do Cultivo e nenhum modelo, textura ou som faltando (só os avisos conhecidos de Realms, `end_of_frame` e remapeamento de IDs do mundo antigo). Conferido nos prints: planta em 8 estágios e 12 famílias de cor, estações 3D com a placa da prensa animada, bandeja/pote/cinzeiro, cura do pote com brilho, 40 genéticas, dicas em português com estrelas, as 2 abas do criativo, legendas de som em português, fumar cada aparelho em 1ª e 3ª pessoa e o efeito "Chapado". **Bug achado:** em 1ª pessoa os fios de fumaça nasciam a meio bloco do olho e cobriam a tela com uma mancha preta (prints 37 e 43). Também falharam 3 cenas do próprio teste: a mira da bandeja caía na pedra da frente e o suporte agora exige agachar para devolver a entrada. |
+| 25/10/2026 | PC local: investigação da bandeja (log temporário no `useItemOn` e no clique do mouse, removido depois) | O raio do clique acertava a pedra ao lado da bandeja (2 px de altura); olhando de cima, o clique chega ao bloco e o mod funciona: `Baseado enrolado`, 3 baseados, e sem folhas "Você precisa de 3 folhas de seda no inventário". Não era bug do mod; o teste passou a mirar de cima. |
+| 25/10/2026 | PC local, correção da fumaça em 1ª pessoa + teste ajustado (commit `f515cb9`): `.\gradlew.bat build` / teste visual completo de novo | **`BUILD SUCCESSFUL in 11s`**, 311 testes, 0 falhas (inclui a varredura que proíbe classes de cliente no código comum) / 47 prints, log limpo; a mancha preta sumiu (fica a brasa e a chama), bandeja enrola e recusa, suporte recebe e devolve (agachado). |
+| 25/10/2026 | PC local: `run-probe.ps1 -Multiplayer` (servidor dedicado em 127.0.0.1 + cliente) | Parcial: `Done (0.434s)!`, `Dev[/127.0.0.1:55502] logged in with entity id 1`, cenas `cam_crops` e `cam_families` construídas e vistas pelo cliente (2 prints), nenhum erro nem desconexão nos dois logs. O Claude Code parou o teste por falta de memória (dois jogos + dois Gradle). `server.properties` e `options.txt` voltaram ao original. |
 **Conferência dos formatos:**
 - Os JSONs gerados foram conferidos contra os vanilla do `client-extra-26.3` jar: `loot_table/blocks/wheat.json`, `chests/village/village_plains_house.json`, `processor_list/farm_plains.json` (as regras vanilla do mod são idênticas às do jar), `feature/melon.json`, `placed_feature/patch_melon.json`, `recipe/bowl.json`/`book.json` e `test_instance/always_pass.json`.
-- Os formatos novos de 24/10 foram conferidos contra o código e os JSONs do 26.3 e pelos testes JUnit de `data/`, mas os de cliente só carregam de verdade num `runClient`, ainda pendente. São eles:
+- Os formatos novos de 24/10 foram conferidos contra o código e os JSONs do 26.3 e pelos testes JUnit de `data/`; os de cliente carregaram sem erro no `runClient` do teste visual de 25/10. São eles:
   - avanços de receita;
   - definições de item com `condition`/`select`/`range_dispatch`/`composite`;
   - blockstates multipart;
@@ -68,10 +72,11 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 - [x] `./gradlew build` do mod renomeado: `BUILD SUCCESSFUL`.
 - [x] Servidor dedicado (`runServer`): `Done (6.116s)!`; último no PC local com o código de `5bded22` (`Done (2.277s)!`).
 - [x] Cliente de desenvolvimento (`runClient`) inicia no Windows com o mod carregado e sem erros de recurso (24/10/2026, código `5bded22`).
-- [ ] `runServer` e `runClient` com o código atual: o último de cada um foi em `5bded22`, antes do polimento.
-- [ ] Checagem visual no cliente (seção 6 do guia).
+- [x] `runClient` com o código atual (25/10/2026, teste visual automático, commit `f515cb9`).
+- [x] Checagem visual no cliente: 47 prints do teste automático conferidos (25/10/2026). Ainda vale o dono olhar com calma (seção 6 do guia).
+- [ ] `runServer` + cliente conectado com o código atual: só parcial (o cliente entrou; teste parado por falta de memória).
 
-**Gate:** servidor OK; o cliente iniciou antes do polimento; checagem visual pendente.
+**Gate:** servidor OK; cliente e checagem visual OK com o código atual; multiplayer completo pendente.
 
 ## 2. Conteúdo e cultivo
 - [x] **Regras puras** com testes passando:
@@ -102,13 +107,10 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
   - fontes de sementes: `village_chest_seeds` (1600 baús com semente fixa: 45–55% com semente, as 40 genéticas aparecem, médias dentro de ±25%), `wandering_trader_catalog_seeds`, `villager_replants_mod_crop`;
   - organização e estado: `creative_tabs_split`, `block_states_match_ids`.
 - [x] Dados carregam no servidor de GameTest: os 62 GameTests usam as receitas, o loot e as tags carregados.
-- [ ] Checagem visual no cliente (precisa do cliente):
-  - planta silvestre no mundo e lavouras de aldeia;
-  - os 8 estágios;
-  - os ícones das genéticas;
-  - o mascate com sementes.
+- [x] No cliente, pelo teste visual de 25/10: os 8 estágios, as 12 famílias de cor e os ícones das 40 genéticas.
+- [ ] No cliente, num mundo novo: planta silvestre, lavouras de aldeia e o mascate com sementes.
 
-**Gate:** regras e drops OK no servidor; checagem visual pendente.
+**Gate:** regras e drops OK no servidor; visual OK no teste automático; mundo novo pendente.
 
 ## 3. Processamento
 - [x] **Regras puras com testes:**
@@ -144,15 +146,11 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
   - isqueiro e material: `smoke_requires_lighter_and_fuel`, `smoke_pipe_uses_fuel`, `smoke_offhand_fuel_first`, `smoke_lighter_breaks`, `smoke_creative_consumes_nothing`;
   - recusas: `smoke_at_cap_refused`, `smoke_refusal_messages`, `smoke_infinite_high_refused`, `smoke_refused_at_finish_explains`;
   - registro, uso real e dicas: `smoke_devices_registered`, `smoke_use_effects_run` (os 5 artigos fumados tick a tick), `tooltips_show_profile_and_marks`.
-- [ ] **Ver no cliente** (precisa de `runClient`):
-  - animação nova em 1ª e 3ª pessoa, nas duas mãos;
-  - modelos na mão e acesos;
-  - partículas e sons;
-  - ícone e nome do efeito, náusea;
-  - tooltips e mensagens.
+- [x] **Visto no cliente** (teste visual de 25/10): animação em 1ª e 3ª pessoa dos 5 aparelhos (bong e narguilé com as duas mãos), modelos na mão e acesos, partículas, legendas dos sons em português, ícone e nome do efeito, náusea, tooltips e mensagens. Corrigido: fumaça cobrindo a tela em 1ª pessoa (commit `f515cb9`).
+- [ ] Animação com a mão esquerda (não coberta pelo teste) e ouvir os sons (o teste só vê as legendas).
 - [ ] Testar em multiplayer: dois jogadores fumando no servidor dedicado, cada um vendo a animação e a fumaça do outro.
 
-**Gate:** regras e servidor OK; checagem visual e multiplayer pendentes.
+**Gate:** regras, servidor e visual OK; multiplayer pendente.
 
 ## 3c. Artigos com uso (24/10/2026)
 - [x] **Regras puras com JUnit:**
@@ -165,10 +163,8 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
   - pote: `jar_cures_flowers`, `jar_reload_resumes`;
   - cinzeiro: `ashtray_collects_ash`, `ashtray_search_edges`;
   - blocos colocados: `placeable_articles_drop_self`.
-- [ ] **Ver no cliente:**
-  - bandeja, pote (vazio e cheio) e cinzeiro (0 a 4) de todos os lados;
-  - peneira com dichavador;
-  - baseado com piteira na mão.
+- [x] **Visto no cliente** (teste visual de 25/10): bandeja (2 direções), pote vazio e cheio com brilho de cura, cinzeiro de 0 a 4, peneira com dichavador, baseado com piteira na mão; cliques reais na bandeja (enrola e recusa), no suporte (põe e tira agachado) e na peneira (instala o dichavador).
+- [ ] Ver os artigos de todos os lados (o teste olha de um ângulo só).
 
 ## 3d. Português, animações e sons (pedido de 24/10/2026)
 - [x] Flag `portuguese_everywhere` com `en_us` = `pt_br`, textos revisados e metadado em português (`PortugueseEverywhereTest`).
@@ -176,24 +172,23 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
 - [x] Texturas animadas (`AnimatedTexturesTest`).
 - [x] Animação de fumar e placa da prensa conferidas por regra pura e pelos modelos gerados (`SmokeAnimationTest`, `SmokeAnimationAssetsTest`, `StationAnimationTest`).
 - [x] Isolamento do código de cliente (`ClientIsolationTest`).
-- [ ] Ouvir os sons e ver as animações e partículas no cliente.
+- [x] Animações, texturas animadas, partículas e legendas dos sons vistas no cliente (teste visual de 25/10).
+- [ ] Ouvir os sons (o teste só confere as legendas).
 
 ## 4. Conteúdo de release
 - [x] Licença escolhida (MIT para código e assets do Cultivo) e registrada em `mods.toml` e `LICENSE`.
 - [x] Jar inspecionado: assets incluídos, nenhum arquivo do Minecraft (última inspeção registrada: código `1e7325a`).
 - [ ] Inspecionar e registrar o jar do código atual.
-- [x] `build` (com `test`) e `runGameTestServer` com o código atual; `runServer` com o código de `5bded22`.
-- [ ] `runClient` com o código atual e conexão de um cliente ao servidor dedicado.
+- [x] `build` (com `test`), `runGameTestServer` e `runClient` (teste visual) com o código atual.
+- [ ] Cliente conectado ao servidor dedicado do começo ao fim (25/10 só parcial: entrou e sincronizou 2 cenas; parado por falta de memória).
 
-**Gate:** pendente do cliente e de registrar o jar atual.
+**Gate:** pendente do multiplayer completo e de registrar o jar atual.
 
 ## Próximos passos
 O passo a passo para leigos está em [GUIA_INICIANTE.md](GUIA_INICIANTE.md); a lista completa, em [NEXT_SESSION.md](NEXT_SESSION.md), seção 8.
 
-1. **`runClient`** no PC do dono:
-   - a checklist da seção 6.1 do guia;
-   - o teste visual automático (`tools/visual-probe/run-probe.ps1`, seção 3.8 do guia).
-2. **`runServer` + cliente conectado:** ciclo completo em multiplayer (plantar, colher, secar, peneirar, prensar, craftar, curar, enrolar, fumar).
+1. **Multiplayer:** repetir `run-probe.ps1 -Multiplayer` com o PC folgado (feche navegador e jogos; são dois Minecraft e dois Gradle). Depois, o ciclo completo com um amigo (plantar, colher, secar, peneirar, prensar, craftar, curar, enrolar, fumar).
+2. **Olhar com calma no `runClient`** (seção 6.1 do guia): mão esquerda, sons e o que o teste automático não cobre.
 3. **Mundo novo:** planta silvestre na selva e na planície, lavouras de aldeia, baús de aldeia e um mascate com sementes do catálogo.
 4. **Ambiente do dono:** testar com o Serene Seasons e decidir a faixa do Forge no `mods.toml`.
 5. **Balanceamento** depois de jogar (DECISIONS.md, "Em aberto").

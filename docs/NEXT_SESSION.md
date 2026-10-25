@@ -1,6 +1,6 @@
 # Orientação para a próxima sessão
 
-**Atualizado em 24/10/2026, com o código do commit `319cf0b`.** Este é o documento para retomar o projeto sem a conversa anterior. Regras e números de jogo: [DECISIONS.md](DECISIONS.md). Evidências: [TODO.md](TODO.md). Passo a passo do dono (leigo em Java): [GUIA_INICIANTE.md](GUIA_INICIANTE.md). Prompt pronto para a nuvem: [CLOUD_PROMPT.md](CLOUD_PROMPT.md).
+**Atualizado em 25/10/2026, com o código do commit `f515cb9`.** Este é o documento para retomar o projeto sem a conversa anterior. Regras e números de jogo: [DECISIONS.md](DECISIONS.md). Evidências: [TODO.md](TODO.md). Passo a passo do dono (leigo em Java): [GUIA_INICIANTE.md](GUIA_INICIANTE.md). Prompt pronto para a nuvem: [CLOUD_PROMPT.md](CLOUD_PROMPT.md).
 
 ## 1. Estado
 
@@ -13,19 +13,21 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
 - **Mecânica fictícia de fumar** (pedida em 21/10/2026), com animação própria em 1ª e 3ª pessoa.
 - **Tudo em português** em qualquer idioma do cliente (pedido de 24/10/2026), com 16 eventos de som do mod.
 
-**Verificado** no PC do dono (Windows 11, Temurin 25.0.4.1+1), com o código de `319cf0b`:
+**Verificado** no PC do dono (Windows 11, Temurin 25.0.4.1+1), com o código de `f515cb9` (25/10/2026):
 
 | Verificação | Resultado |
 |---|---|
 | `.\gradlew.bat build` | `BUILD SUCCESSFUL`, 311 testes JUnit, 0 falhas |
 | `.\gradlew.bat runGameTestServer` | `All 62 required tests passed :)` (61 do Cultivo + `minecraft:always_pass`) |
 | `node tools/gen/generate.mjs` | `285 texturas e 786 arquivos JSON` |
+| Teste visual automático (`run-probe.ps1`, `runClient`) | 47 prints conferidos; log sem modelo, textura ou som faltando; achou e corrigiu a fumaça cobrindo a tela em 1ª pessoa |
+| `run-probe.ps1 -Multiplayer` | Parcial: o cliente entrou no servidor dedicado em 127.0.0.1 e 2 cenas sincronizaram sem erro; parado por falta de memória no PC |
 
-**Ainda não visto num cliente de verdade:** o `runClient` abriu sem erros de recurso em 24/10/2026, mas com o código de `5bded22`, antes do polimento. Tudo o que é só do cliente foi conferido apenas por JUnit, revisão contra as fontes do 26.3 e um renderizador de software fora do repositório. Isso inclui árvores de modelo de item, blockstates multipart, texturas animadas, a placa da prensa (BlockEntityRenderer), poses de braço e sons. Erros de carregamento de modelo do cliente não aparecem no `runGameTestServer`.
+**Visto num cliente de verdade (25/10/2026):** o teste visual automático abriu o `runClient` com o código atual e passou por todas as cenas: árvores de modelo de item, blockstates multipart, texturas animadas, placa da prensa (BlockEntityRenderer), poses de braço, partículas e legendas dos sons. **Ainda não visto:** mão esquerda, os artigos de todos os lados, ouvir os sons e o multiplayer do começo ao fim. Erros de carregamento de modelo do cliente não aparecem no `runGameTestServer`; rode o teste visual depois de mexer em asset.
 
 **Branches:**
 - `main` está em `5bded22` (PR #3).
-- A branch `claude/polish-visual-uses` tem o polimento de 24/10, de `121cc4b` até o commit destes docs. Quando estes docs foram escritos, ela ainda não tinha sido enviada nem mesclada; ela entra na `main` por PR.
+- A branch `claude/polish-visual-uses` tem o polimento de 24–25/10, de `121cc4b` até o commit destes docs. Foi enviada ao GitHub em 25/10/2026 junto com estes docs, ainda sem mesclar; ela entra na `main` por PR.
 
 ## 2. Como retomar
 
@@ -33,12 +35,12 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
    - Rode `git fetch origin`. Se o PR de `claude/polish-visual-uses` já foi mesclado, parta da `main`; senão, faça `git checkout claude/polish-visual-uses`.
    - Para saber se já foi mesclado: `git cat-file -e origin/main:docs/strains-catalog.json && echo mesclado`. O arquivo só existe a partir do polimento, e o teste funciona mesmo se o PR tiver sido mesclado com squash.
    - Crie uma branch nova `claude/<tema>`. Commits em inglês; entrega por PR para a `main`.
-   - Pronto quando `git log --oneline -1` mostrar `319cf0b` ou um commit mais novo.
+   - Pronto quando `git log --oneline -1` mostrar o commit destes docs (depois de `f515cb9`) ou um mais novo.
 2. **Preparar o ambiente** (seção 3).
    - Pronto quando `java -version` mostrar 25 e o primeiro `./gradlew build` terminar.
 3. **Verificar o ponto de partida.** Rode nesta ordem e nunca dois comandos do Gradle ao mesmo tempo:
    1. `node tools/gen/generate.mjs`: termina com `285 texturas e 786 arquivos JSON gerados em ...`, e `git status` não mostra mudança.
-   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (311 testes, 0 falhas em `319cf0b`).
+   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (311 testes, 0 falhas em `f515cb9`).
    3. `./gradlew runGameTestServer --console=plain`: `All 62 required tests passed :)`.
 
    Os números crescem com testes novos; o que vale é zero falha. No Windows (PC do dono), defina antes, na mesma janela: `$env:JAVA_HOME = "C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1"; $env:Path = "$env:JAVA_HOME\bin;$env:Path"`.
@@ -148,8 +150,9 @@ Outras pastas:
 - `tools/gen/`: `manifest.json`, `generate.mjs` e `models.mjs`.
 - `tools/art/`: `textures.mjs` e `png.mjs`.
 - `tools/visual-probe/`:
-  - `run-probe.ps1` + datapack de cena: abre o `runClient` num mundo de teste e tira 11 prints (só Windows com tela; ferramenta de desenvolvimento, fora do jar).
-  - A cena ainda mostra só as 3 nativas e as estações vazias.
+  - `run-probe.ps1` + datapack de cena: abre o `runClient` num mundo de teste e tira 47 prints (só Windows com tela; ferramenta de desenvolvimento, fora do jar). Cobre tudo do polimento; `-Multiplayer` sobe também o servidor dedicado em 127.0.0.1 (precisa de bastante memória livre).
+  - `gen-datapack.mjs` gera o datapack a partir do `manifest.json` (rode depois de mudar genéticas) e `validate.mjs` confere a sintaxe sem abrir o jogo. Os `.mcfunction` têm de ficar em LF (`.gitattributes`).
+  - Prints e o `log-problems.txt` vão para a pasta de `-OutDir`; olhe os prints um por um, porque o script não julga a imagem.
 - `tools/test-offline.sh`: roda o JUnit sem Gradle nem Minecraft (Linux/macOS).
   - Rodado pela última vez em 24/10/2026 com 88 testes.
   - Pelo código, os dois testes de bytecode do `ClientIsolationTest` precisam das classes que o Gradle compila em `build/sourceSets/main`; sem um build anterior, eles dão erro "classes compiladas não encontradas".
@@ -231,16 +234,16 @@ Outras pastas:
   - arte nova (`191d082`);
   - usos dos artigos (`9cd902c`);
   - português, animações e sons (`16c7d3c`);
-  - correções da revisão (`319cf0b`);
-  - estes docs.
+  - correções da revisão (`319cf0b`) e docs (`dbe06a4`).
+- **25/10/2026, madrugada, PC do dono:** conferência própria de build e GameTests; teste visual estendido (47 cenas) no cliente real, que achou a fumaça cobrindo a tela em 1ª pessoa (corrigido em `f515cb9`); multiplayer local parcial; estes docs; branch enviada ao GitHub.
 - Detalhes e resultados de cada etapa estão em TODO.md (evidências) e em `git log`. O prompt da sessão de 21/10 está em `git show 319cf0b:docs/CLOUD_PROMPT.md`.
 
 ## 8. Pendências, em ordem
 
-1. **Checagem visual no `runClient`** (Windows com tela, PC do dono): a checklist da seção 6.1 do guia e o teste visual automático. Veja o que só o cliente mostra (seção 1); se um modelo não carregar, aparece um cubo roxo e preto ou um aviso no log.
-2. **Multiplayer:** `runServer` com o código atual (o último foi em `5bded22`) e um cliente de verdade conectado, com dois jogadores numa estação e fumando perto um do outro (GUIA, seção 6.3).
+1. **Multiplayer completo** (PC do dono): `run-probe.ps1 -Multiplayer` com o PC folgado (o de 25/10 foi parado por falta de memória: são dois Minecraft e dois Gradle). Depois, dois jogadores de verdade numa estação e fumando perto um do outro (GUIA, seção 6.3).
+2. **O que o teste visual não cobre** (PC do dono, seção 6.1 do guia): mão esquerda, artigos de todos os lados e ouvir os sons.
 3. **Ambiente do dono:** testar com o Serene Seasons, ou documentar que as lavouras do Cultivo sofrem com as estações; decidir entre exigir `[66.0.13,)` no `mods.toml` ou testar no Forge 66.0.2.
-4. **Teste visual automático:** estender a cena para as genéticas do catálogo, a bandeja, o pote e o cinzeiro colocados, o dichavador na peneira e o baseado com piteira.
+4. **Teste visual automático:** o enquadramento de algumas cenas é largo (artigos, genéticas e "na mão" ficam pequenos); aproximar as câmeras ajudaria a revisar.
 5. **Catálogo:** o filtro High THC da loja tinha cerca de 58 produtos num snapshot antigo; entraram 37. Se o dono colar a página, acrescente as que faltam (DECISIONS.md, "Como adicionar uma genética").
 6. **Balanceamento** depois de jogar (pesos, raridade da planta silvestre, velocidades, preços do mascate).
 7. **Opcionais** registrados nas etapas:
