@@ -1,0 +1,76 @@
+{
+  "parent": "cultivo:item/pipe_in_hand",
+  "textures": {
+    "bowl": "cultivo:item/smoke_ember"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        -120,
+        0
+      ],
+      "translation": [
+        0.24,
+        5.72,
+        1.23
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        120,
+        0
+      ],
+      "translation": [
+        -3.96,
+        5.72,
+        1.23
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        10,
+        -60,
+        0
+      ],
+      "translation": [
+        -1,
+        6,
+        -2
+      ],
+      "scale": [
+        0.65,
+        0.65,
+        0.65
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        10,
+        60,
+        0
+      ],
+      "translation": [
+        -1,
+        6,
+        -2
+      ],
+      "scale": [
+        0.65,
+        0.65,
+        0.65
+      ]
+    }
+  }
+}

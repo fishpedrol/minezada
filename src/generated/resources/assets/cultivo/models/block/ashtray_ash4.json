@@ -1,0 +1,91 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cultivo:block/ashtray_ash",
+    "ash": "cultivo:block/ashtray_ash"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        0.5,
+        5
+      ],
+      "to": [
+        11,
+        1.5,
+        11
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            5,
+            5,
+            11,
+            11
+          ],
+          "texture": "#ash"
+        }
+      }
+    },
+    {
+      "from": [
+        6.5,
+        1.5,
+        6.5
+      ],
+      "to": [
+        9.5,
+        2.25,
+        9.5
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            6.5,
+            6.5,
+            9.5,
+            9.5
+          ],
+          "texture": "#ash"
+        },
+        "north": {
+          "uv": [
+            6.5,
+            13.75,
+            9.5,
+            14.5
+          ],
+          "texture": "#ash"
+        },
+        "south": {
+          "uv": [
+            6.5,
+            13.75,
+            9.5,
+            14.5
+          ],
+          "texture": "#ash"
+        },
+        "west": {
+          "uv": [
+            6.5,
+            13.75,
+            9.5,
+            14.5
+          ],
+          "texture": "#ash"
+        },
+        "east": {
+          "uv": [
+            6.5,
+            13.75,
+            9.5,
+            14.5
+          ],
+          "texture": "#ash"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "type": "cultivo:drying",
+  "ingredient": "cultivo:cola_de_gorila_fresh_flower",
+  "input_count": 1,
+  "result": {
+    "id": "cultivo:cola_de_gorila_dried_flower",
+    "count": 1
+  },
+  "processing_time": 600
+}

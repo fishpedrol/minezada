@@ -7,9 +7,9 @@ license="MIT"
 modId="cultivo"
 version="0.1.0"
 displayName="Cultivo"
-authors="Cultivo contributors"
-description='''Cultivo ficcional de variedades de planta com estufa, secagem, peneira, prensa e artigos craftáveis.
-Mod privado; tudo é abstração de gameplay.'''
+authors="Colaboradores do Cultivo"
+description='''Cultivo fictício de variedades de planta, com estufa, secagem, peneira, prensa e artigos de fumo para fabricar.
+Mod privado para jogar com os amigos; tudo é mecânica de jogo, sem nada do mundo real.'''
 
 [[dependencies.cultivo]]
     modId="forge"

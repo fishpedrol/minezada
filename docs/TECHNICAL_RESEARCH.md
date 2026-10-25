@@ -1,6 +1,6 @@
 # Pesquisa técnica: loaders para o mod
 
-**Pesquisa técnica revisada em 21/10/2026.** Este documento registra fatos encontrados em fontes oficiais e recomendações técnicas para iniciar o projeto. Versões de Minecraft e Forge mudam; confira as páginas oficiais antes de atualizar ou publicar uma build.
+**Pesquisa técnica revisada em 21/10/2026; situação atualizada em 24/10/2026.** A matriz abaixo está fixada e é a que o projeto usa: troque versões só a pedido do dono e, nesse caso, refaça a conferência nas páginas oficiais e no MDK baixado. As seções depois da matriz registram a pesquisa feita antes de implementar. Os pontos que ela deixava em aberto já foram resolvidos (veja "Itens que estavam abertos antes de implementar").
 
 ## Matriz exata do projeto (fixada pelo MDK baixado em 21/10/2026)
 
@@ -10,16 +10,17 @@
 | Loader | Forge `26.3-66.0.13` | `build.gradle` (`net.minecraftforge:forge:26.3-66.0.13`), `mods.toml` (`[66,)`) |
 | Plugin | `net.minecraftforge.gradle` `[7.0.17,8)` (ForgeGradle 7) | `build.gradle` |
 | Gradle | wrapper 9.7.1 | `gradle/wrapper/gradle-wrapper.properties` |
-| Java | toolchain 25. Testado na nuvem com Temurin 25.0.1+8 | `build.gradle` |
+| Java | toolchain 25. Testado na nuvem com Temurin 25.0.1+8 (21/10/2026) e no Windows 11 do dono com Temurin 25.0.4.1+1 (24/10/2026) | `build.gradle` |
 | Pack format | `min_format`/`max_format` 121 (do MDK) | `pack.mcmeta` |
 | Testes | JUnit 5.12.2 (BOM) + Gson 2.13.1 | `build.gradle`, `tools/test-offline.sh` |
+| Gerador de recursos | Node.js, sem dependências npm; testado com Node 24.19 no PC do dono | `tools/gen/generate.mjs` |
 
 Essa matriz substitui a divergência entre 66.0.6 e 66.0.10 descrita abaixo, porque o MDK efetivamente baixado traz a 66.0.13.
 
 ### Rede necessária para o build
 O ForgeGradle 7 baixa ferramentas e dependências de `maven.minecraftforge.net` (por exemplo `minecraft-mavenizer-0.5.21.jar`) e o jogo dos servidores da Mojang (`piston-meta.mojang.com`, `libraries.minecraft.net`). Na sessão na nuvem de 21/10/2026, esses hosts foram negados pela política de rede (403 no CONNECT), e `./gradlew build` falhou na configuração. Depois de liberar os domínios nas configurações de rede do ambiente, o build completou (`BUILD SUCCESSFUL`). O plugin em si vem do Gradle Plugin Portal, que estava acessível. Para builds na nuvem, libere esses domínios nas configurações de rede do ambiente.
 
-Hosts que estavam acessíveis: `services.gradle.org`, `plugins.gradle.org`, `repo1.maven.org` e downloads de releases do GitHub (por onde veio o JDK Temurin). Enquanto o build completo não roda, `tools/test-offline.sh` executa os testes JUnit que não dependem do Minecraft.
+Hosts que estavam acessíveis: `services.gradle.org`, `plugins.gradle.org`, `repo1.maven.org` e downloads de releases do GitHub (por onde veio o JDK Temurin). Se uma sessão nova não conseguir baixar o Forge, `tools/test-offline.sh` roda os testes JUnit sem o Minecraft. Os testes de bytecode do `ClientIsolationTest` precisam das classes de um build anterior em `build/sourceSets/main`.
 
 ### Formatos de dados 26.3 usados (conferidos contra o `client-extra-26.3` jar em 21/10/2026)
 A pesquisa inicial veio das notas oficiais dos snapshots; os formatos finais foram copiados dos JSONs vanilla (detalhes em NEXT_SESSION.md, seção 6). Fontes ([26.3 Snapshot 4](https://www.minecraft.net/en-us/article/minecraft-26-3-snapshot-4), [notas do 26.1 Pre-Release 1](https://www.minecraft.net/en-us/article/minecraft-26-1-pre-release-1)):
@@ -27,11 +28,19 @@ A pesquisa inicial veio das notas oficiais dos snapshots; os formatos finais for
 - **Worldgen (26.1):** o tipo `random_patch` foi removido. Patches agora são `count` + `minecraft:offset` (com `x`/`y`/`z`, ex.: `trapezoid`) + `block_predicate_filter` no placed feature, e as features configuradas ficam em `worldgen/feature/`.
 - **Receitas:** `crafting_shaped`/`crafting_shapeless` com ingrediente em string (`"ns:item"` ou `"#ns:tag"`) e `result: {id, count}`. `crafting_transmute` (usado no baseado): `input`, `material`, `result: {id, count, components}`; o resultado recebe o *patch* de componentes da entrada e depois os `components` do próprio resultado (`TransmuteRecipe`/`ItemStackTemplate#apply` no 26.3).
 - **Efeitos:** `Registries.MOB_EFFECT`; `MobEffectInstance` recebe `Holder<MobEffect>` (pegue com `RegistryObject#getHolder()`); ícone em `assets/<ns>/textures/mob_effect/<id>.png`, 18×18 como os vanilla. Para substituir um efeito com nível menor sem criar "efeito escondido", use `LivingEntity#forceAddEffect`.
+- **Formatos adicionados em 24/10/2026:**
+  - avanços do livro de receitas em `advancement/recipes/misc/`;
+  - definições de item com `minecraft:condition`, `minecraft:select`, `minecraft:range_dispatch` e `minecraft:composite`;
+  - blockstates multipart;
+  - `sounds.json` com `"type": "event"`;
+  - texturas animadas com `.png.mcmeta`.
+
+  Todos foram conferidos contra o código decompilado e os JSONs do 26.3, mas os de cliente só se confirmam de verdade num `runClient`, que ainda está pendente. Os detalhes e as armadilhas estão em NEXT_SESSION.md, seção 6.
 
 ## Alvo confirmado
 
 - A versão estável atual do Minecraft Java indicada para esta pesquisa é **26.3**. A Mojang publicou o lançamento em 15/09/2026. [Notas oficiais do Minecraft Java 26.3](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-3)
-- A página oficial de downloads do Forge lista a branch **26.3** e fornece o artefato **MDK**, mas os índices consultados divergem quanto ao patch: a página de downloads apresentou **66.0.6**, enquanto o índice Maven/projeto listou uma atualização mais recente (**66.0.10**). Este registro não fixa uma coordenada: ao iniciar, baixar o MDK indicado pelo portal oficial e copiar dele a versão real do loader, Gradle e plugin para os docs/build. [Downloads oficiais Forge 26.3](https://files.minecraftforge.net/net/minecraftforge/forge/) · [Índice de projetos Forge](https://files.minecraftforge.net/project_index.html)
+- A página oficial de downloads do Forge lista a branch **26.3** e fornece o artefato **MDK**, mas os índices consultados divergiam quanto ao patch: a página de downloads apresentou **66.0.6**, enquanto o índice Maven/projeto listou uma atualização mais recente (**66.0.10**). Por isso a coordenada saiu do MDK efetivamente baixado, que trouxe a **66.0.13** (matriz no topo; histórico de 21/10/2026). [Downloads oficiais Forge 26.3](https://files.minecraftforge.net/net/minecraftforge/forge/) · [Índice de projetos Forge](https://files.minecraftforge.net/project_index.html)
 - O MDK 26.3 está baseado em **ForgeGradle 7**, conforme o template oficial, que declara `net.minecraftforge.gradle` na faixa `[7.0.17,8)`. O mesmo MDK define toolchain Java 25. [Template build.gradle da branch 26.3](https://github.com/MinecraftForge/MinecraftForge/blob/26.3/forge-mdk/template/build.gradle)
 
 ## Java, Gradle e divergência nas instruções
@@ -57,14 +66,19 @@ Comandos usuais no PowerShell:
     .\gradlew.bat runServer
     .\gradlew.bat runData
 
+Neste projeto os recursos de `src/generated/resources` vêm do gerador Node (`node tools/gen/generate.mjs`), e não do `runData`. Os testes dentro do jogo rodam com `.\gradlew.bat runGameTestServer`.
+
 A tarefa `build` gera o JAR em `build/libs`. O teste com servidor dedicado é necessário para detectar referências acidentais a classes/clientes e validar o comportamento multiplayer. Ao primeiro iniciar o servidor de teste, aceite a EULA local no diretório de execução. [Build e teste em servidor](https://docs.minecraftforge.net/en/latest/gettingstarted/)
 
 ## Forge versus NeoForge
 
 - Forge e NeoForge são loaders/projetos distintos, com MDKs, dependências, APIs e metadados próprios. Não presumir compatibilidade binária entre eles nem misturar plugins e namespaces. [Histórico do projeto NeoForged](https://neoforged.net/news/2023-retrospection/) · [MDKs oficiais NeoForge](https://github.com/NeoForgeMDKs)
 - **Recomendação para este projeto privado:** Forge como primeiro alvo de implementação em Minecraft 26.3, porque as fontes consultadas apontam Forge 26.3 como release estável, enquanto os artefatos encontrados para NeoForge 26.3 têm sufixo `-beta`. Para um grupo pequeno, a estabilidade e a facilidade de todos reproduzirem a mesma configuração pesam mais que suporte a dois loaders. [Downloads Forge 26.3](https://files.minecraftforge.net/net/minecraftforge/forge/) · [Artefatos NeoForge 26.3 no Maven oficial](https://maven.neoforged.net/releases/net/neoforged/neoforge/)
-- **Exceção que pode mudar a recomendação:** se os amigos já usam um conjunto indispensável de mods em NeoForge, confirmar a versão compartilhada pelos clientes/servidor antes de baixar MDK e iniciar código. Escolher somente um loader para o MVP. A decisão final e a matriz exata precisam ser conferidas novamente no momento da implementação.
-- As páginas consultadas nem sempre refletem o mesmo número de patch: a página de downloads do Forge e o índice Maven podem estar em momentos de atualização distintos. Portanto, não tratar o número da versão Latest desta pesquisa como garantido; obter o MDK e registrar a coordenada efetivamente selecionada no início do setup.
+- **Exceção prevista (histórico):** se os amigos já usassem mods indispensáveis em NeoForge, a escolha mudaria. Isso não aconteceu.
+  - Em 21/10/2026 ficou o Forge, sem dependência do grupo em NeoForge registrada.
+  - Em 24/10/2026, o launcher do dono mostrou um perfil Forge 26.3-66.0.2 com outros mods Forge (Serene Seasons, entre outros), o que confirma o Forge.
+  - Todos os jogadores e o servidor devem usar o mesmo Forge 26.3-66.0.13 do projeto.
+- As páginas consultadas nem sempre refletem o mesmo número de patch: a página de downloads do Forge e o índice Maven podem estar em momentos de atualização distintos. Por isso a coordenada do projeto veio do MDK baixado, e não do número "Latest" das páginas.
 
 ## Metadados e dependências
 
@@ -92,18 +106,22 @@ A tarefa `build` gera o JAR em `build/libs`. O teste com servidor dedicado é ne
 - As diretrizes oficiais de uso do Minecraft permitem distribuir o mod, mas dizem para distribuir **somente o mod**, sem uma versão modificada de Minecraft ou arquivos do jogo. Não incluir binários, assets ou instaladores do Minecraft no release. [Minecraft Usage Guidelines — mods e distribuição](https://www.minecraft.net/en-us/usage-guidelines) · [EULA Minecraft](https://www.minecraft.net/en-us/eula)
 - Forge é um loader/build tool; a existência de um JAR do mod não comprova nem promete compatibilidade com launchers não oficiais, versões modificadas do jogo ou fluxos que contornem autenticação. O caminho de suporte e publicação documentável é Forge/Minecraft oficiais e distribuição do mod isolado.
 
-## Itens para fechar antes de implementar
+## Itens que estavam abertos antes de implementar (resolvidos)
 
-1. Usar Forge como loader recomendado para o MVP, salvo se o grupo exigir NeoForge para compatibilidade com mods indispensáveis. Antes do setup, selecionar o MDK oficial atual e registrar versões exatas de Minecraft, loader, JDK, Gradle e plugin a partir dos arquivos desse MDK; as páginas de versão atualmente divergem.
-2. Escolher e registrar `modId`, `group`, versão inicial e licença do projeto.
-3. Decidir se o processamento é apenas uma sequência de receitas JSON ou requer estação/bloco com inventário, progresso e sincronização.
-4. Definir os itens e estágios de cultivo como conteúdo ficcional e documentar comportamento de crescimento, colheita, drops, rendimento e receitas.
-5. Manter o outdoor plantável em qualquer bioma/local válido. Mapear os tipos de aldeia existentes na versão escolhida e distribuir sementes em baús de mais da metade desses tipos; adicionar sementes em plantações/campos de planície e selva onde existam, ou em fontes naturais equivalentes nesses biomas. Definir requisitos simples da estufa e o bônus de qualidade.
-6. Validar cada incremento com `build`, `runClient` e `runServer`; testar pelo menos uma conexão de cliente em servidor dedicado antes de declarar multiplayer pronto.
+1. **Loader e versões:** Forge, com as versões tiradas do MDK baixado (matriz no topo; 21/10/2026).
+2. **Identidade:** `modId` `cultivo`, group `io.github.peixeangola.cultivo`, versão 0.1.0, licença MIT (DECISIONS.md).
+3. **Processamento:** estações com BlockEntity, inventário, progresso por ticks e sincronização dos slots, com receitas próprias `cultivo:drying`, `cultivo:sieving` e `cultivo:pressing` (DECISIONS.md, "Estações").
+4. **Conteúdo de cultivo:** itens, estágios, colheita, drops, rendimento e receitas documentados em DECISIONS.md.
+5. **Outdoor, aldeias e estufa:** outdoor em qualquer bioma; 4 de 5 tipos de aldeia; lavouras de planície; planta silvestre na selva e na planície; regra da estufa e bônus de qualidade (DECISIONS.md, "Fontes de sementes" e "Estufa").
+6. **Validação:** `build`, `runGameTestServer` e `runServer` rodam a cada incremento. O `runClient` abriu no Windows em 24/10/2026 (código `5bded22`); a checagem visual e a conexão de um cliente ao servidor dedicado continuam pendentes (TODO.md). O multiplayer só fica pronto depois desse teste.
 
 ## Referência de produto consultada
 
-- A Santa Semente BR apresenta seu catálogo como sementes colecionáveis e organiza variedades por tipo de semente/ciclo (como automática e fotoperíodo), predominância (sativa, índica e híbrida) e origem/marca. Para este mod, aproveitar somente essas dimensões como inspiração para variedade e descoberta; os nomes, descrições e atributos do jogo devem ser originais. [Loja Santa Semente BR](https://santasementebr.com/loja/) · [Categorias de variedades da marca Santa Semente](https://santasementebr.com/marca/santa-semente/)
+- A Santa Semente BR apresenta seu catálogo como sementes colecionáveis e organiza variedades por tipo de semente/ciclo (como automática e fotoperíodo), predominância (sativa, índica e híbrida) e origem/marca. No começo, o mod aproveitou só essas dimensões como inspiração. [Loja Santa Semente BR](https://santasementebr.com/loja/) · [Categorias de variedades da marca Santa Semente](https://santasementebr.com/marca/santa-semente/)
+- **24/10/2026:** o dono pediu as genéticas do filtro High THC ([catálogo High THC](https://santasementebr.com/loja/?canab%5B%5D=high-thc&catalogo=sementes)), com nomes reais ou de paródia.
+  - O site respondeu HTTP 403 ao acesso automático (WebFetch e Invoke-WebRequest), então a lista saiu de trechos de busca das páginas de produto da própria loja: 37 genéticas.
+  - Um snapshot antigo mostrava cerca de 58 produtos nesse filtro, então a lista pode estar incompleta.
+  - O jogo usa nomes de paródia e faixas abstratas. Os nomes reais e os bancos ficam só em `docs/strains-catalog.json` (DECISIONS.md, "Catálogo de genéticas").
 
 ## Fontes oficiais consultadas
 

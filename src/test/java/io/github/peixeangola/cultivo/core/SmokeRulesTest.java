@@ -133,6 +133,37 @@ class SmokeRulesTest {
         assertFalse(find(unknown, EffectKind.REGENERATION).isPresent());
     }
 
+    /** As variedades do catálogo usam os perfis pela genética, com os mesmos números das nativas. */
+    @Test
+    void catalogStrainsReuseLineageProfiles() {
+        List<EffectSpec> sativa = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.AMNESIA_NEBLINA, 2, false), 0);
+        assertEquals(450, find(sativa, EffectKind.SPEED).orElseThrow().ticks(), "sativa: velocidade por metade da sessão");
+        assertFalse(find(sativa, EffectKind.SLOWNESS).isPresent());
+
+        List<EffectSpec> hybrid = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.BANANONA, 2, false), 0);
+        assertEquals(100, find(hybrid, EffectKind.REGENERATION).orElseThrow().ticks(), "híbrida: 5 s de regeneração");
+        assertFalse(find(hybrid, EffectKind.SPEED).isPresent());
+        assertFalse(find(hybrid, EffectKind.SLOWNESS).isPresent());
+
+        List<EffectSpec> indica = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.MIRTILO, 2, false), 0);
+        assertEquals(450, find(indica, EffectKind.SLOWNESS).orElseThrow().ticks());
+        assertEquals(200, find(indica, EffectKind.REGENERATION).orElseThrow().ticks(), "índica: 10 s de regeneração");
+
+        // Potência e raridade não mudam a duração: só artigo, qualidade e haxixe
+        assertEquals(900, high(sativa));
+        assertEquals(900, high(hybrid));
+        assertEquals(1260, SmokeRules.sessionTicks(SmokeDevice.PIPE, new Material(Variety.LUZES_DO_NORTE, 4, false)));
+        for (Variety v : Variety.values()) {
+            List<EffectSpec> effects = SmokeRules.effects(SmokeDevice.JOINT, new Material(v, 2, false), 0);
+            List<EffectSpec> sameLineage = SmokeRules.effects(SmokeDevice.JOINT, new Material(switch (v.lineage()) {
+                case SATIVA -> Variety.BRISA;
+                case HYBRID -> Variety.AURORA;
+                case INDICA -> Variety.ECLIPSE;
+            }, 2, false), 0);
+            assertEquals(sameLineage, effects, v.id() + " deveria ter o perfil da nativa da mesma genética");
+        }
+    }
+
     @Test
     void varietyById() {
         assertEquals(Optional.of(Variety.ECLIPSE), Variety.byId("eclipse"));
@@ -216,6 +247,69 @@ class SmokeRulesTest {
         assertEquals(450, find(indica, EffectKind.SLOWNESS).orElseThrow().ticks());
         List<EffectSpec> unknown = SmokeRules.effects(SmokeDevice.PIPE, new Material(null, 2, false), 5000);
         assertEquals(270, find(unknown, EffectKind.SLOWNESS).orElseThrow().ticks());
+    }
+
+    // ------------------------------------------------------------------ piteira (baseado com cultivo:filtered)
+
+    @Test
+    void filterConstants() {
+        assertEquals(1.25F, SmokeRules.FILTER_DURATION_MULTIPLIER);
+        assertEquals(2, SmokeRules.FILTER_NAUSEA_DIVISOR);
+    }
+
+    /** Brisa qualidade 2 no baseado: comum 900 / 160; com piteira 1125 / 80 (plano 1.2). */
+    @Test
+    void filteredJointLastsLongerWithHalfTheNausea() {
+        List<EffectSpec> plain = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.BRISA, 2, false), 0);
+        assertEquals(900, high(plain));
+        assertEquals(160, find(plain, EffectKind.NAUSEA).orElseThrow().ticks());
+
+        List<EffectSpec> filtered = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.BRISA, 2, false, true), 0);
+        assertEquals(1125, SmokeRules.sessionTicks(SmokeDevice.JOINT, new Material(Variety.BRISA, 2, false, true)));
+        assertEquals(1125, high(filtered));
+        assertEquals(80, find(filtered, EffectKind.NAUSEA).orElseThrow().ticks());
+        assertEquals(1125, find(filtered, EffectKind.HUNGER).orElseThrow().ticks(), "larica acompanha o total");
+    }
+
+    /**
+     * O teto vem antes da divisão: sem isso o teto apagaria a diferença. Eclipse q5 rende 1440 (comum) e 1800 (com
+     * piteira); 30% dá 432 e 540, os dois acima do teto leve de 160, então a náusea fica 160 e 80.
+     */
+    @Test
+    void filterHalvesNauseaAfterTheCap() {
+        Material plain = new Material(Variety.ECLIPSE, 5, false);
+        Material filtered = new Material(Variety.ECLIPSE, 5, false, true);
+        assertEquals(1440, SmokeRules.sessionTicks(SmokeDevice.JOINT, plain));
+        assertEquals(1800, SmokeRules.sessionTicks(SmokeDevice.JOINT, filtered));
+        assertEquals(160, find(SmokeRules.effects(SmokeDevice.JOINT, plain, 0), EffectKind.NAUSEA).orElseThrow().ticks());
+        assertEquals(80, find(SmokeRules.effects(SmokeDevice.JOINT, filtered, 0), EffectKind.NAUSEA).orElseThrow().ticks());
+        // Pesado (teto 400): 1800 × 0,3 = 540 → 400 → 200
+        assertEquals(200, find(SmokeRules.effects(SmokeDevice.JOINT, filtered, SmokeRules.HEAVY_THRESHOLD_TICKS), EffectKind.NAUSEA)
+            .orElseThrow().ticks());
+    }
+
+    /** A piteira só vale no baseado: cachimbo e bong ignoram a marca (duração e náusea iguais às do material comum). */
+    @Test
+    void filterIsIgnoredOutsideTheJoint() {
+        for (SmokeDevice device : List.of(SmokeDevice.PIPE, SmokeDevice.BONG, SmokeDevice.CHILLUM, SmokeDevice.HOOKAH)) {
+            Material plain = new Material(Variety.AURORA, 3, false);
+            Material marked = new Material(Variety.AURORA, 3, false, true);
+            assertFalse(SmokeRules.isFiltered(device, marked), device.name());
+            assertEquals(SmokeRules.effects(device, plain, 0), SmokeRules.effects(device, marked, 0), device.name());
+        }
+        assertEquals(900, SmokeRules.sessionTicks(SmokeDevice.PIPE, new Material(Variety.BRISA, 2, false, true)));
+        assertEquals(1440, SmokeRules.sessionTicks(SmokeDevice.BONG, new Material(Variety.BRISA, 2, false, true)));
+        assertTrue(SmokeRules.isFiltered(SmokeDevice.JOINT, new Material(Variety.BRISA, 2, false, true)));
+        assertFalse(SmokeRules.isFiltered(SmokeDevice.JOINT, new Material(Variety.BRISA, 2, false)));
+    }
+
+    /** O perfil da variedade acompanha a sessão mais longa: sativa com piteira dá Velocidade por metade de 1125. */
+    @Test
+    void filteredSessionDrivesTheProfile() {
+        List<EffectSpec> sativa = SmokeRules.effects(SmokeDevice.JOINT, new Material(Variety.BRISA, 2, false, true), 0);
+        assertEquals(563, find(sativa, EffectKind.SPEED).orElseThrow().ticks());
+        List<EffectSpec> unknown = SmokeRules.effects(SmokeDevice.JOINT, new Material(null, 2, false, true), 0);
+        assertEquals(338, find(unknown, EffectKind.SLOWNESS).orElseThrow().ticks());
     }
 
     @Test

@@ -4,21 +4,24 @@
 
 **O que é o Cultivo:** um mod para **Minecraft Java 26.3** com **Forge 26.3-66.0.13**. No jogo, você:
 
-- acha sementes em baús de aldeia, em lavouras de aldeia e na natureza;
-- planta como trigo e colhe flores com qualidade (a estufa dá as melhores);
-- processa as flores em três estações (secar, peneirar e prensar) e crafta o baseado e os artigos (bong, cachimbo…);
-- pode "fumar" para ganhar efeitos de status do próprio Minecraft. Tudo é ficção de jogo.
+- acha sementes de **40 genéticas** em baús de aldeia, em lavouras de aldeia, na natureza e com o Mercador Ambulante. São 3 nativas e 37 inspiradas no catálogo da Santa Semente, com nomes de paródia;
+- planta como trigo e colhe flores com qualidade: a estufa dá as melhores, e o pote de vidro ainda cura e melhora um pouco;
+- processa as flores em três estações (secar, peneirar e prensar), que mostram quando estão trabalhando;
+- crafta o baseado e os artigos (bong, cachimbo, bandeja, pote, cinzeiro…), cada um com um uso;
+- pode "fumar" para ganhar efeitos de status do próprio Minecraft, com animação própria.
+
+Tudo é ficção de jogo, e todo o texto do mod aparece em português.
 
 **Como ler este guia:** abra no site do GitHub ou no VS Code com **Ctrl+Shift+V** (pré-visualização). No Bloco de Notas aparecem `**`, `|---|` e links que não funcionam.
 
-**Primeira vez?** Faça antes a [seção 2](#2-preparar-o-computador): instalar o JDK 25, configurar o JAVA_HOME, instalar o Git e baixar o código com `git clone -b claude/cultivo-mvp-nxdr8q …` (seção 2.7). Sem ela, os comandos abaixo não funcionam.
+**Primeira vez?** Faça antes a [seção 2](#2-preparar-o-computador): instalar o JDK 25, configurar o JAVA_HOME, instalar o Git e baixar o código com `git clone` (seção 2.7). Sem ela, os comandos abaixo não funcionam. No PC do dono do projeto isso já está feito: Windows 11, JDK 25 com JAVA_HOME configurado em 24/10/2026, Git e Node 24 instalados, e o projeto em `C:\Users\Cliente\Documents\minezada`.
 
-**Os 3 comandos que você mais vai usar** no Windows. Eles vão no **[terminal]**: a janela do PowerShell ou do cmd, aberta na pasta do projeto `C:\dev\minezada` ([como abrir o terminal na pasta](#28-abrir-o-terminal-na-pasta-do-projeto)).
+**Os 3 comandos que você mais vai usar** no Windows. Eles vão no **[terminal]**: a janela do PowerShell ou do cmd, aberta na pasta do projeto ([como abrir o terminal na pasta](#28-abrir-o-terminal-na-pasta-do-projeto)). Este guia usa `C:\dev\minezada` como exemplo de pasta; no PC do dono, é `C:\Users\Cliente\Documents\minezada`.
 
 | Comando | Para que serve | Como é o sucesso |
 |---|---|---|
-| `.\gradlew.bat build` | Compila, roda os testes automáticos rápidos (JUnit; hoje são 88) e gera `build\libs\cultivo-0.1.0.jar` | `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 30) | `All 30 required tests passed :)` |
+| `.\gradlew.bat build` | Compila, roda os testes automáticos rápidos (JUnit; hoje são 311) e gera `build\libs\cultivo-0.1.0.jar` | `BUILD SUCCESSFUL` |
+| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 62) | `All 62 required tests passed :)` |
 | `.\gradlew.bat runClient` | Abre o Minecraft de teste já com o mod | a janela do jogo abre |
 
 - **As quantidades de testes mudam** quando alguém acrescenta testes. O que importa é aparecer `BUILD SUCCESSFUL` e `All N required tests passed :)` (com o número que for), sem `FAILED`.
@@ -26,7 +29,11 @@
 
 **Para jogar:** instalar no jogo de verdade e jogar com os amigos está na [seção 4](#4-jogar-com-os-amigos). Como o mod funciona dentro do jogo está na [seção 5](#5-como-jogar-o-cultivo).
 
-**O que só você pode testar:** a lista de testes à mão (checklist) está na [seção 6](#6-o-que-você-precisa-testar-à-mão): 6.1 single player, 6.2 mundo novo, 6.3 multiplayer. Para registrar o que viu, o jeito mais fácil é preencher o modelo da [seção 6.4](#64-como-reportar-um-problema) e mandar para quem mantém o projeto, ou editar o `docs/TODO.md` direto no site do GitHub (também na 6.4).
+**O que só você pode testar:**
+- a lista de testes à mão (checklist) está na [seção 6](#6-o-que-você-precisa-testar-à-mão): 6.1 single player, 6.2 mundo novo, 6.3 multiplayer;
+- o teste visual automático, que abre o jogo e tira prints sozinho, está na [seção 3.8](#38-teste-visual-automático-só-no-windows-com-tela).
+
+Para registrar o que viu, o jeito mais fácil é preencher o modelo da [seção 6.4](#64-como-reportar-um-problema) e mandar para quem mantém o projeto, ou editar o `docs/TODO.md` direto no site do GitHub (também na 6.4).
 
 **Deu erro?** Veja a [seção 8](#8-problemas-comuns).
 
@@ -68,15 +75,15 @@ Este guia é para você, dono do projeto, que está começando em Java, em Gradl
 | **Gradle** | Ferramenta de build: baixa bibliotecas, compila, roda os testes e empacota o mod. | Configurado em `build.gradle` e `settings.gradle`. |
 | **gradlew / gradlew.bat** | O "wrapper" (embrulho) do Gradle. É um script que baixa sozinho a versão certa do Gradle (9.7.1) na primeira vez. | Windows: `gradlew.bat`. (Linux/macOS: `./gradlew`, [Apêndice B](#apêndice-b-linux-e-macos).) Não instale Gradle à parte. |
 | **Git** | Programa que guarda o histórico do código e baixa/envia o código do GitHub. | Você usa para baixar o projeto (seção 2.7) e para registrar resultados (seção 6.4). |
-| **Repositório, clone, branch, commit** | **Repositório**: o projeto com todo o histórico. **Clone**: a cópia dele no seu PC. **Branch**: uma linha de trabalho separada dentro do repositório. **Commit**: uma versão salva, com um código curto como `740bf86`. | O trabalho do mod está na branch `claude/cultivo-mvp-nxdr8q`, não na `main`. |
+| **Repositório, clone, branch, commit, PR** | **Repositório**: o projeto com todo o histórico. **Clone**: a cópia dele no seu PC. **Branch**: uma linha de trabalho separada dentro do repositório. **Commit**: uma versão salva, com um código curto como `740bf86`. **PR** (*pull request*): o pedido para juntar uma branch na `main`, feito no site do GitHub. | A `main` tem o mod completo. Cada mudança nova é feita numa branch separada (por exemplo `claude/polish-visual-uses`) e entra na `main` por um PR. |
 | **Forge** | *Mod loader*: o programa que carrega mods dentro do Minecraft. | Versão 26.3-66.0.13, que significa Minecraft 26.3 com Forge 66.0.13. |
 | **ForgeGradle** | Plugin do Gradle (declarado no `build.gradle`) que baixa e prepara o Minecraft e o Forge para desenvolvimento. Uma das ferramentas que ele baixa se chama *mavenizer*: ela transforma o Minecraft em bibliotecas que o Gradle sabe usar. O nome aparece em erros de download (seção 8). | É por causa dele que o primeiro build demora e precisa de internet. |
 | **MDK** (Mod Development Kit) | O projeto-modelo que o Forge distribui para quem vai criar um mod. | Este repositório começou do MDK 26.3 (`build.gradle`, `gradlew`, `settings.gradle` vieram dele). |
 | **.jar** | Um arquivo compactado, parecido com um .zip, com o código compilado e os recursos (texturas, traduções…). | O mod pronto é `build\libs\cultivo-0.1.0.jar`. |
 | **Pasta `mods`** | Onde o Forge procura os mods ao abrir o jogo ou o servidor. | Jogo normal no Windows: `%APPDATA%\.minecraft\mods`. Servidor: pasta `mods` ao lado do `run.bat`. |
-| **JUnit** | Testes automáticos rápidos que **não abrem o Minecraft**. Conferem as regras (contas de qualidade, pesos de sementes, efeitos) e se os arquivos JSON batem com o código Java. | Ficam em `src/test/java/`. Rodam no `test` e no `build` (hoje, 88 testes). |
-| **GameTest** | Testes que rodam **dentro de um servidor Minecraft de verdade**, sem janela: a planta cresce, a estação processa, fumar aplica o efeito. | Ficam em `src/main/java/io/github/peixeangola/cultivo/gametest/CultivoGameTests.java`. Rodam no `runGameTestServer`: hoje são 30 no total, sendo 29 do Cultivo + 1 de exemplo que vem com o próprio Minecraft (`minecraft:always_pass`). |
-| **Node.js** | Programa que roda JavaScript fora do navegador. | Usado só para gerar texturas e arquivos JSON (`tools/gen/generate.mjs`). Você precisa dele se for mudar recursos ou qualquer número marcado "Sim" na seção 7.2. |
+| **JUnit** | Testes automáticos rápidos que **não abrem o Minecraft**. Conferem as regras (contas de qualidade, pesos de sementes, efeitos) e se os arquivos JSON batem com o código Java. | Ficam em `src/test/java/`. Rodam no `test` e no `build` (hoje, 311 testes). |
+| **GameTest** | Testes que rodam **dentro de um servidor Minecraft de verdade**, sem janela: a planta cresce, a estação processa, fumar aplica o efeito. | Ficam em `src/main/java/io/github/peixeangola/cultivo/gametest/CultivoGameTests.java`. Rodam no `runGameTestServer`: hoje são 62 no total, sendo 61 do Cultivo + 1 de exemplo que vem com o próprio Minecraft (`minecraft:always_pass`). |
+| **Node.js** | Programa que roda JavaScript fora do navegador. | Usado só para gerar texturas, modelos, sons e arquivos JSON (`tools/gen/generate.mjs`). Você precisa dele se for mudar recursos ou qualquer número marcado "Sim" na seção 7.2. |
 | **Tick** | A "batida" do relógio do jogo. | **20 ticks = 1 segundo.** Todos os tempos do mod são em ticks. |
 | **Cliente e servidor** | O cliente desenha a tela e lê o teclado. O servidor decide o que acontece no mundo. Mesmo no single player existe um servidor rodando por baixo. | Crescimento, qualidade, colheita, estações e efeitos são decididos **no servidor**. O cliente só mostra. |
 
@@ -209,6 +216,10 @@ Se aparecer `'git' não é reconhecido como um comando interno ou externo...` (c
 
 Use uma pasta com caminho curto e sem acentos, fora do OneDrive. As pastas Documentos e Área de Trabalho muitas vezes estão sincronizadas com o OneDrive, e a sincronização atrapalha o build. Este guia usa `C:\dev\minezada`.
 
+> **No PC do dono do projeto**, o código já está em `C:\Users\Cliente\Documents\minezada`.
+> - Ali a pasta Documentos **não** está no OneDrive, então essa pasta serve. Use esse caminho no lugar de `C:\dev\minezada` em todo o guia e pule para o passo 4.
+> - Ela pode estar numa branch de trabalho (o passo 4 mostra qual). Depois que o PR dessa branch entrar na `main`, rode `git checkout main` e `git pull`.
+
 1. Abra um terminal: Menu Iniciar → digite **PowerShell** → abra **Windows PowerShell**.
 2. Crie a pasta `C:\dev` e entre nela:
 
@@ -220,19 +231,18 @@ Use uma pasta com caminho curto e sem acentos, fora do OneDrive. As pastas Docum
    ```
 
    Se `mkdir` disser que a pasta já existe, tudo bem: só rode o `cd`.
-3. Baixe o código **já na branch certa** e entre na pasta:
+3. Baixe o código e entre na pasta:
 
    **[terminal]**
 
    ```
-   git clone -b claude/cultivo-mvp-nxdr8q https://github.com/fishpedrol/minezada
+   git clone https://github.com/fishpedrol/minezada
    cd minezada
    ```
 
-   - O `-b claude/cultivo-mvp-nxdr8q` é **obrigatório**. Sem ele, o Git baixa a branch padrão do repositório (a `main`), que ainda tem só o mod de exemplo do Forge e gera `examplemod-1.0.0.jar` em vez do `cultivo-0.1.0.jar`.
+   - O Git baixa a branch `main`, que tem o mod completo.
    - Se o repositório for privado, o Git abre uma janela de login do GitHub. Entre com a sua conta.
-   - Se você já tinha clonado sem o `-b`, entre na pasta e rode `git checkout claude/cultivo-mvp-nxdr8q`.
-4. Confira que você está no lugar certo e na branch certa:
+4. Confira que você está no lugar certo:
 
    **[terminal]**
 
@@ -242,14 +252,17 @@ Use uma pasta com caminho curto e sem acentos, fora do OneDrive. As pastas Docum
    git log --oneline -1
    ```
 
-   - `git branch` precisa mostrar `* claude/cultivo-mvp-nxdr8q` (o `*` marca a branch atual).
-   - `dir` precisa listar pastas como `block`, `core`, `item` e `smoke`. Se disser que não encontra o caminho, você está na `main` ou na pasta errada.
-   - `git log --oneline -1` mostra o commit mais novo que você tem, por exemplo `e693564 Update docs with review results and final evidence`. O código muda a cada atualização: **outro código é normal**. O que importa é a branch.
+   - `git branch` mostra a branch atual, marcada com `*`. Depois do `git clone`, é `* main`.
+   - `dir` precisa listar pastas como `block`, `core`, `item` e `smoke`. Se disser que não encontra o caminho, você está na pasta errada.
+   - `git log --oneline -1` mostra o commit mais novo que você tem: um código curto e uma frase em inglês. O código muda a cada atualização, então **outro código é normal**.
 5. **Para pegar atualizações depois**, entre na pasta do projeto e rode `git pull`. Se der erro, veja as linhas do Git na [seção 8](#8-problemas-comuns).
+6. **Testar uma branch antes de ela entrar na `main`** (só quando alguém pedir), com o jogo e o Gradle fechados:
+   - rode `git fetch` e depois `git checkout nome-da-branch`, por exemplo `git checkout claude/polish-visual-uses`;
+   - para voltar: `git checkout main`.
 
-**Sem Git (baixar ZIP):** no GitHub, primeiro troque a branch no botão que mostra `main` para `claude/cultivo-mvp-nxdr8q`; depois clique no botão verde **Code** → **Download ZIP**. Extraia em `C:\dev`.
+**Sem Git (baixar ZIP):** no GitHub, clique no botão verde **Code** → **Download ZIP** (vem a `main`). Extraia em `C:\dev`.
 
-- O GitHub dá à pasta o nome do repositório e da branch (algo como `minezada-claude-cultivo-mvp-nxdr8q`), e o "Extrair tudo" do Windows às vezes cria uma pasta dentro de outra com o mesmo nome.
+- O GitHub dá à pasta o nome do repositório e da branch (algo como `minezada-main`), e o "Extrair tudo" do Windows às vezes cria uma pasta dentro de outra com o mesmo nome.
 - **A pasta certa é a que tem `gradlew.bat` dentro.** Mova ou renomeie para que ela fique em `C:\dev\minezada`, isto é, para que exista `C:\dev\minezada\gradlew.bat`.
 - Sem o Git você não consegue usar `git pull` nem `git status`, então prefira o Git.
 
@@ -269,7 +282,7 @@ Os arquivos gerados já estão no repositório (`src/generated/resources`), ent�
 
 Você **precisa** dele se for mudar texturas, nomes, receitas, ou qualquer número marcado "Sim" na coluna "Precisa rodar o gerador?" da [seção 7.2](#72-onde-mora-cada-número).
 
-Para instalar: baixe a versão **LTS** em <https://nodejs.org>, instale aceitando as opções padrão, feche e abra o terminal e confira com `node --version` (aqui foi usado o Node 22).
+Para instalar: baixe a versão **LTS** em <https://nodejs.org>, instale aceitando as opções padrão, feche e abra o terminal e confira com `node --version`. No PC do dono do projeto, é o Node 24.19.
 
 ---
 
@@ -279,9 +292,9 @@ Rode tudo **no terminal, na pasta do projeto** (`C:\dev\minezada`, seção 2.8).
 
 | Comando **[terminal]** | O que faz | Como é o sucesso |
 |---|---|---|
-| `.\gradlew.bat build` | Compila, roda os testes JUnit (hoje 88) e gera o .jar | `BUILD SUCCESSFUL in ...` |
+| `.\gradlew.bat build` | Compila, roda os testes JUnit (hoje 311) e gera o .jar | `BUILD SUCCESSFUL in ...` |
 | `.\gradlew.bat test` | Só os testes JUnit | linhas `... PASSED` e `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 30 required tests passed :)` (o número muda se entrarem testes novos) |
+| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 62 required tests passed :)` (o número muda se entrarem testes novos) |
 | `.\gradlew.bat runClient` | Abre o Minecraft de desenvolvimento já com o mod | a janela do jogo abre |
 | `.\gradlew.bat runServer` | Liga um servidor dedicado na pasta `run\` | `Done (...)! For help, type "help"` |
 | `.\gradlew.bat --stop` | Desliga os processos do Gradle que ficam rodando em segundo plano ("daemons") | útil quando algo trava |
@@ -322,10 +335,10 @@ Rode tudo **no terminal, na pasta do projeto** (`C:\dev\minezada`, seção 2.8).
 Mostra uma linha por teste. Quando algo falha, aparece assim:
 
 ```
-SeedSourcesTest > chestWeightsFollowRarity() FAILED
-    org.opentest4j.AssertionFailedError at SeedSourcesTest.java:30
+SeedSourcesTest > chestProbabilities() FAILED
+    org.opentest4j.AssertionFailedError at SeedSourcesTest.java:73
 
-88 tests completed, 1 failed
+311 tests completed, 1 failed
 There were failing tests. See the report at: file:///.../build/reports/tests/test/index.html
 ```
 
@@ -334,7 +347,7 @@ O terminal só mostra o arquivo e a linha. A mensagem completa fica no relatóri
 ### 3.3 `runGameTestServer`
 
 - Não abre janela e **não pede a EULA**: esse servidor de teste não lê o `eula.txt` (só o servidor dedicado da seção 3.5 lê).
-- Sucesso: `All 30 required tests passed :)`. Hoje, 30 é o **total** de testes: os 29 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
+- Sucesso: `All 62 required tests passed :)`. Hoje, 62 é o **total** de testes: os 61 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
 - Falha: o log lista o nome de cada teste obrigatório que falhou e a mensagem dele. Estas linhas são de uma rodada real que falhou durante o desenvolvimento:
   ```
   3 required tests failed :(
@@ -357,6 +370,7 @@ O terminal só mostra o arquivo e a linha. A mensagem completa fica no relatóri
 - Esse jogo roda **sem a sua conta Microsoft** (entra com um nome de teste). Serve para testar no single player.
   - Por isso ele **não consegue entrar** no servidor do `runServer` nem em servidores de amigos: aparece um erro de login ou de sessão. Isso é esperado. Para multiplayer, use o jogo de verdade (seção 6.3).
 - Mundos, logs e prints ficam em `run\saves`, `run\logs` e `run\screenshots`.
+- Ele usa a pasta `run\` do projeto, separada da `.minecraft` do launcher. Por isso os outros mods do launcher (como o Serene Seasons, no PC do dono) não entram: é o jeito mais simples de ver o Cultivo sozinho.
 - Teclas úteis: F2 tira print, F3 abre as informações de depuração, F5 troca a câmera para terceira pessoa. Em notebooks, talvez você precise segurar a tecla **Fn** junto (Fn+F2, Fn+F3, Fn+F5).
 - Para fechar, saia do jogo normalmente. Se travar, aperte `Ctrl+C` no terminal e responda `S` (ou `Y`) quando o Windows perguntar "Deseja finalizar o arquivo em lotes (S/N)?".
 - **Não** copie o .jar para `run\mods`: no ambiente de desenvolvimento o mod já é carregado direto do código.
@@ -376,13 +390,19 @@ As configurações do servidor ficam em `run\server.properties` e o log em `run\
 
 ### 3.6 `node tools/gen/generate.mjs`: regerar texturas e JSONs
 
-- Lê `tools/gen/manifest.json` e os scripts de arte em `tools/art/`, **apaga** `src/generated/resources` e cria tudo de novo: texturas, modelos, traduções, receitas, loot, tags, worldgen e os arquivos que registram cada GameTest (pasta `test_instance`).
-- **[terminal]** Rode da pasta do projeto: `node tools/gen/generate.mjs`. No fim aparece `43 texturas e 149 arquivos JSON gerados em ...` (os números mudam se você acrescentar coisas).
-- Rode sempre que mudar `manifest.json`, `tools/art/*.mjs` ou o próprio `generate.mjs`. Depois, rode `.\gradlew.bat build`.
+- **O que faz:** lê `tools/gen/manifest.json`, os modelos 3D de `tools/gen/models.mjs` e os scripts de arte em `tools/art/`, **apaga** `src/generated/resources` e cria tudo de novo. Isso inclui:
+  - texturas, inclusive as animadas;
+  - modelos e traduções;
+  - sons (`sounds.json`);
+  - receitas e os avanços do livro de receitas;
+  - loot, tags e worldgen;
+  - os arquivos que registram cada GameTest (pasta `test_instance`).
+- **[terminal]** Rode da pasta do projeto: `node tools/gen/generate.mjs`. No fim aparece `285 texturas e 786 arquivos JSON gerados em ...` (os números mudam se você acrescentar coisas).
+- Rode sempre que mudar `manifest.json`, `tools/gen/*.mjs` ou `tools/art/*.mjs`. Depois, rode `.\gradlew.bat build`.
 - **Nunca edite à mão** nada em `src/generated/resources`: a próxima geração apaga a sua mudança.
 - **Se der erro:**
   - Um erro de digitação no `manifest.json` aparece **antes** de apagar qualquer coisa (o script lê o manifest primeiro). A mensagem diz a linha e a coluna (seção 7.1). Corrija e rode de novo.
-  - Se o erro aparecer **depois** (por exemplo, num script de arte), a pasta `src/generated/resources` pode ter ficado vazia ou pela metade. Recupere com `git restore src/generated/resources`, corrija o erro e rode de novo.
+  - Se o erro aparecer **depois** (por exemplo, num script de arte, ou um texto que falta em uma das línguas), a pasta `src/generated/resources` pode ter ficado vazia ou pela metade. Recupere com `git restore src/generated/resources`, corrija o erro e rode de novo.
 - `git status` mostra quais arquivos gerados mudaram, e `git diff` mostra o que mudou dentro deles. Isso ajuda a revisar.
 - Não use `runData`: este projeto gera os recursos com o script Node.
 
@@ -407,6 +427,51 @@ As configurações do servidor ficam em `run\server.properties` e o log em `run\
 
 Não basta procurar a palavra `cultivo`: linhas normais de `INFO` também têm "cultivo".
 
+### 3.8 Teste visual automático (só no Windows, com tela)
+
+O script `tools\visual-probe\run-probe.ps1` abre o `runClient` sozinho num mundo de teste, monta uma cena e tira prints. Serve para conferir rápido se texturas e modelos carregam, sem montar nada à mão.
+
+- **É ferramenta de desenvolvimento:** o datapack da cena só existe no mundo de teste, e nada disso entra no `.jar`.
+- **Só funciona no Windows, com a tela ligada.** Numa sessão na nuvem ele não roda.
+
+**Antes de rodar:**
+
+1. Rode `.\gradlew.bat runServer` uma vez, aceite a EULA (seção 3.5) e desligue com `stop`. Isso cria a pasta `run\world`, que o script copia. Sem ela, ele para com `Falta run\world`.
+2. Confira o JAVA_HOME (seção 2.5).
+3. Feche o jogo, o servidor e qualquer outro comando do Gradle.
+
+**[terminal]** PowerShell, na pasta do projeto (troque a pasta dos prints se quiser):
+
+```
+powershell -ExecutionPolicy Bypass -File tools\visual-probe\run-probe.ps1 -OutDir C:\dev\prints-cultivo
+```
+
+**O que acontece:**
+- O script copia `run\world` para `run\saves\cultivo_probe`, instala o datapack da cena e ajusta o `run\options.txt` (devolve o original no fim).
+- Ele abre o jogo direto nesse mundo e responde sozinho ao aviso de "ajustes experimentais".
+- **Não mexa no mouse nem no teclado enquanto ele roda:** o script aperta teclas e move o mouse na janela do jogo (F1, F2, F5, E, Esc, Shift, 1, 2 e os botões do mouse). Leva uns 5 minutos depois que o jogo abre.
+- No fim, ele fecha o jogo.
+
+**O resultado**, na pasta do `-OutDir`, são 47 prints, os logs (`gradle-client.log` e `client-latest.log`) e o `log-problems.txt`, que separa os avisos ligados ao Cultivo dos avisos normais do jogo. Os avisos `Object did not get ID it asked for` vêm do mundo de teste antigo e são normais.
+
+| Prints | Mostram |
+|---|---|
+| `01` e `02` | as 3 nativas nas 8 idades e uma planta de cada família de cor |
+| `03` a `07` | suporte, peneira e prensa vazios, trabalhando e prontos (a placa da prensa em 3 momentos) |
+| `08` a `11` | bandeja, pote, cinzeiro de 0 a 4, o pote terminando a cura e a estufa |
+| `12` a `15` | as 40 genéticas (semente, flor fresca e seca), produtos, artigos e modelos na mão |
+| `16` a `26` | inventário e as dicas (tooltips) de sementes, flor curada, haxixe, baseado, isqueiro, dichavador e estações |
+| `27` a `29` | as duas abas do modo criativo |
+| `30` a `34` | cliques de verdade: enrolar na bandeja, recusa sem folhas, pôr e tirar (agachado) do suporte, instalar o dichavador |
+| `35` a `47` | fumar cada aparelho em 1ª e 3ª pessoa, o efeito "Chapado" e a recusa sem material |
+
+**Olhe os prints um por um:** o script só tira as fotos; quem diz se está certo é você. O que cada print deve mostrar, e o que seria bug, está em `tools\visual-probe\PRINTS.md`.
+
+**Multiplayer automático:** com `-Multiplayer` no fim do comando, o script sobe também o servidor dedicado e o jogo entra nele por 127.0.0.1, com as mesmas cenas. Durante o teste, o `run\server.properties` fica em modo offline (o jogador de teste não tem conta), só aceita conexão do próprio PC e sem whitelist; o original volta no fim. São dois Minecraft e dois Gradle ao mesmo tempo, então **feche o navegador e outros programas antes**. Em 25/10/2026 ele foi parado por falta de memória depois de 2 cenas.
+
+**Se mudar genéticas** no `manifest.json`, regere a cena: `node tools/visual-probe/gen-datapack.mjs . tools/visual-probe/datapack` e confira com `node tools/visual-probe/validate.mjs . tools/visual-probe/datapack tools/visual-probe/run-probe.ps1` (deve dizer `OK: nenhum erro`).
+
+**Não cobre:** a mão esquerda, os artigos de todos os lados e o som (as legendas aparecem, mas ninguém ouve). Para esses, use a checklist da seção 6.1.
 ---
 
 ## 4. Jogar com os amigos
@@ -416,6 +481,11 @@ Regra de ouro: **todo mundo** (cada jogador e o servidor) usa **o mesmo Forge 26
 - **Atenção ao nome:** enquanto a versão do mod continuar 0.1.0, **todo** build gera um arquivo com o mesmo nome, `cultivo-0.1.0.jar`, mesmo com mudanças dentro. Pelo nome não dá para saber qual é o novo. Antes de mandar um .jar com mudanças, aumente a versão (seção 7.3, passo 7): aí o nome muda junto.
 
 Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe em login nem em licença.
+
+> **No PC do dono do projeto:** o perfil "Forge 26.3" do launcher usa o Forge **26.3-66.0.2**, e a pasta `%APPDATA%\.minecraft\mods` já tem outros mods. Entre eles está o **Serene Seasons** (estações do ano), que mexe no crescimento das plantações.
+> - Para o Cultivo, instale o Forge **26.3-66.0.13** (seção 4.1) e use o perfil dele. O Cultivo só foi testado no 66.0.13; ele tenta carregar também no 66.0.2, mas isso nunca foi testado.
+> - Para ver o Cultivo sozinho, sem as estações do Serene Seasons, use o `runClient` (seção 3.4) ou uma pasta de jogo separada (seção 4.1, passo 6).
+> - Para jogar com o Serene Seasons junto: todos os amigos e o servidor precisam dos mesmos mods, e as plantações do Cultivo podem crescer mais devagar ou parar em algumas estações. Essa combinação ainda não foi testada.
 
 ### 4.1 Instalar no jogo (cada jogador)
 
@@ -455,6 +525,10 @@ Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe
    - Windows: aperte `Win+R`, digite `%APPDATA%\.minecraft` e entre na pasta `mods` (crie a pasta se ela não existir).
    - Linux: `~/.minecraft/mods`
    - macOS: `~/Library/Application Support/minecraft/mods`
+   - **Já tem outros mods nessa pasta** (como o dono)? Prefira uma pasta de jogo só para o Cultivo. No launcher oficial (os nomes podem variar um pouco):
+     1. aba **Instalações** → na instalação do Forge 66.0.13, **…** → **Editar** → **Mais opções** → **Diretório do jogo**;
+     2. escolha uma pasta nova, por exemplo `%APPDATA%\.minecraft-cultivo`;
+     3. a pasta `mods` do Cultivo fica dentro dela.
 7. Abra o jogo pelo perfil do Forge. No menu principal, o botão **Mods** deve listar **Cultivo 0.1.0**.
 
 ### 4.2 Servidor dedicado (quem for hospedar)
@@ -512,7 +586,7 @@ Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe
      - **Hospedagem paga** de servidor de Minecraft que aceite Forge.
    - o Windows pode perguntar se o Java pode usar a rede: permita em redes privadas.
 
-**Jeito mais simples para uma partida rápida:** um jogador abre um mundo single player com o mod, aperta Esc → **Abrir para LAN**, e quem estiver na mesma rede Wi-Fi (ou na mesma LAN virtual) entra pela lista de Multijogador. Todos ainda precisam do mesmo Forge e do mesmo .jar.
+**Jeito mais simples para uma partida rápida:** um jogador abre um mundo single player com o mod, aperta Esc → **Abrir em LAN**, e quem estiver na mesma rede Wi-Fi (ou na mesma LAN virtual) entra pela lista de Multijogador. Todos ainda precisam do mesmo Forge e do mesmo .jar.
 
 ---
 
@@ -520,51 +594,139 @@ Cada amigo precisa do Minecraft Java original na própria conta. O mod não mexe
 
 Os arquivos citados nesta seção ficam em `src/main/java/io/github/peixeangola/cultivo/` (por exemplo, `core/Variety.java` é `src/main/java/io/github/peixeangola/cultivo/core/Variety.java`). O `manifest.json` fica em `tools/gen/`.
 
+**Tudo em português:** os nomes, as dicas e os avisos do Cultivo aparecem em português mesmo com o jogo em English ou em outro idioma. Foi um pedido do dono (24/10/2026). Os textos do próprio Minecraft continuam mudando de idioma normalmente.
+
 ### 5.1 O ciclo completo
 
 ```
 Semente → planta (8 idades) → Flor Fresca (com qualidade)
   → Suporte de Secagem → Flor Seca
-      → + Folha de Seda → Baseado
-      → Peneira de Bancada → Resina → (2x) Prensa Manual → Haxixe
+      → (se quiser) Pote de Vidro: cura, +1 de qualidade uma vez
+      → + Folha de Seda (na bancada) ou na Bandeja de Enrolar → Baseado
+          → (se quiser) + Piteira → Baseado com piteira
+      → Peneira de Bancada (com ou sem Dichavador) → Resina → (2x) Prensa Manual → Haxixe
+Fumar perto de um Cinzeiro → cinza → Farinha de Osso (de volta para a lavoura)
 ```
 
-A **qualidade** passa por todas as etapas. A **variedade** também: cada variedade tem a sua própria Flor Seca, e o baseado, a resina e o haxixe levam gravada a variedade da flor de onde vieram (seções 5.6 e 5.7).
+A **qualidade** passa por todas as etapas. A **genética** também: cada genética tem a sua própria Flor Seca, e o baseado, a resina e o haxixe levam gravada a genética da flor de onde vieram (seções 5.6 e 5.7).
 
-### 5.2 As três variedades
+### 5.2 As 40 genéticas
 
-| Variedade | Raridade | Rótulos no tooltip | Velocidade de crescimento | Chance de +1 de qualidade |
-|---|---|---|---|---|
-| Brisa | Comum | Automática · Sativa | ×1,25 (mais rápida) | 20% |
-| Aurora | Incomum | Fotoperíodo · Híbrida | ×1,0 (igual ao trigo) | 35% |
-| Eclipse | Rara | Fotoperíodo · Índica | ×0,8 (mais lenta) | 50% |
+O jogo tem **40 genéticas**; o código e alguns textos chamam de "variedades":
+- **3 nativas do mod:** Brisa, Aurora e Eclipse. Só elas nascem na natureza e nas lavouras de aldeia.
+- **37 do catálogo:** inspiradas nas genéticas High THC da loja Santa Semente BR (pedido do dono em 24/10/2026), com **nomes de paródia**. Elas vêm de baús de aldeia e do Mercador Ambulante (seção 5.3).
 
-Fonte: `core/Variety.java`. Os rótulos são só de jogo. A "linhagem" (sativa, híbrida, índica) decide o efeito extra ao fumar (seção 5.8).
+Cada genética tem cinco rótulos de jogo, e nenhum deles é número do mundo real:
+
+| Rótulo | O que muda no jogo |
+|---|---|
+| Raridade (Comum, Incomum, Rara) | a chance de achar a semente (seção 5.3) |
+| Ciclo (Automática, Fotoperíodo) | só o rótulo; no catálogo, toda automática cresce rápido |
+| Genética (Sativa, Híbrida, Índica) | o efeito extra ao fumar (seção 5.8) |
+| Potência (★☆☆, ★★☆, ★★★) | a chance de +1 de qualidade na colheita: 20%, 35% ou 50% |
+| Crescimento (rápida, média, lenta) | a velocidade: ×1,25, ×1,0 ou ×0,8 da velocidade do trigo |
+
+O tooltip da semente e das flores mostra os quatro primeiros, por exemplo "Comum · Automática · Sativa · Potência ★☆☆".
+
+A tabela segue a ordem da aba criativa **Cultivo: Genéticas**: nativas primeiro, depois comuns, incomuns e raras.
+- A última coluna é **só para o dono**: o nome real na loja e o banco de sementes.
+- Esse nome nunca aparece no jogo, e um teste automático falha se ele entrar nos arquivos do jogo.
+- A lista completa, com os nomes em inglês, fica em `docs/strains-catalog.json`.
+
+| # | Nome no jogo | Raridade | Ciclo | Genética | Potência | Crescimento | Nome real na loja (só para o dono) |
+|---|---|---|---|---|---|---|---|
+| 1 | Brisa | Comum | Automática | Sativa | ★☆☆ | rápida (×1,25) | — (nativa do mod) |
+| 2 | Aurora | Incomum | Fotoperíodo | Híbrida | ★★☆ | média (×1,0) | — (nativa do mod) |
+| 3 | Eclipse | Rara | Fotoperíodo | Índica | ★★★ | lenta (×0,8) | — (nativa do mod) |
+| 4 | Manga Gelada | Comum | Fotoperíodo | Híbrida | ★★☆ | média (×1,0) | Mango Gelato — Santa Semente |
+| 5 | Amnésia Neblina | Comum | Fotoperíodo | Sativa | ★★★ | lenta (×0,8) | Amnesia Haze — Santa Semente |
+| 6 | Cola de Gorila #4 | Comum | Fotoperíodo | Híbrida | ★★★ | média (×1,0) | Gorilla Glue #4 — Santa Semente |
+| 7 | Ouro Colombiano | Comum | Fotoperíodo | Sativa | ★★☆ | lenta (×0,8) | Colombian Gold — Santa Semente |
+| 8 | Ultravioleta | Comum | Fotoperíodo | Híbrida | ★★☆ | média (×1,0) | Ultra Violet — Santa Semente |
+| 9 | Kush Roxinha | Comum | Automática | Índica | ★★☆ | rápida (×1,25) | Purple Kush (auto) — Santa Semente |
+| 10 | Neblina Roxa | Comum | Automática | Sativa | ★★☆ | rápida (×1,25) | Purple Haze (auto) — Santa Semente |
+| 11 | AK-48 | Comum | Automática | Híbrida | ★★☆ | rápida (×1,25) | AK-47 (auto / foto) — Santa Semente |
+| 12 | Jack Herói | Comum | Automática | Sativa | ★★☆ | rápida (×1,25) | Jack Herer (auto) — Santa Semente |
+| 13 | Bruno Banner | Comum | Automática | Híbrida | ★★★ | rápida (×1,25) | Bruce Banner (auto) — Santa Semente |
+| 14 | Ouro 18k | Comum | Fotoperíodo | Híbrida | ★★☆ | média (×1,0) | 24k Gold — Santa Semente |
+| 15 | Kush do Bubba | Comum | Fotoperíodo | Índica | ★★☆ | média (×1,0) | Bubba Kush — Santa Semente |
+| 16 | Kush de Manga | Comum | Fotoperíodo | Índica | ★★☆ | média (×1,0) | Mango Kush — Santa Semente |
+| 17 | Mirtilo | Comum | Fotoperíodo | Índica | ★★☆ | média (×1,0) | Blueberry — Santa Semente |
+| 18 | Andarilho do Céu | Comum | Fotoperíodo | Índica | ★★☆ | média (×1,0) | Skywalker — Santa Semente |
+| 19 | Soco Roxo | Comum | Fotoperíodo | Índica | ★★☆ | média (×1,0) | Purple Punch — Santa Semente |
+| 20 | Tri-Campeã | Comum | Fotoperíodo | Híbrida | ★★☆ | média (×1,0) | 3 Peat — Santa Semente |
+| 21 | Bolo de Casamento | Comum | Automática | Índica | ★★★ | rápida (×1,25) | Wedding Cake (auto) — Santa Semente |
+| 22 | Caramelo Crítico | Comum | Automática | Índica | ★★☆ | rápida (×1,25) | Critical Caramel (auto) — Santa Semente |
+| 23 | Luzes do Norte | Comum | Automática | Índica | ★☆☆ | rápida (×1,25) | Northern Lights (auto) — Santa Semente |
+| 24 | Bala Sortida | Comum | Automática | Híbrida | ★★★ | rápida (×1,25) | Runtz (auto) — Santa Semente |
+| 25 | Azul Arroxeado | Comum | Automática | Índica | ★★☆ | rápida (×1,25) | Blue Purple (auto) — Santa Semente |
+| 26 | Creme de Caramelo | Comum | Automática | Índica | ★★☆ | rápida (×1,25) | Cream Caramel (auto) — Santa Semente |
+| 27 | Confeitez | Comum | Fotoperíodo | Índica | ★★☆ | média (×1,0) | Watermelon Zkittlez — Santa Semente |
+| 28 | Gorilão | Incomum | Automática | Híbrida | ★★★ | rápida (×1,25) | Gorilla (auto) — Pyramid Seeds |
+| 29 | Viúva Branca | Incomum | Automática | Híbrida | ★★☆ | rápida (×1,25) | White Widow (auto) — Dutch Passion |
+| 30 | Ligeirinha | Incomum | Automática | Sativa | ★★☆ | rápida (×1,25) | +Speed (auto) — Sweet Seeds |
+| 31 | Dó-Si-Dó | Rara | Automática | Índica | ★★☆ | rápida (×1,25) | Do-Si-Dos (auto) — Royal Queen Seeds |
+| 32 | Viagem-25 | Rara | Automática | Índica | ★★☆ | rápida (×1,25) | LSD-25 (auto) — Fastbuds |
+| 33 | Cão Químico | Rara | Automática | Híbrida | ★★☆ | rápida (×1,25) | Chemdawg (auto) — Fastbuds |
+| 34 | Morango com Banana | Rara | Automática | Índica | ★★★ | rápida (×1,25) | Strawberry Banana (auto) — Fastbuds |
+| 35 | Frutinha Veloz | Rara | Automática | Híbrida | ★★☆ | rápida (×1,25) | Fastberry (auto) — Fastbuds |
+| 36 | Chiclete | Rara | Automática | Híbrida | ★★☆ | rápida (×1,25) | BubbleGum (auto) — Fastbuds |
+| 37 | Viagem Lisérgica | Rara | Fotoperíodo | Índica | ★★★ | média (×1,0) | LSD — Barney's Farm |
+| 38 | Gelato Azul 42 | Rara | Fotoperíodo | Híbrida | ★★★ | média (×1,0) | Blue Gelato 41 — Barney's Farm |
+| 39 | Morango Azedo | Rara | Fotoperíodo | Sativa | ★★☆ | lenta (×0,8) | Sour Strawberry — Barney's Farm |
+| 40 | Bananona | Rara | Automática | Híbrida | ★★★ | rápida (×1,25) | Fat Banana (auto) — Royal Queen Seeds |
+
+Fontes: `core/Variety.java`, `manifest.json` (`strains`) e `docs/strains-catalog.json`. Os itens de cada genética se chamam "Sementes de X", "Plantio de X" (a planta no chão, como o "Plantio de Trigo"), "Flor Fresca de X" e "Flor Seca de X".
+
+**Como adicionar uma genética** (por exemplo, uma que faltou do catálogo da loja):
+
+1. Em `docs/strains-catalog.json`, copie uma linha parecida da lista `catalog` e troque os dados:
+   - `id`: minúsculas, sem acento, com `_` entre as palavras;
+   - `pt` e `en`: o nome de paródia;
+   - `original` e `breeder`: o nome real e o banco, só para você;
+   - os rótulos `cycle`, `genetics`, `growth`, `potency` e `rarity`;
+   - `family`: a paleta de cores, com no máximo 6 genéticas por família.
+2. Acrescente a mesma genética, **na mesma posição**, em `core/Variety.java` e em `manifest.json` → `strains`. Os testes conferem que as três listas batem.
+3. Rode o gerador (seção 3.6) e depois o `build` e o `runGameTestServer`.
+   - Alguns testes travam a quantidade de hoje (40 genéticas, 25 comuns, 120 itens na aba…) e vão reclamar.
+   - Troque esses números de propósito, como na seção 7.4, e acrescente a linha nova na tabela acima.
+
+Se travar, peça ajuda: o passo a passo técnico está em `docs/DECISIONS.md` ("Como adicionar uma genética").
 
 ### 5.3 Onde achar sementes
 
-| Fonte | Onde | Chances |
+| Fonte | Onde | Quais genéticas e que chance |
 |---|---|---|
-| Baús das **casas** de aldeia | Aldeias de **planície, savana, taiga e deserto** (4 dos 5 tipos; a aldeia de neve fica de fora) | Uma rolagem por baú: 30% Brisa (1 a 3), 14% Aurora (1 a 2), 6% Eclipse (1), 50% nada |
-| **Lavouras** de aldeia de planície | Aldeias de planície, que nascem em planícies e prados | Cada pé de trigo da lavoura pode virar plantação do mod. As regras são testadas em ordem: 5% Brisa; se não sair, 2,5% Aurora; se não sair, 1% Eclipse; depois as do Minecraft (cenoura, batata, beterraba). Na prática: 5% Brisa, cerca de 2,4% Aurora e cerca de 0,9% Eclipse por pé. |
-| **Planta Silvestre** | Selvas (selva, selva esparsa, selva de bambu): cerca de 1 grupo a cada 16 chunks. Planície e prado: cerca de 1 a cada 48 chunks. Cada grupo tem até 12 plantas | Ao quebrar: 1 semente, com 60% Brisa, 30% Aurora, 10% Eclipse |
+| Baús das **casas** de aldeia | Aldeias de **planície, savana, taiga e deserto** (4 dos 5 tipos; a aldeia de neve fica de fora) | **Todas as 40.** Cada baú sorteia uma vez: metade das vezes não vem nada; na outra metade, vem uma genética. Cada **comum** sai em cerca de 1,7% dos baús (1 a 3 sementes); cada **incomum**, em 0,84% (1 a 2); cada **rara**, em 0,42% (1). Somando, um baú tem cerca de 42% de chance de trazer alguma comum, 3,4% alguma incomum e 4,6% alguma rara. |
+| **Lavouras** de aldeia de planície | Aldeias de planície, que nascem em planícies e prados | **Só as nativas.** Cada pé de trigo da lavoura pode virar plantação do mod. As regras são testadas em ordem: 5% Brisa; se não sair, 2,5% Aurora; se não sair, 1% Eclipse; depois as do Minecraft (cenoura, batata, beterraba). Na prática: 5% Brisa, cerca de 2,4% Aurora e cerca de 0,9% Eclipse por pé. |
+| **Planta Silvestre** | Selvas (selva, selva esparsa, selva de bambu): cerca de 1 grupo a cada 16 chunks. Planície e prado: cerca de 1 a cada 48 chunks. Cada grupo tem até 12 plantas | **Só as nativas.** Ao quebrar: 1 semente, com 60% Brisa, 30% Aurora, 10% Eclipse |
+| **Mercador Ambulante** (o mascate que anda com duas lhamas) | Onde ele aparecer | **Só as do catálogo.** Cada mercador novo vende 2 genéticas diferentes do catálogo, além das trocas normais: 2 ou 3 sementes por 2 esmeraldas (comum), 4 (incomum) ou 8 (rara), até 4 trocas cada. A primeira oferta sai comum em cerca de 86% dos mercadores, rara em 9% e incomum em 5%. |
 
 Fontes: `core/SeedSources.java`, `tools/gen/manifest.json` (`seed_sources`) e `tools/gen/generate.mjs` (raridade 16 e 48, grupos de 12).
 
-- **Como é a Planta Silvestre:** uma moita baixa em forma de X (como as flores do Minecraft), com o mesmo desenho da plantação madura do mod, em verde-oliva com botões verde-claros e pontinhos alaranjados. Ela nasce direto no chão, sem terra arada: em grama, terra (comum, grossa ou com raízes), podzol, micélio, lama, raízes de mangue lamacentas, bloco de musgo, bloco de musgo pálido ou terra arada.
-- **Plantação do mod numa lavoura de aldeia:** aparece pequena (idade 0), no lugar de um pé de trigo.
+- **Como é a Planta Silvestre:** uma moita baixa em forma de X (como as flores do Minecraft), mais baixa que a plantação do mod, com duas folhas em leque verde-acinzentadas e cachos de sementes marrons. Ela nasce direto no chão, sem terra arada: em grama, terra (comum, grossa ou com raízes), podzol, micélio, lama, raízes de mangue lamacentas, bloco de musgo, bloco de musgo pálido ou terra arada.
+- **Plantação do mod numa lavoura de aldeia:**
+  - aparece pequena (idade 0), no lugar de um pé de trigo;
+  - quando o Agricultor (o aldeão fazendeiro) colhe uma madura, ele replanta a mesma genética, como faz com o trigo;
+  - a flor e as sementes da colheita dele ficam no chão para você pegar.
+- **Mercador Ambulante:**
+  - só os que aparecem depois que o mod foi instalado ganham as ofertas de sementes. Vale também para os que vêm de ovo ou de `/summon` sem dados extras;
+  - as ofertas ficam salvas com ele.
 - O loot de um baú é sorteado na primeira vez que alguém abre o baú. Por isso, baús de aldeia ainda fechados num mundo antigo também podem ter sementes.
 - Planta silvestre e lavouras de aldeia só aparecem em **chunks novos** (áreas do mapa ainda não exploradas). Para testar, crie um mundo novo.
 
 ### 5.4 Plantar e colher (igual ao trigo)
 
-1. Use uma enxada para arar terra ou grama e transformar em **terra arada** (*farmland*). Água a até 4 blocos deixa a terra hidratada, e a planta cresce mais rápido, como no trigo.
+1. Use uma enxada para arar terra ou grama e transformar em **terra arada**. Água a até 4 blocos deixa a terra hidratada, e a planta cresce mais rápido, como no trigo.
 2. Clique com o botão direito com a semente na terra arada. **Funciona em qualquer bioma**: não existe filtro de bioma.
 3. **Luz** (é a mesma regra do trigo):
    - **9 ou mais** no bloco da planta: ela cresce. Céu aberto conta como luz 15 (inclusive à noite); em lugar fechado, use tochas ou lanternas.
    - **8**: ela não cresce, mas também não se solta.
    - **7 ou menos**: não dá para plantar, e uma planta que já estava ali pode se soltar (virar item) quando um bloco vizinho muda.
-4. Ela passa pelas idades 0 a 7, com 4 aparências (0–1, 2–3, 4–5, 6–7). Farinha de osso adianta de 2 a 5 idades.
+4. **Idades:** ela passa pelas idades 0 a 7, com **uma aparência para cada idade** (8 desenhos), e a farinha de osso adianta de 2 a 5 idades.
+   - **Idade 6:** a planta tem uma flor pequena no topo, com pontinhos, ainda sem a cor final.
+   - **Idade 7:** só aí aparecem as flores grandes e coloridas. É a hora de colher.
+   - **Cores:** cada genética tem a cor da sua família (as 3 nativas têm cores próprias).
 5. Plantar a mesma cultura em fileiras cruzadas deixa o crescimento mais lento, igual ao trigo. Abelhas também ajudam a crescer.
 6. **Colheita** (quebrar a planta):
    - madura (idade 7): 1 **Flor Fresca** com qualidade, mais 0 a 3 sementes (Fortuna aumenta);
@@ -575,7 +737,7 @@ Fontes: `core/SeedSources.java`, `tools/gen/manifest.json` (`seed_sources`) e `t
 1. Aperte **F3+F6** para abrir as Opções de depuração (*Debug Options*).
 2. Use a busca para achar estas três linhas. Os **nomes das linhas** ficam em inglês. À direita de cada linha há **três botões**: o da esquerda desliga; o do **meio** mostra a informação só quando o F3 está aberto; o da **direita** mostra sempre. Com o jogo em português, os botões aparecem traduzidos (em inglês são "In Overlay" e "Always"). Ligue cada linha no botão do meio ou no da direita:
    - `light_levels`: mostra `Client Light: N (X sky, Y block)`. O **primeiro número** (N) é o que vale para a planta. Ele mede a luz no bloco dos seus pés: fique no chão comum ao lado da planta, com os pés na altura dela.
-   - `looking_at_block_state`: mira na planta e mostra `age: 0` a `age: 7`.
+   - `looking_at_block_state`: mira na planta e mostra `age: 0` a `age: 7`. Mirando numa estação, mostra `facing`, `contents` (seção 5.6) e, na peneira, `grinder`.
    - `biome`: mostra o bioma onde você está.
 
 ### 5.5 Estufa e qualidade
@@ -584,8 +746,8 @@ Fontes: `core/SeedSources.java`, `tools/gen/manifest.json` (`seed_sources`) e `t
 
 1. **Teto:** o primeiro bloco que não é ar acima da planta, até 6 blocos de altura, precisa ser vidro de estufa. Uma tocha ou um bloco de pedra entre a planta e o vidro estraga o teto.
 2. **Paredes:** em cada uma das 4 direções (norte, sul, leste, oeste), precisa haver vidro de estufa a até 6 blocos de distância, na altura da planta ou um bloco acima. **Não** precisa ter caminho livre até o vidro: o jogo só procura vidro naquela linha, mesmo com outros blocos no meio.
-3. **Vidro de estufa** é: vidro, vidro fumê, painel de vidro, os 16 vidros tingidos e os 16 painéis tingidos (35 blocos, na tag `cultivo:greenhouse_glass`).
-   - Cuidado com o **vidro fumê**: ele conta como estufa, mas **bloqueia a luz**. Com teto de vidro fumê, ponha tochas dentro, senão a planta não cresce (seção 5.4).
+3. **Vidro de estufa** é: vidro, vidro fosco, vidraça, os 16 vidros tingidos e as 16 vidraças tingidas (35 blocos, na tag `cultivo:greenhouse_glass`).
+   - Cuidado com o **vidro fosco**: ele conta como estufa, mas **bloqueia a luz**. Com teto de vidro fosco, ponha tochas dentro, senão a planta não cresce (seção 5.4).
 
 **Exemplo** (é o mesmo dos GameTests): vidro 2 blocos acima da planta e vidro a 2 blocos de distância nas 4 direções. Uma caixa de vidro em volta funciona:
 
@@ -605,50 +767,77 @@ Também vale mais apertado: teto logo acima da planta (1 bloco) e paredes encost
 
 **O que a estufa dá:**
 
-- crescimento ×1,25, **multiplicado** pelo multiplicador da variedade (por exemplo, Eclipse: 0,8 × 1,25 = 1,0);
+- crescimento ×1,25, **multiplicado** pelo crescimento da genética (por exemplo, Eclipse: 0,8 × 1,25 = 1,0);
 - qualidade maior na colheita.
 
 **Qualidade** (`core/QualityRules.java`): é um número gravado no item e mostrado no tooltip. A escala vai de 1 a 5, mas a colheita só dá de 2 a 5. A qualidade 1 só aparece em item criado por comando (`/give`).
 
-| Rota | Base | Resultado possível |
-|---|---|---|
-| Ao ar livre | 2 | 2 (Regular) ou 3 (Boa) |
-| Estufa | 4 | 4 (Ótima) ou 5 (Excepcional) |
+| Rota | Base | Resultado possível | Depois da cura no pote (seção 5.9) |
+|---|---|---|---|
+| Ao ar livre | 2 | 2 (Regular) ou 3 (Boa) | 3 ou 4 |
+| Estufa | 4 | 4 (Ótima) ou 5 (Excepcional) | 5 |
 
-O "+1" sai com a chance da variedade (20%, 35% ou 50%). A qualidade é sorteada **no servidor, na hora em que você quebra a planta madura**, então a estufa precisa estar montada nesse momento. As cores no tooltip são: 1 cinza-escuro, 2 cinza, 3 verde, 4 azul-claro, 5 lilás (roxo-claro).
+O "+1" sai com a chance da potência da genética (20%, 35% ou 50%). A qualidade é sorteada **no servidor, na hora em que você quebra a planta madura**, então a estufa precisa estar montada nesse momento. Mesmo com a cura, a estufa continua dando o melhor produto. As cores no tooltip são: 1 cinza-escuro, 2 cinza, 3 verde, 4 azul-claro, 5 lilás (roxo-claro).
 
 ### 5.6 Estações de processamento
 
-As três estações funcionam do mesmo jeito: **não têm tela**.
+As três estações funcionam do mesmo jeito: **não têm tela**. A frente de cada uma fica virada para quem a colocou. Com o machado elas quebram mais rápido.
 
-- Clique com o botão direito segurando o item certo: a estação pega a pilha inteira para a entrada.
-- Clique com a **mão vazia**: você retira a saída. Se não houver saída, retira a entrada de volta, e o progresso zera. Clicar com um item que a estação não aceita naquele momento faz o mesmo que a mão vazia.
+**Cliques** (clique com o botão direito):
+
+| O que você faz | O que acontece |
+|---|---|
+| Clicar segurando o ingrediente certo | a estação pega a pilha inteira (ou o quanto couber) para a entrada |
+| Clicar com a **mão vazia** | você retira **só a saída pronta**; sem saída, nada sai |
+| **Agachado** (Shift) e com **as duas mãos vazias** | você pega de volta a **entrada** que estava esperando, e o progresso zera |
+| Clicar segurando algo que a estação não aceita naquele momento (outro item, outra qualidade, entrada cheia) | **nada sai da estação**: o jogo faz o que faria com o item, por exemplo colocar o bloco ao lado |
+
+O que sai vai para o inventário; se não couber, cai aos seus pés. Segurar o botão ou um amigo clicando logo depois de você nunca puxa a entrada que está trabalhando.
+
+**Funcionamento:**
 - A estação trabalha **um ciclo por vez**: o Suporte de Secagem e a Peneira usam 1 item por ciclo; a Prensa usa 2 resinas por ciclo. Ela só trabalha enquanto aquela área do mapa estiver carregada (isto é, perto de algum jogador; veja "Área carregada" no glossário).
-- A qualidade da entrada passa para a saída. Na Peneira e na Prensa, a **variedade** também passa (veja abaixo).
-- Se a saída estiver cheia, ou tiver um item diferente do que vai sair (outra qualidade ou outra variedade), a estação **pausa** sem perder nada. Retire a saída para ela continuar.
+- A qualidade da entrada passa para a saída, e a **genética** também (veja abaixo).
+- Se a saída estiver cheia, ou tiver um item diferente do que vai sair (outra qualidade ou outra genética), a estação **pausa** sem perder nada. Retire a saída para ela continuar.
 - Se você quebrar a estação, os itens dentro caem no chão.
+
+**Como saber o que a estação está fazendo** (o modelo muda; no F3, a linha `contents`):
+
+| Estado | Suporte de Secagem | Peneira de Bancada | Prensa Manual |
+|---|---|---|---|
+| Vazia (`empty`) | só o cavalete | só a bancada | placa erguida |
+| Carregada, parada (`loaded`): tem entrada, mas o ciclo não anda (por exemplo, 1 resina só na prensa) | maços frescos parados | flores paradas na tela | resina parada sob a placa erguida |
+| Trabalhando (`working`) | maços balançando, farelo verde caindo, farfalhar | flores tremendo, pó âmbar caindo, som de peneira | placa subindo e descendo, resina pingando, som de prensa |
+| Pronta (`done`): saída esperando e o ciclo parado | maços secos | resina na bandeja de baixo | barra de haxixe na base |
+
+Cada ciclo terminado solta uma lufada branca e o som "Processo concluído" (com as legendas ligadas, seção 5.10).
 
 | Estação | Entrada | Saída | Tempo por ciclo |
 |---|---|---|---|
-| Suporte de Secagem | 1 Flor Fresca | 1 Flor Seca (da mesma variedade) | 600 ticks = **30 s** |
-| Peneira de Bancada | 1 Flor Seca (qualquer variedade) | 1 Resina da mesma variedade, ou **2** se a qualidade for 4 ou mais | 200 ticks = **10 s** |
-| Prensa Manual | 2 Resinas iguais (mesma variedade e mesma qualidade) | 1 Haxixe da mesma variedade | 300 ticks = **15 s** |
+| Suporte de Secagem | 1 Flor Fresca | 1 Flor Seca (da mesma genética) | 600 ticks = **30 s** |
+| Peneira de Bancada | 1 Flor Seca (qualquer genética) | 1 Resina da mesma genética; **+1** se a qualidade for 4 ou mais e **+1** com o Dichavador instalado | 200 ticks = **10 s** |
+| Prensa Manual | 2 Resinas iguais (mesma genética e mesma qualidade) | 1 Haxixe da mesma genética | 300 ticks = **15 s** |
 
-Fontes: `core/StationKind.java`, `core/ProcessingRules.java`, `block/ProcessingStationBlockEntity.java` e `manifest.json` (`processing`). Exemplo: 64 flores no Suporte de Secagem levam 64 × 30 s = 32 minutos.
+Fontes: `core/StationKind.java`, `core/ProcessingRules.java`, `core/StationVisualRules.java`, `block/ProcessingStationBlock.java`, `block/ProcessingStationBlockEntity.java` e `manifest.json` (`processing`). Exemplo: 64 flores no Suporte de Secagem levam 64 × 30 s = 32 minutos.
 
-**Resina e haxixe guardam a variedade e a qualidade.** A variedade fica gravada no item (componente `cultivo:strain`) e aparece no tooltip como "Variedade: …". Na prática:
+**Dichavador na Peneira:**
+- **Instalar:** clique com o botão direito numa Peneira de Bancada segurando um Dichavador. Ele aparece em cima da peneira e gasta 1 (no Criativo, não gasta).
+- **Efeito:** cada ciclo rende +1 resina. Qualidade 2 dá 2 resinas; qualidade 4 dá 3.
+- **Tirar:** agachado e com as duas mãos vazias, com a peneira **sem entrada**. Se houver flores na entrada, o mesmo gesto devolve primeiro as flores.
+- **Quebrar a peneira** derruba o dichavador junto (no Sobrevivência).
 
-- Resinas (ou haxixes) de variedades ou qualidades diferentes **não se empilham**.
-- Elas também **não entram juntas** na Prensa: para prensar, junte 2 resinas iguais. Se a prensa já tem uma resina de Brisa e você clica com uma de Eclipse, a estação não aceita, e o clique funciona como mão vazia (devolve o que estiver dentro).
-- O haxixe lembra a variedade, então ao fumar ele dá o efeito daquela variedade (seção 5.8).
+**Resina e haxixe guardam a genética e a qualidade.** A genética fica gravada no item (componente `cultivo:strain`) e aparece no tooltip como "Variedade: …". Na prática:
+
+- Resinas (ou haxixes) de genéticas ou qualidades diferentes **não se empilham**.
+- **Na Prensa:** elas também **não entram juntas**. Para prensar, junte 2 resinas iguais. Se a prensa já tem uma resina de Brisa e você clica com uma de Eclipse, a resina de Eclipse não entra e nada sai da prensa.
+- **O haxixe lembra a genética:** ao fumar, ele dá o efeito daquela genética (seção 5.8). O carimbo desenhado no haxixe tem a cor da família da genética.
 - **A resina não se fuma.** Só a Flor Seca e o Haxixe servem de material para fumar (seção 5.8).
-- Resina ou haxixe **sem variedade** (da aba criativa, de `/give` sem `cultivo:strain`, ou feitos antes do commit `1e7325a`, de 24/10/2026, quando a Peneira e a Prensa passaram a gravar a variedade) continuam funcionando, mas não empilham com os novos. O haxixe sem variedade, ao fumar, dá o efeito "sem variedade".
+- **Resina ou haxixe sem genética** continuam funcionando, mas não empilham com os novos. Isso vale para os da aba criativa, de `/give` sem `cultivo:strain`, ou feitos antes do commit `1e7325a` (24/10/2026, quando a Peneira e a Prensa passaram a gravar a genética). O haxixe sem genética, ao fumar, dá o efeito "sem variedade".
 
 ### 5.7 Receitas de crafting
 
-Como ler: cada grupo entre barras é uma linha da grade, de cima para baixo, e `·` é um espaço vazio. Receitas menores que 3×3 podem ficar em qualquer posição da grade. A coluna "Onde" diz se cabe na grade 2×2 do inventário ou se precisa da **mesa de trabalho** (3×3).
+Como ler: cada grupo entre barras é uma linha da grade, de cima para baixo, e `·` é um espaço vazio. Receitas menores que 3×3 podem ficar em qualquer posição da grade. A coluna "Onde" diz se cabe na grade 2×2 do inventário ou se precisa da **mesa de trabalho** (3×3). Todas aparecem no **livro de receitas** assim que você pega um dos ingredientes.
 
-Legenda: V = Vidro (`glass`), A = Balde d'água (`water_bucket`; o balde vazio volta para você), J = Tijolo (`brick`), F = Barra de ferro (`iron_ingot`), L = Linha (`string`), C = Terracota simples (`terracotta`), S = Sílex/Pederneira (`flint`), P = Pepita de ferro (`iron_nugget`), M = Laje de madeira (qualquer), G = Graveto (`stick`), T = Tábuas (qualquer madeira).
+Legenda: V = Vidro (`glass`), A = Balde de Água (`water_bucket`; o balde vazio volta para você), J = Tijolo (`brick`), F = Lingote de Ferro (`iron_ingot`), L = Linha (`string`), C = Terracota simples (`terracotta`), S = Sílex (`flint`), P = Pepita de Ferro (`iron_nugget`), M = Laje de madeira (qualquer), G = Graveto (`stick`), T = Tábuas (qualquer madeira).
 
 > **Atenção:** estas letras são só deste guia. No `manifest.json` (seção 7.2) cada receita tem as próprias letras, e elas são diferentes (por exemplo, lá `G` é vidro e `P` é tábua). Ao editar uma receita no manifest, leia a `key` daquela receita, que diz o que cada letra é.
 
@@ -660,51 +849,81 @@ Legenda: V = Vidro (`glass`), A = Balde d'água (`water_bucket`; o balde vazio v
 | Chillum | `C` / `C` | inventário ou mesa | 1 |
 | Dichavador | `F` / `S` / `F` | mesa | 1 |
 | Isqueiro | `S` / `P` / `P` | mesa | 1 |
-| Bandeja | `P·P` / `PPP` | mesa | 1 |
-| Pote | `M` / `V` / `V` | mesa | 1 |
+| Bandeja de Enrolar | `P·P` / `PPP` | mesa | 1 |
+| Pote de Vidro | `M` / `V` / `V` | mesa | 1 |
 | Cinzeiro | `C·C` / `CCC` | mesa | 1 |
 | Suporte de Secagem | `GGG` / `L·L` / `GGG` | mesa | 1 |
 | Peneira de Bancada | `TLT` / `T·T` | mesa | 1 |
 | Prensa Manual | `FFF` / `·G·` / `TTT` | mesa | 1 |
 | Folha de Seda | sem forma: Papel + Cana-de-açúcar | inventário ou mesa | 4 |
 | Piteira | sem forma: Papel + Linha | inventário ou mesa | 4 |
-| **Baseado** | sem forma: **1 Flor Seca** (de qualquer variedade) + **1 Folha de Seda** | inventário ou mesa | 1 |
+| **Baseado** | sem forma: **1 Flor Seca** (de qualquer genética) + **1 Folha de Seda** | inventário ou mesa | 1 |
+| **Baseado com piteira** | sem forma: **1 Baseado** + **1 Piteira** | inventário ou mesa | 1 |
 
-Fontes: `core/ArticleRecipes.java` e `manifest.json` (`crafting`). O **Baseado** usa receitas do tipo `crafting_transmute` (uma por variedade), que **copiam a qualidade da flor** e gravam a variedade dela (componente `cultivo:strain`). O tooltip mostra "Variedade: …" e "Qualidade: …". Baseados só se empilham (até 16) com outros da mesma variedade e qualidade.
+Fontes: `core/ArticleRecipes.java` e `manifest.json` (`crafting` e `joint_recipe`).
+- **Baseado:** usa receitas do tipo `crafting_transmute`, uma por genética (40), que aparecem juntas no livro de receitas. Elas **copiam a qualidade da flor** e gravam a genética dela (componente `cultivo:strain`); o tooltip mostra "Variedade: …" e "Qualidade: …".
+- **Baseado com piteira:** mantém a genética e a qualidade e ganha "Com piteira" no tooltip. Não dá para pôr uma segunda piteira.
+- **Pilhas:** baseados só se empilham (até 16) com outros iguais: mesma genética, mesma qualidade, com ou sem piteira, curados ou não.
 
-Folha de Seda, Piteira, Dichavador, Bandeja, Pote e Cinzeiro são itens decorativos. A Folha de Seda também é ingrediente do baseado.
+**Para que serve cada artigo:**
+
+| Artigo | Uso |
+|---|---|
+| Baseado, Cachimbo, Chillum, Bong, Narguilé | fumar (seção 5.8) |
+| Isqueiro | necessário para fumar; gasta 1 de durabilidade por uso (64 usos) |
+| Folha de Seda | ingrediente do baseado, na bancada ou na Bandeja de Enrolar |
+| Piteira | vira Baseado com piteira: dura mais e dá menos náusea |
+| Dichavador | instala na Peneira de Bancada: +1 resina por ciclo |
+| Bandeja de Enrolar | coloca no chão: enrola 3 baseados com 2 flores secas e 3 folhas de seda (seção 5.9) |
+| Pote de Vidro | coloca no chão: guarda uma pilha e cura flores secas (seção 5.9) |
+| Cinzeiro | coloca no chão: junta a cinza de quem fuma por perto e dá farinha de osso (seção 5.9) |
 
 ### 5.8 Fumar (mecânica fictícia de jogo)
 
 **Como funciona** (`item/SmokingItem.java`, `smoke/SmokeSession.java`, `core/SmokeRules.java`, `core/SmokeDevice.java`). Tudo é decidido no servidor; o seu jogo só mostra a animação e os avisos.
 
-1. Segure o **botão direito** com um Baseado, Cachimbo, Chillum, Bong ou Narguilé na mão. O personagem leva o item à boca, com a mesma animação do chifre de cabra. Aperte **F5** para ver de fora (terceira pessoa).
-2. É preciso ter um **Isqueiro do Cultivo** (`cultivo:lighter`) em qualquer lugar do inventário.
-   - Atenção: o item do Minecraft `minecraft:flint_and_steel` também costuma aparecer como "Isqueiro" no jogo em português, e ele **não serve**.
-   - Como saber qual é o do Cultivo: ele está na aba criativa **Cultivo**, a receita é `S` / `P` / `P` (sílex e duas pepitas de ferro), e o tooltip diz "Necessário para fumar · perde 1 de durabilidade por uso".
+1. **Segure o botão direito** com um Baseado, Cachimbo, Chillum, Bong ou Narguilé na mão. O item sobe até a boca, com uma animação própria do Cultivo:
+   - em primeira pessoa, ele sobe suave, "respira" enquanto você traga e desce no fim;
+   - em terceira pessoa (aperte **F5**), o braço sobe e acompanha a cabeça;
+   - o Bong e o Narguilé usam as duas mãos quando a outra mão está vazia;
+   - funciona nas duas mãos, e o item acende enquanto você fuma (o ícone do baseado na barra também).
+2. **É preciso ter um Isqueiro do Cultivo** (`cultivo:lighter`) em qualquer lugar do inventário.
+   - O isqueiro do próprio Minecraft se chama **Pederneira** (`minecraft:flint_and_steel`) e **não serve**.
+   - Como reconhecer o do Cultivo: ele está na aba criativa **Cultivo**, a receita é `S` / `P` / `P` (sílex e duas pepitas de ferro), e o tooltip diz "Necessário para fumar" e "Gasta 1 de durabilidade a cada uso".
    - Com **F3+H** (dicas avançadas), o tooltip mostra o ID: `cultivo:lighter` ou `minecraft:flint_and_steel`.
-3. **Baseado:** gasta o próprio baseado.
-   **Cachimbo, Chillum, Bong e Narguilé:** não se gastam. A cada uso, queimam **1 Flor Seca (qualquer variedade) ou 1 Haxixe** do inventário. A resina não serve. A **mão secundária tem prioridade**: coloque nela (tecla F) a flor ou o haxixe que você quer usar. Se ela não tiver flor seca nem haxixe, o jogo pega o primeiro que achar no inventário.
-   O efeito depende do que foi queimado: a variedade e a qualidade da flor seca, do haxixe (que guarda a variedade da flor de onde veio, seção 5.6) ou do próprio baseado.
+3. **O que cada artigo gasta:**
+   - **Baseado:** gasta o próprio baseado.
+   - **Cachimbo, Chillum, Bong e Narguilé:** não se gastam. A cada uso, queimam **1 Flor Seca (qualquer genética) ou 1 Haxixe** do inventário; a resina não serve.
+   - **Mão secundária primeiro:** coloque nela (tecla F) a flor ou o haxixe que você quer usar. Se ela não tiver flor seca nem haxixe, o jogo pega o primeiro que achar no inventário.
+   - **O efeito depende do que foi queimado:** a genética e a qualidade da flor seca, do haxixe (que guarda a genética da flor de onde veio, seção 5.6) ou do próprio baseado.
 4. Cada uso tira **1 de durabilidade** do isqueiro, que tem **64**. No 64º uso ele **quebra e some**, com o som de ferramenta quebrando, e aparece o aviso **"Seu isqueiro acabou"** acima da barra de itens.
 5. **Quando o jogo não deixa fumar**, nada é gasto e aparece um aviso acima da barra de itens. Ele confere nesta ordem e mostra só o primeiro problema que achar:
    1. sem isqueiro do Cultivo: "Você precisa de um isqueiro no inventário";
    2. cachimbo, chillum, bong ou narguilé sem flor seca nem haxixe: "Você precisa de flor seca ou haxixe no inventário";
    3. já perto do limite de 6 minutos (veja "Acumular e limite", abaixo): "Você já está chapado ao máximo, espere um pouco".
-6. Ao terminar, sai fumaça branca perto da boca, com som de isqueiro e de brasa apagando.
-7. No modo Criativo nada é gasto (nem baseado, nem material, nem isqueiro), mas você ainda precisa **ter** o isqueiro e, nos artigos, a flor seca ou o haxixe no inventário. Teste no Sobrevivência para ver o consumo.
+
+   Se o isqueiro ou o material sumir enquanto você segura o botão (por exemplo, você jogou fora), o mesmo aviso aparece no fim e nada é gasto.
+6. **Sons e partículas** (todos os jogadores por perto veem e ouvem):
+   - ao começar, o isqueiro estala e solta uma chaminha;
+   - com o item na boca, saem brasa e fiapos de fumaça; o Bong e o Narguilé borbulham;
+   - no fim, você solta uma nuvem de fumaça com som de expirar.
+
+   Com as legendas ligadas (seção 5.10) aparecem "Isqueiro acende", "Tragando", "Bong borbulha", "Narguilé borbulha" e "Fumaça soprada".
+7. **No modo Criativo** nada é gasto (nem baseado, nem material, nem isqueiro), mas você ainda precisa **ter** o isqueiro e, nos artigos, a flor seca ou o haxixe no inventário. Teste no Sobrevivência para ver o consumo.
+8. **Cinzeiro:** cada sessão que termina bem perto de um Cinzeiro põe cinza nele (seção 5.9).
 
 **Tempo segurando o botão:** Baseado, Cachimbo e Chillum 1,6 s; Bong 2 s; Narguilé 2,4 s.
 
 **Duração do efeito "Chapado" em um uso** (calculada no servidor):
 
-`45 s × força do artigo × (0,6 + 0,2 × qualidade) × 1,5 se for haxixe`
+`45 s × força do artigo × (0,6 + 0,2 × qualidade) × 1,5 se for haxixe × 1,25 se for baseado com piteira`
 
 Um item sem qualidade conta como qualidade 2. Itens pegos na aba criativa não têm qualidade.
 
 | Artigo | Força | Qualidade 2 | Qualidade 3 | Qualidade 4 | Qualidade 5 |
 |---|---|---|---|---|---|
 | Baseado | 1,0 | 45 s | 54 s | 63 s | 72 s |
+| Baseado com piteira | 1,0 × 1,25 | 56,25 s | 67,5 s | 78,75 s | 90 s |
 | Cachimbo | 1,0 | 45 s | 54 s | 63 s | 72 s |
 | Chillum | 1,2 | 54 s | 64,8 s | 75,6 s | 86,4 s |
 | Bong | 1,6 | 72 s | 86,4 s | 100,8 s | 115,2 s |
@@ -733,13 +952,19 @@ Neste guia, **sessão** quer dizer um uso só: o tempo desta tabela, sem somar o
 |---|---|---|
 | Todo uso | **Chapado** (ícone verde, só indica o tempo; nível I ou II) | o **total** acumulado |
 | Todo uso | **Fome I** ("larica") | o **total** acumulado, igual ao Chapado |
-| Todo uso | **Náusea** | 30% da **sessão**, no máximo 8 s (no máximo 20 s quando o novo total dá Chapado II) |
-| Brisa (sativa) | + **Velocidade I** | metade da **sessão** |
-| Aurora (híbrida) | + **Regeneração I** | 5 s |
-| Eclipse (índica) | + **Lentidão I** e **Regeneração I** | Lentidão: metade da **sessão**; Regeneração: 10 s |
-| Sem variedade: baseado ou haxixe da aba criativa ou de `/give` sem `cultivo:strain`, ou haxixe feito antes do commit `1e7325a` (24/10/2026) | + **Lentidão I** | 30% da **sessão** |
+| Todo uso | **Náusea** | 30% da **sessão**, no máximo 8 s (no máximo 20 s quando o novo total dá Chapado II); com piteira, a metade disso |
+| Genética **Sativa** (Brisa e as sativas do catálogo) | + **Velocidade I** | metade da **sessão** |
+| Genética **Híbrida** (Aurora e as híbridas do catálogo) | + **Regeneração I** | 5 s |
+| Genética **Índica** (Eclipse e as índicas do catálogo) | + **Lentidão I** e **Regeneração I** | Lentidão: metade da **sessão**; Regeneração: 10 s |
+| Sem genética: baseado ou haxixe da aba criativa ou de `/give` sem `cultivo:strain`, ou haxixe feito antes do commit `1e7325a` (24/10/2026) | + **Lentidão I** | 30% da **sessão** |
 
-**Só o Chapado e a Fome crescem com o acumulado.** A Náusea e o efeito da variedade são **calculados** só com a sessão atual. Exemplo: você está com 4 min de Chapado e fuma um baseado de Brisa de qualidade 2 (sessão de 45 s). O Chapado e a Fome vão para 4 min 45 s. A Velocidade nova é de 22,5 s (metade de 45 s) e a Náusea nova é de 13,5 s (30% de 45 s; o teto é 20 s porque o total passa de 2 min).
+**Só o Chapado e a Fome crescem com o acumulado.** A Náusea e o efeito da genética são **calculados** só com a sessão atual.
+- Exemplo: você está com 4 min de Chapado e fuma um baseado de Brisa de qualidade 2 (sessão de 45 s).
+  - O Chapado e a Fome vão para 4 min 45 s.
+  - A Velocidade nova é de 22,5 s (metade de 45 s).
+  - A Náusea nova é de 13,5 s (30% de 45 s; o teto é 20 s porque o total passa de 2 min).
+
+**Baseado com piteira:** dura 25% a mais, e a náusea cai pela metade. Exemplo: um baseado de Brisa de qualidade 2 dá 45 s de Chapado e 8 s de Náusea; com piteira, 56,25 s e 4 s.
 
 **Mas um efeito mais longo que você já tinha continua.** Para Náusea, Velocidade, Lentidão e Regeneração, o jogo usa a regra normal do Minecraft: no mesmo nível, o efeito só é trocado se o novo durar **mais** que o que resta. Na prática, cada um desses efeitos fica com **o maior** entre o que restava e o novo.
 
@@ -751,37 +976,105 @@ Neste guia, **sessão** quer dizer um uso só: o tempo desta tabela, sem somar o
 - Se você fumar Brisa e depois Eclipse, fica com Velocidade e Lentidão ao mesmo tempo, como acontece no Minecraft normal quando você bebe as duas poções; uma compensa parte da outra.
 - Com uma **Velocidade II** de poção, a Velocidade I da Brisa não aparece por cima: se durar mais que a da poção, ela fica "escondida" e só passa a valer quando a da poção acabar (regra do próprio Minecraft).
 
-**Haxixe:** além de durar 1,5×, o haxixe feito nas estações guarda a variedade da flor (seção 5.6), então dá o efeito daquela variedade. Por exemplo, haxixe de Eclipse dá Lentidão e Regeneração. A Lentidão de 30% é só do haxixe ou do baseado **sem** variedade.
+**Haxixe:** além de durar 1,5×, o haxixe feito nas estações guarda a genética da flor (seção 5.6), então dá o efeito daquela genética. Por exemplo, haxixe de Eclipse dá Lentidão e Regeneração. A Lentidão de 30% é só do haxixe ou do baseado **sem** genética.
+
+### 5.9 Bandeja, pote e cinzeiro
+
+Os três se colocam no chão como um bloco: segure o item e clique com o botão direito no chão. No inventário eles continuam com o ícone de item. Quebrados, cada um devolve o próprio item. Bandeja e cinzeiro quebram mais rápido com a picareta.
+
+**Bandeja de Enrolar** (`core/RollingRules.java`):
+- **Enrolar:** com a bandeja no chão, clique com o botão direito segurando **pelo menos 2 Flores Secas iguais** (da mesma pilha: mesma genética e mesma qualidade). Você precisa ter também **3 Folhas de Seda** em qualquer lugar do inventário. Ela gasta 2 flores e 3 folhas e entrega **3 Baseados**: 1,5 baseado por flor, contra 1 na bancada.
+- **O que os baseados levam:** a genética e a qualidade da flor (e a cura, se a flor foi curada). Eles empilham com os baseados feitos na bancada com a mesma flor.
+- **Mãos:** se a mão principal não tiver flores, mas a secundária tiver, a secundária enrola.
+- **Quando falta algo**, nada é gasto e aparece "Você precisa de 2 flores secas iguais na mão" ou "Você precisa de 3 folhas de seda no inventário".
+- No Criativo, nada é gasto.
+
+**Pote de Vidro** (`core/CuringRules.java`):
+- **Guarda uma pilha** de Flor Seca (qualquer genética), Resina, Haxixe ou Baseado. Clique com o botão direito com o item na mão para guardar o quanto couber; só junta com o mesmo item e a mesma qualidade e genética.
+- **Mão vazia** retira a pilha inteira (o que não couber no inventário cai aos seus pés).
+- **Cura:** uma pilha de **Flores Secas** que fica **2 minutos** (2400 ticks) no pote, sem ninguém mexer, ganha **+1 de qualidade** (até 5) e a marca "Cura concluída" no tooltip.
+  - Acontece **uma vez só** por flor.
+  - Mexer no conteúdo (pôr ou tirar) recomeça a contagem.
+  - Ao terminar, o pote solta brilhos verdes e toca o som "Flores curadas".
+  - Flores curadas não empilham com as não curadas. Resina, haxixe e baseado não curam.
+- **Comparador de Redstone:** o pote dá sinal pela quantidade guardada (cheio = 15).
+- **Quebrar** o pote derruba o que estava dentro.
+- **Funil:** o pote não funciona com funil; é só na mão.
+
+**Cinzeiro** (`core/AshtrayRules.java`):
+- **Junta cinza:** cada vez que alguém termina de fumar perto dele, o cinzeiro ganha 1 de cinza, até 4. "Perto" é até 4 blocos para os lados e 2 para cima ou para baixo do lugar onde a pessoa está.
+  - Com vários cinzeiros, enche o mais próximo que ainda não está cheio.
+  - No Criativo também junta.
+- **Cheio (4 de cinza):** clique com a **mão vazia** para tirar **1 Farinha de Osso**, e ele volta a 0. Segurando qualquer item, nada acontece.
+- **Comparador de Redstone:** sinal de 3 por nível de cinza (cheio = 12).
+- **Quebrar** o cinzeiro devolve só o cinzeiro; a cinza se perde.
+
+### 5.10 Sons, animações e legendas
+
+- **Sons:** o Cultivo tem 16 sons próprios, que usam áudios do Minecraft com volume e tom diferentes:
+  - isqueiro, tragar, borbulhar e soltar fumaça;
+  - cada estação trabalhando e o fim de cada ciclo;
+  - o pote abrindo, fechando e curando;
+  - o dichavador, a bandeja e o cinzeiro.
+- **Legendas:** para ver o que está tocando, ligue as legendas. No jogo em português: **Opções → Música e sons… → Legendas ocultas: Sim** (a mesma opção aparece em Acessibilidade…). Cada som do Cultivo tem legenda em português, como "Peneira sacode" ou "Processo concluído".
+- **Animações:**
+  - fumar (seção 5.8);
+  - os maços do suporte e as flores da peneira mexem quando a estação trabalha, e a placa da prensa sobe e desce (seção 5.6);
+  - o baseado aceso tem brasa piscando, o bong aceso tem bolhas e o narguilé tem o carvão brilhando.
 
 ---
 
 ## 6. O que você precisa testar à mão
 
-Os testes automáticos não abrem a tela do jogo. Estes itens só você consegue conferir.
+Os testes automáticos não abrem a tela do jogo. Estes itens só você consegue conferir. Desde o polimento de 24/10/2026, **nada do que é só visual ou sonoro foi visto num jogo aberto**: modelos 3D, animações, partículas e sons. Por isso esta checklist é a parte mais importante agora.
 
 **Onde marcar:** as caixinhas `[ ]` deste guia não dá para marcar no site do GitHub. Use uma folha de papel ou um arquivo de texto à parte: para cada item, anote "ok" ou o que deu errado. No fim, registre o resultado no `docs/TODO.md` como explica a [seção 6.4](#64-como-reportar-um-problema).
 
+**Atalho:** o teste visual automático da [seção 3.8](#38-teste-visual-automático-só-no-windows-com-tela) tira prints das plantas, estações, itens e de alguém fumando. Ele não substitui esta lista, mas mostra rápido se algo está faltando.
+
 ### 6.1 No `runClient` (single player)
 
-Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois teste no Sobrevivência. Os comandos vão no **[chat do jogo]**: aperte `T`, cole **um comando por vez** e aperte Enter.
+Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois teste no Sobrevivência. Os comandos vão no **[chat do jogo]**: aperte `T`, cole **um comando por vez** e aperte Enter. Ligue as legendas (seção 5.10) para conferir os sons.
 
-- [ ] A aba criativa **Cultivo** aparece, com o ícone da Flor Fresca de Brisa. Ela fica depois da aba de ovos de geração; pode estar na segunda página de abas, use as setas.
-- [ ] Todos os itens e blocos têm textura. Uma textura faltando aparece como um xadrez roxo e preto.
-- [ ] Todos os nomes aparecem traduzidos, e não como `item.cultivo.xxx`. Teste em **Português (Brasil)** e em **English** (Opções → Idioma).
-- [ ] Os tooltips estão certos:
-  - semente: "Comum · Automática · Sativa", etc.;
-  - flores, resina e haxixe: "Qualidade: …" com cor (só aparece em itens com qualidade; os da aba criativa não têm);
-  - resina e haxixe feitos nas estações: também "Variedade: …" (os da aba criativa não têm);
-  - estações: uma linha de função e outra de uso;
-  - baseado: variedade e qualidade (quando tiver), e "Segure o botão direito para fumar · precisa de isqueiro";
-  - cachimbo, chillum, bong e narguilé: "Segure o botão direito para fumar · precisa de isqueiro e flor seca ou haxixe (mão secundária primeiro)";
-  - isqueiro: barra de durabilidade e "Necessário para fumar · perde 1 de durabilidade por uso";
-  - artigos decorativos: "Item decorativo".
-- [ ] Plantar em terra arada, ver os 4 estágios e usar farinha de osso.
-- [ ] Colher madura e verde, e conferir os drops.
+**Abas, nomes e texturas**
+- [ ] **Abas criativas:**
+  - **Cultivo**, com o ícone do Baseado, fica depois da aba "Ovos geradores"; pode estar na segunda página de abas, use as setas;
+  - **Cultivo: Genéticas**, com o ícone da Flor Fresca de Brisa, vem logo depois, com semente, flor fresca e flor seca de cada genética (120 itens, 3 genéticas por linha).
+- [ ] **Texturas:** todos os itens e blocos têm textura, inclusive os modelos 3D (estações, bandeja, pote e cinzeiro colocados, artigos na mão). Uma textura faltando aparece como um xadrez roxo e preto; um modelo faltando, como um cubo roxo e preto.
+- [ ] **Ícones:** os ícones de semente, flor fresca e flor seca são diferentes entre genéticas. Compare algumas da mesma família de cor na aba Genéticas.
+- [ ] **Português:** todos os nomes aparecem em português, e não como `item.cultivo.xxx`. Troque o idioma para **English** (Opções → Idioma…): os textos do Cultivo **continuam em português** (é de propósito, seção 5) e os do Minecraft mudam.
+
+**Tooltips**
+- [ ] Os tooltips estão certos e cada linha cabe na tela (nenhuma linha muda de quebra quando você mexe o mouse):
+  - semente e flores: "Comum · Automática · Sativa · Potência ★☆☆" (a raridade colorida);
+  - flores, resina e haxixe: "Qualidade: …" com cor (só em itens com qualidade; os da aba criativa não têm); "Cura concluída" nas flores curadas;
+  - resina, haxixe e baseado feitos no jogo: "Variedade: …";
+  - baseado: "Com piteira", quando tiver, e as linhas "Segure o botão direito para fumar" e "Precisa de um isqueiro no inventário";
+  - cachimbo, chillum, bong e narguilé: "Segure o botão direito para fumar", "Precisa de isqueiro e flor seca ou haxixe" e "Usa primeiro o da mão secundária";
+  - isqueiro: barra de durabilidade, "Necessário para fumar" e "Gasta 1 de durabilidade a cada uso";
+  - estações: uma linha de função e quatro de uso, começando com "Clique com o botão direito:";
+  - folha de seda, piteira, dichavador, bandeja, pote e cinzeiro: cada um explica o próprio uso em linhas curtas; nenhum diz "Item decorativo".
+
+**Plantas e estufa**
+- [ ] **8 estágios:** plantar em terra arada, ver os 8 estágios (um por idade) e usar farinha de osso. Na idade 6 a flor ainda é pequena; só na idade 7 aparecem as flores grandes e coloridas.
+- [ ] **Catálogo:** plantar 3 ou 4 genéticas do catálogo de cores diferentes e ver as cores da família na plantação.
+- [ ] **Colheita:** colher madura e verde, e conferir os drops (madura: flor fresca da mesma genética + sementes; verde: 1 semente).
 - [ ] **Estufa:** montar uma, colher e ver qualidade 4 ou 5. Fora dela, 2 ou 3.
-- [ ] **Estações:** inserir, esperar 30 s, 10 s ou 15 s, retirar. Quebrar com itens dentro e ver os itens caírem.
-- [ ] **Variedade na resina e no haxixe:**
+
+**Estações**
+- [ ] **Colocar:** a frente de cada estação fica virada para você. Com o machado elas quebram mais rápido.
+- [ ] **Estados** (seção 5.6; confira também a linha `contents` do F3):
+  1. coloque uma flor fresca no Suporte de Secagem: maços balançando, farelo verde caindo e o som "Maços farfalham";
+  2. depois de 30 s, a lufada e "Processo concluído", e os maços secos;
+  3. na Peneira, as flores tremem e cai pó âmbar;
+  4. na Prensa com 2 resinas, a placa sobe e desce e pinga resina;
+  5. com **1 resina só**, a prensa fica "carregada": resina parada e placa erguida, sem mexer.
+- [ ] **Cliques:**
+  - segurando terra, clique numa estação com coisa dentro: a terra é colocada ao lado e nada sai da estação;
+  - com a mão vazia, sai só o que está pronto;
+  - agachado e com as duas mãos vazias, volta a entrada.
+- [ ] **Quebrar:** quebre uma estação com itens dentro e veja os itens caírem.
+- [ ] **Genética na resina e no haxixe:**
   1. Pegue a Peneira, a Prensa e uma Flor Seca de Eclipse de qualidade 4:
      ```
      /give @s cultivo:sieve
@@ -789,9 +1082,9 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
      /give @s cultivo:eclipse_dried_flower[cultivo:quality=4] 4
      ```
   2. Peneire uma flor. Ela rende 2 resinas iguais, com "Variedade: Eclipse" no tooltip.
-  3. Prense as duas e veja a mesma variedade no haxixe.
-  4. Peneire outra flor de Eclipse. Separe **uma** das duas resinas (no inventário, clique com o botão direito na pilha para pegar metade) e coloque só ela na prensa.
-  5. Pegue uma resina de Brisa com `/give @s cultivo:resin[cultivo:strain="brisa",cultivo:quality=4] 1` e clique na prensa com ela: ela não entra, e o clique funciona como mão vazia (devolve a resina de Eclipse).
+  3. Prense as duas e veja a mesma genética no haxixe.
+  4. Peneire outra flor de Eclipse. Separe **uma** das duas resinas (no inventário, clique com o botão direito na pilha para pegar metade) e coloque só ela na prensa: a prensa fica "carregada", parada.
+  5. Pegue uma resina de Brisa com `/give @s cultivo:resin[cultivo:strain="brisa",cultivo:quality=4] 1` e clique na prensa com ela: ela não entra e nada sai da prensa.
 - [ ] **Pausa da estação** (teste rápido, sem precisar encher 64 itens):
   1. Pegue o Suporte de Secagem e duas Flores Frescas de qualidades diferentes:
      ```
@@ -800,49 +1093,89 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
      /give @s cultivo:brisa_fresh_flower[cultivo:quality=5] 1
      ```
   2. Seque a de qualidade 2 no Suporte de Secagem e **não** retire a Flor Seca.
-  3. Coloque a de qualidade 5 e espere mais de 30 s.
-  4. Clique duas vezes com a mão vazia. O 1º clique devolve a Flor Seca de qualidade 2. O 2º devolve a Flor Fresca de qualidade 5 ainda **fresca**, porque a estação ficou parada.
-- [ ] Craftar cada receita da tabela 5.7, incluindo o baseado das 3 variedades.
-- [ ] **Fumar:**
-  - a animação de levar à boca (F5 para ver de fora);
-  - as partículas de fumaça e o som;
-  - o **ícone "Chapado"** no canto da tela e no inventário, com o tempo;
-  - a Náusea balançando a tela;
-  - as mensagens de recusa sem isqueiro e sem material;
-  - no Sobrevivência: o baseado some, a flor ou o haxixe é gasto, a barra do isqueiro desce;
-  - fumar várias vezes até ver **Chapado II**. Continue (um bong com haxixe enche rápido) até o jogo recusar perto dos 6 min com "Você já está chapado ao máximo, espere um pouco", e confira que nada foi gasto nessa recusa;
-  - **Velocidade × Lentidão:** ponha uma Flor Seca de Brisa na mão secundária e fume no cachimbo (aparece Velocidade). Depois faça o mesmo com uma de Eclipse: a Velocidade some e aparece a Lentidão;
-  - **haxixe com variedade:** fume no cachimbo um haxixe de Eclipse e veja Lentidão e Regeneração;
-  - **isqueiro quebrando:** com `/give @s cultivo:lighter[damage=63]` (falta 1 uso), fume uma vez no Sobrevivência. O isqueiro some com som de quebra e aparece "Seu isqueiro acabou".
-- [ ] Comandos úteis. **[chat do jogo]** (aperte `T`, cole **um por vez** e aperte Enter):
-  ```
-  /gamemode creative
-  /gamemode survival
-  /give @s cultivo:brisa_seeds 16
-  /give @s cultivo:brisa_fresh_flower[cultivo:quality=2] 1
-  /give @s cultivo:brisa_fresh_flower[cultivo:quality=5] 1
-  /give @s cultivo:aurora_dried_flower[cultivo:quality=5] 8
-  /give @s cultivo:brisa_dried_flower[cultivo:quality=3] 4
-  /give @s cultivo:eclipse_dried_flower[cultivo:quality=4] 4
-  /give @s cultivo:joint[cultivo:strain="eclipse",cultivo:quality=5] 4
-  /give @s cultivo:hash[cultivo:quality=4] 8
-  /give @s cultivo:hash[cultivo:strain="eclipse",cultivo:quality=4] 8
-  /give @s cultivo:bong
-  /give @s cultivo:lighter
-  /give @s cultivo:lighter[damage=63]
-  /effect clear @s
-  ```
-  - Em `cultivo:strain`, os valores aceitos são `"brisa"`, `"aurora"` e `"eclipse"`. Ele vale para o baseado, a resina e o haxixe.
-  - Em `cultivo:quality`, de 1 a 5.
-  - O primeiro `/give` de haxixe não tem variedade (dá a Lentidão de 30%); o segundo é haxixe de Eclipse. Os dois não se empilham.
-  - Lembre: itens tirados da aba criativa não têm qualidade (contam como 2 ao fumar), e o baseado, a resina e o haxixe da aba criativa não têm variedade.
+  3. Coloque a de qualidade 5 e espere mais de 30 s. O suporte mostra os maços secos (pronta) e não trabalha.
+  4. Clique com a mão vazia: sai a Flor Seca de qualidade 2.
+  5. Agachado e com as duas mãos vazias, clique de novo: volta a Flor Fresca de qualidade 5, ainda **fresca**, porque a estação ficou parada.
+- [ ] **Dichavador:**
+  1. Instale um Dichavador na Peneira (clique com ele na mão): ele aparece em cima dela, com som.
+  2. Peneire uma flor de qualidade 4: saem 3 resinas.
+  3. Com a peneira sem entrada, agachado e de mãos vazias, tire o dichavador.
+
+**Bandeja, pote e cinzeiro** (seção 5.9)
+- [ ] **Blocos colocados:** coloque a Bandeja de Enrolar, o Pote de Vidro e o Cinzeiro no chão e olhe de todos os lados. Quebrados, cada um devolve o próprio item.
+- [ ] **Bandeja de Enrolar:**
+  - com 2 flores secas iguais na mão e 3 folhas de seda no inventário, clique na bandeja: saem 3 baseados e o som "Baseado enrolado";
+  - com 1 flor, ou com 2 folhas, aparece o aviso e nada é gasto;
+  - com as flores só na mão secundária, também enrola.
+- [ ] **Pote de Vidro:**
+  - guarde flores secas: o conteúdo aparece atrás do vidro;
+  - um Comparador de Redstone encostado no pote acende de acordo com a quantidade;
+  - espere 2 minutos sem mexer: brilhos verdes, "Flores curadas", e as flores ganham +1 de qualidade e "Cura concluída";
+  - de mão vazia, tire tudo.
+- [ ] **Cinzeiro:**
+  - fume 4 vezes perto dele: a cinza sobe de 1 em 1, com a lufada de cinza e o som;
+  - cheio, clique de mão vazia: sai 1 Farinha de Osso e ele esvazia.
+
+**Receitas**
+- [ ] Craftar cada receita da tabela 5.7, incluindo o baseado de algumas genéticas e o baseado com piteira. As receitas aparecem no livro de receitas.
+
+**Fumar**
+- [ ] **Animação:**
+  - em primeira pessoa, o item sobe suave até a boca, "respira" e desce no fim;
+  - em terceira pessoa (F5), o braço sobe e acompanha a cabeça;
+  - teste também com o item na mão secundária;
+  - o Bong e o Narguilé usam as duas mãos quando a outra está vazia;
+  - nada deve cobrir a tela inteira nem pular de posição quando você começa a fumar.
+- [ ] **Item aceso:** baseado com brasa piscando (também o ícone na barra), cachimbo e chillum com brasa, bong com bolhas e narguilé com o carvão brilhando.
+- [ ] **Partículas e sons:** chaminha do isqueiro, brasa e fumaça perto da boca, bolhas no bong e no narguilé, nuvem de fumaça no fim. As legendas: "Isqueiro acende", "Tragando", "Bong borbulha", "Narguilé borbulha", "Fumaça soprada".
+- [ ] **Efeito:** o **ícone "Chapado"** no canto da tela e no inventário, com o tempo, e a Náusea balançando a tela.
+- [ ] **Recusas:** as mensagens de recusa sem isqueiro e sem material.
+- [ ] **Consumo** (no Sobrevivência): o baseado some, a flor ou o haxixe é gasto, a barra do isqueiro desce.
+- [ ] **Chapado II e limite:** fume várias vezes até ver **Chapado II**. Continue (um bong com haxixe enche rápido) até o jogo recusar perto dos 6 min com "Você já está chapado ao máximo, espere um pouco", e confira que nada foi gasto nessa recusa.
+- [ ] **Velocidade e Lentidão juntas:** ponha uma Flor Seca de Brisa na mão secundária e fume no cachimbo (aparece Velocidade). Depois faça o mesmo com uma de Eclipse: aparece a Lentidão, e a Velocidade **continua** (as duas ficam juntas, seção 5.8).
+- [ ] **Haxixe com genética:** fume no cachimbo um haxixe de Eclipse e veja Lentidão e Regeneração.
+- [ ] **Baseado com piteira:** dura mais e a Náusea é mais curta que a do baseado comum da mesma flor. Na mão, a ponta é creme (a do comum é de papel torcido).
+- [ ] **Isqueiro quebrando:** com `/give @s cultivo:lighter[damage=63]` (falta 1 uso), fume uma vez no Sobrevivência. O isqueiro some com som de quebra e aparece "Seu isqueiro acabou".
+
+**Comandos úteis.** **[chat do jogo]** (aperte `T`, cole **um por vez** e aperte Enter):
+```
+/gamemode creative
+/gamemode survival
+/give @s cultivo:brisa_seeds 16
+/give @s cultivo:manga_gelada_seeds 16
+/give @s cultivo:brisa_fresh_flower[cultivo:quality=2] 1
+/give @s cultivo:brisa_fresh_flower[cultivo:quality=5] 1
+/give @s cultivo:aurora_dried_flower[cultivo:quality=5] 8
+/give @s cultivo:brisa_dried_flower[cultivo:quality=3] 4
+/give @s cultivo:eclipse_dried_flower[cultivo:quality=4] 4
+/give @s cultivo:joint[cultivo:strain="eclipse",cultivo:quality=5] 4
+/give @s cultivo:joint[cultivo:strain="brisa",cultivo:quality=2,cultivo:filtered={}] 4
+/give @s cultivo:hash[cultivo:quality=4] 8
+/give @s cultivo:hash[cultivo:strain="eclipse",cultivo:quality=4] 8
+/give @s cultivo:rolling_paper 16
+/give @s cultivo:filter_tip 16
+/give @s cultivo:grinder
+/give @s cultivo:rolling_tray
+/give @s cultivo:jar
+/give @s cultivo:ashtray
+/give @s cultivo:bong
+/give @s cultivo:lighter
+/give @s cultivo:lighter[damage=63]
+/summon minecraft:wandering_trader ~ ~ ~
+/effect clear @s
+```
+- **`cultivo:strain`:** os valores aceitos são os IDs das genéticas, como `"brisa"`, `"aurora"`, `"eclipse"`, `"manga_gelada"` ou `"ak_48"`. O ID é o nome sem acento, em minúsculas e com `_`; a lista completa fica em `docs/strains-catalog.json`, campo `id`. Ele vale para o baseado, a resina e o haxixe; sementes e flores já têm a genética no próprio item.
+- **`cultivo:quality`:** de 1 a 5.
+- **`cultivo:filtered={}`:** é o baseado com piteira.
+- **Haxixe:** o primeiro `/give` de haxixe não tem genética (dá a Lentidão de 30%); o segundo é haxixe de Eclipse. Os dois não se empilham.
+- **Aba criativa:** itens tirados dela não têm qualidade (contam como 2 ao fumar), e o baseado, a resina e o haxixe da aba criativa não têm genética.
 
 ### 6.2 Mundo novo: fontes de sementes
 
 Faça isto no **Criativo**, para poder voar.
 
-- [ ] **[chat do jogo]** `/locate biome minecraft:jungle`. Clique nas **coordenadas verdes** da resposta: o jogo escreve o comando `/tp` para você, é só apertar Enter. Procure a Planta Silvestre (seção 5.3), quebre e ganhe uma semente.
-- [ ] O mesmo em `minecraft:plains` ou `minecraft:meadow`. Lá ela é mais rara.
+- [ ] **Selva:** **[chat do jogo]** `/locate biome minecraft:jungle`. Clique nas **coordenadas verdes** da resposta: o jogo escreve o comando `/tp` para você, é só apertar Enter. Procure a Planta Silvestre (seção 5.3), quebre e ganhe uma semente nativa.
+- [ ] **Planície:** o mesmo em `minecraft:plains` ou `minecraft:meadow`. Lá ela é mais rara.
 - [ ] **[chat do jogo]** Ache as aldeias (um comando por vez):
   ```
   /locate structure minecraft:village_plains
@@ -852,20 +1185,25 @@ Faça isto no **Criativo**, para poder voar.
   /locate structure minecraft:village_snowy
   ```
   Para estruturas, a altura volta como `~`: depois do `/tp` você pode aparecer no ar ou dentro do chão. Por isso use o Criativo.
-- [ ] Na aldeia de planície, procure plantações do mod (pequenas, idade 0) no meio do trigo das lavouras. São raras (cerca de 5%, 2,4% e 0,9% por pé), então olhe várias lavouras.
-- [ ] Abrir baús de **casas** de aldeia de planície, savana, taiga e deserto e ver sementes em alguns deles. Nos baús da aldeia de neve não pode ter.
-- [ ] Com as linhas `biome` e `light_levels` ligadas no F3 (seção 5.4), confirme onde você está.
+- [ ] **Lavouras:** na aldeia de planície, procure plantações do mod (pequenas, idade 0) no meio do trigo das lavouras. São raras (cerca de 5%, 2,4% e 0,9% por pé), então olhe várias lavouras.
+- [ ] **Agricultor:** se der para ver um Agricultor colhendo uma plantação madura do mod, ele replanta a mesma genética, e a flor e as sementes ficam no chão.
+- [ ] **Baús:** abra baús de **casas** de aldeia de planície, savana, taiga e deserto. Metade deles deve ter uma semente, quase sempre de uma genética comum. Nos baús da aldeia de neve não pode ter.
+- [ ] **Mercador Ambulante:** com `/summon minecraft:wandering_trader ~ ~ ~`, clique nele com o botão direito. No fim da lista de trocas aparecem 2 ofertas de sementes de genéticas do catálogo, diferentes entre si (2 ou 3 sementes por 2, 4 ou 8 esmeraldas).
+- [ ] **F3:** com as linhas `biome` e `light_levels` ligadas no F3 (seção 5.4), confirme onde você está.
 
 ### 6.3 Multiplayer
 
-O `runClient` não usa a sua conta e não consegue entrar no `runServer` (seção 3.4). Para este teste, use o **jogo de verdade**.
+O `runClient` não usa a sua conta e não consegue entrar no `runServer` (seção 3.4). Para este teste, use o **jogo de verdade** com o Forge 26.3-66.0.13 (seção 4.1).
 
 1. **[terminal]** Gere o .jar (`.\gradlew.bat build`) e instale o Forge e o .jar no seu launcher (seção 4.1).
 2. **[terminal]** Rode `.\gradlew.bat runServer` e aceite a EULA (seção 3.5).
 3. Abra o jogo pelo launcher e vá em Multijogador → Adicionar servidor → `localhost`.
 4. **[console do servidor]** Para usar comandos no jogo, digite `op SeuNome` no terminal do servidor (sem `/`). "SeuNome" é o seu nome de usuário do Minecraft.
-5. Faça o ciclo completo: plantar, colher, secar, peneirar, prensar, craftar o baseado e fumar.
-6. Se um amigo entrar junto, ele deve ver a sua fumaça e a animação.
+5. Faça o ciclo completo: plantar, colher, secar, peneirar, prensar, curar no pote, enrolar na bandeja, craftar o baseado e fumar perto de um cinzeiro.
+6. **Com um amigo junto:**
+   - ele deve ver a sua animação de fumar, a fumaça e o item aceso, e ouvir os sons;
+   - as estações animadas e a placa da prensa devem aparecer para os dois;
+   - **numa estação trabalhando:** um coloca a entrada e o outro clica com a mão vazia; só sai o que está pronto, nunca a entrada em andamento.
 7. Confira o `run\logs\latest.log`: procure linhas com `ERROR` ou `Exception` que não estejam na lista da [seção 3.7](#37-mensagens-que-assustam-mas-são-normais).
 
 ### 6.4 Como reportar um problema
@@ -895,23 +1233,25 @@ Só registre com evidência: a data, o comando e o que você viu.
 
 1. Acrescente uma linha na tabela "Evidências registradas", no formato:
    ```
-   | 24/10/2026 | `.\gradlew.bat runClient` (Windows 11) | Aba Cultivo aparece; todas as texturas e nomes ok em pt_br e en_us |
+   | 25/10/2026 | `.\gradlew.bat runClient` (Windows 11, código abc1234) | As duas abas aparecem; texturas, modelos e nomes ok; a prensa anima |
    ```
-   - A linha nova vai **logo depois da última linha da tabela** (a última que começa com `|`; hoje é a linha 26 do arquivo), **sem linha em branco no meio**. Uma linha em branco quebra a tabela.
-2. O `TODO.md` também tem caixinhas próprias, como `- [ ] Cliente de desenvolvimento (runClient): não testado...`. Só troque `- [ ]` por `- [x]` quando **tudo** o que aquela linha pede foi testado e deu certo, e troque também o texto pelo que você viu. Na dúvida, só acrescente a linha na tabela.
+   - Troque `abc1234` pelo código que o `git log --oneline -1` mostrar.
+   - A linha nova vai **logo depois da última linha da tabela "Evidências registradas"** (a última linha que começa com `|` antes do texto "Conferência dos formatos"), **sem linha em branco no meio**. Uma linha em branco quebra a tabela.
+2. O `TODO.md` também tem caixinhas próprias, como `- [ ] Checagem visual no cliente (seção 6 do guia).` Só troque `- [ ]` por `- [x]` quando **tudo** o que aquela linha pede foi testado e deu certo, e troque também o texto pelo que você viu. Na dúvida, só acrescente a linha na tabela.
 
 **Como enviar** (escolha um jeito, do mais fácil ao mais trabalhoso):
 
 - **Mandar para quem mantém o projeto:** preencha o modelo acima e envie, pedindo para registrar no `TODO.md`.
-- **Pelo site do GitHub (sem Git):** troque para a branch `claude/cultivo-mvp-nxdr8q`, abra `docs/TODO.md`, clique no ícone de lápis (*Edit*), faça a mudança e clique em **Commit changes**.
+- **Pelo site do GitHub (sem Git):** abra `docs/TODO.md` na branch `main`, clique no ícone de lápis (*Edit*), faça a mudança e clique em **Commit changes**. Se o GitHub oferecer **Create a new branch for this commit and start a pull request**, escolha essa opção e clique em **Propose changes**, depois em **Create pull request** e, por fim, em **Merge pull request**: é o caminho que o projeto usa (cada mudança entra na `main` por um PR).
 - **Pelo Git, no seu PC:**
-  1. Abra `docs/TODO.md` no VS Code (seção 7.1) e faça a mudança.
-  2. Na primeira vez que for fazer um commit no PC, diga ao Git quem você é. **[terminal]**:
+  1. Vá para a `main` atualizada. **[terminal]**, na pasta do projeto: `git checkout main` e depois `git pull`.
+  2. Abra `docs/TODO.md` no VS Code (seção 7.1) e faça a mudança.
+  3. Na primeira vez que for fazer um commit no PC, diga ao Git quem você é. **[terminal]**:
      ```
      git config --global user.name "Seu Nome"
      git config --global user.email "seu-email@exemplo.com"
      ```
-  3. Salve a mudança e envie para a branch do projeto. **[terminal]**, na pasta do projeto:
+  4. Salve a mudança e envie. **[terminal]**, na pasta do projeto:
      ```
      git status
      git add docs/TODO.md
@@ -919,8 +1259,11 @@ Só registre com evidência: a data, o comando e o que você viu.
      git push
      ```
      - `git status` mostra o que mudou; confira que é só o que você quer.
-     - O `git push` envia para a branch `claude/cultivo-mvp-nxdr8q` (a que você clonou). Ele pode abrir uma janela de login do GitHub.
-     - **Se o `git push` for recusado** com `! [rejected] ... (fetch first)`, alguém enviou mudanças antes de você (outras pessoas e sessões também usam esta branch). Rode `git pull --rebase` e depois `git push` de novo. Outros erros do Git estão na [seção 8](#8-problemas-comuns).
+     - O `git push` envia para a `main` no GitHub. Ele pode abrir uma janela de login do GitHub.
+     - **Se o `git push` for recusado** com `! [rejected] ... (fetch first)`, alguém enviou mudanças antes de você. Rode `git pull --rebase` e depois `git push` de novo.
+     - Se o GitHub recusar o envio direto para a `main` (proteção de branch), use o caminho do site com pull request, acima.
+
+     Outros erros do Git estão na [seção 8](#8-problemas-comuns).
 
 ---
 
@@ -946,13 +1289,19 @@ Só registre com evidência: a data, o comando e o que você viu.
     ```
     Leia o **(line X column Y)**: é a linha e a coluna onde o problema foi notado. No VS Code, aperte **Ctrl+G** e digite o número da linha. O erro de verdade costuma estar logo antes desse ponto (por exemplo, uma vírgula sobrando no fim da linha anterior).
 - **Desfazer:** `git diff` mostra o que você mudou. `git restore caminho/do/arquivo` volta um arquivo ao que estava no último commit.
-- **Números de linha** citados neste guia são da versão atual e podem mudar quando o código mudar.
+- **Números de linha** mudam toda vez que o código muda. Por isso a seção 7.2 cita nomes e trechos para procurar com Ctrl+F; os poucos números de linha dos exemplos (como na seção 7.4) são de 24/10/2026. Na mensagem de erro de um teste, vale sempre a linha que o seu terminal mostrar.
 
 ### 7.2 Onde mora cada número
 
 Algumas regras existem em **dois lugares**: no Java, que o jogo usa, e num JSON gerado a partir do `manifest.json`. Os testes conferem se os dois concordam. Alguns testes também **travam o valor atual de propósito**, para você perceber quando mudar algo sem querer.
 
-Caminhos: arquivos Java ficam em `src/main/java/io/github/peixeangola/cultivo/` (por exemplo, `core/SmokeRules.java`); os testes JUnit em `src/test/java/io/github/peixeangola/cultivo/` (pastas `core/` e `data/`); os GameTests em `src/main/java/io/github/peixeangola/cultivo/gametest/CultivoGameTests.java` (os números de linha dos GameTests abaixo são desse arquivo); o `manifest.json` em `tools/gen/`.
+**Caminhos:**
+- arquivos Java: `src/main/java/io/github/peixeangola/cultivo/` (por exemplo, `core/SmokeRules.java`);
+- testes JUnit: `src/test/java/io/github/peixeangola/cultivo/`, nas pastas `core/` e `data/`;
+- GameTests: `src/main/java/io/github/peixeangola/cultivo/gametest/CultivoGameTests.java`;
+- `manifest.json`: `tools/gen/`.
+
+**Como achar o lugar:** este guia cita o **nome** da constante ou um **trecho para procurar**, e não o número da linha, que muda a cada atualização. No VS Code, abra o arquivo (Ctrl+P) e procure o trecho com **Ctrl+F**. Para achar um GameTest, procure o nome dele sem `_` e em "camelo": `smoke_stacking_and_cap` vira `smokeStackingAndCap`.
 
 **Como usar:** ache o assunto abaixo, mude o número em **todos** os lugares da coluna "Onde mudar" e siga a [seção 7.3](#73-receita-segura-para-mudar-um-número). Embaixo de cada tabela, "Testes que vão reclamar" lista os testes que travam o valor atual: se você mudou de propósito, troque o número esperado nesses testes.
 
@@ -963,17 +1312,35 @@ Caminhos: arquivos Java ficam em `src/main/java/io/github/peixeangola/cultivo/` 
 | Duração base (45 s), multiplicador do haxixe (×1,5), qualidade de quem não tem (2) | `core/SmokeRules.java`: `BASE_SECONDS`, `HASH_MULTIPLIER`, `DEFAULT_QUALITY` | Não |
 | Limite de 6 min, margem de 30 s da recusa, 2 min para o nível II | `core/SmokeRules.java`: `MAX_HIGH_TICKS`, `AT_MAX_MARGIN_TICKS`, `HEAVY_THRESHOLD_TICKS` | Não |
 | Tetos da Náusea (8 s e 20 s), Regeneração (5 s) | `core/SmokeRules.java`: `NAUSEA_LIGHT_MAX_TICKS`, `NAUSEA_HEAVY_MAX_TICKS`, `REGENERATION_TICKS` | Não |
-| Fator de qualidade | `core/SmokeRules.java`, linha 99: `0.6F + 0.2F` | Não |
-| Náusea e Lentidão sem variedade (30% da sessão) | `core/SmokeRules.java`, linhas 129 e 132: `0.3F` | Não |
-| Velocidade da sativa e Lentidão da índica (metade da sessão) | `core/SmokeRules.java`, linhas 135 e 138: `0.5F` | Não |
-| Regeneração da índica (10 s) | `core/SmokeRules.java`, linha 139: `REGENERATION_TICKS * 2` | Não |
+| Fator de qualidade | `core/SmokeRules.java`: procure `0.6F + 0.2F` | Não |
+| Náusea e Lentidão sem genética (30% da sessão) | `core/SmokeRules.java`: procure `session * 0.3F` (aparece duas vezes) | Não |
+| Velocidade da sativa e Lentidão da índica (metade da sessão) | `core/SmokeRules.java`: procure `session * 0.5F` (duas vezes) | Não |
+| Regeneração da índica (10 s) | `core/SmokeRules.java`: procure `REGENERATION_TICKS * 2` | Não |
+| Baseado com piteira: duração (×1,25) e náusea (÷2) | `core/SmokeRules.java`: `FILTER_DURATION_MULTIPLIER`, `FILTER_NAUSEA_DIVISOR` | Não |
 
 Testes que vão reclamar:
 
-- `SmokeRulesTest`: a base de 45 s, a qualidade 5 = ×1,6, as durações exatas em ticks, a margem da recusa e os valores 450 e 270 da Lentidão.
-- GameTests com durações escritas direto: `smoke_stacking_and_cap` (3456 e 6912 ticks, linhas 613 e 615), `smoke_resmoke_after_heavy` (900, 1400, 2300, 1800 e 2700, linhas 653–666), `smoke_hash_multiplier` (1260 e 1890, linhas 700–701), `smoke_joint_without_strain` (900 e 1260, linhas 772 e 785) e `hash_keeps_strain` (1890, linha 862).
+- **`SmokeRulesTest`:**
+  - a base de 45 s, a qualidade 5 = ×1,6 e as durações exatas em ticks;
+  - a margem da recusa;
+  - os valores 450 e 270 da Velocidade e da Lentidão;
+  - a piteira: `filterConstants` e os testes `filtered…`.
+- **GameTests com durações escritas direto:**
+  - `smoke_stacking_and_cap` (3456 e 6912 ticks);
+  - `smoke_resmoke_after_heavy` (1400, 2300, 1800 e 2700);
+  - `smoke_hash_multiplier` (1260 e 1890);
+  - `smoke_joint_without_strain` (900 e 1260);
+  - `hash_keeps_strain` (1890);
+  - `catalog_joint_carries_strain` (1260, 1440 e 900);
+  - `smoke_filtered_joint` (1125, 900, 160 e 563).
 
-**Exemplo:** Náusea de no máximo 6 s (em vez de 8 s) quando não é Chapado II. Em `core/SmokeRules.java`, troque `NAUSEA_LIGHT_MAX_TICKS = 8 * TICKS_PER_SECOND;` por `NAUSEA_LIGHT_MAX_TICKS = 6 * TICKS_PER_SECOND;`. Os testes da Náusea leem a própria constante, então não devem reclamar. Atualize também a tabela "Efeitos aplicados" da seção 5.8 deste guia.
+  Procure esses números no arquivo dos GameTests.
+
+**Exemplo:** Náusea de no máximo 6 s (em vez de 8 s) quando não é Chapado II.
+1. Em `core/SmokeRules.java`, troque `NAUSEA_LIGHT_MAX_TICKS = 8 * TICKS_PER_SECOND;` por `NAUSEA_LIGHT_MAX_TICKS = 6 * TICKS_PER_SECOND;`.
+2. O `build` falha em `SmokeRulesTest`: `specConstants` espera `8 * 20`, e os dois testes da piteira esperam a náusea de 160 e 80 ticks. Troque para `6 * 20`, 120 e 60.
+3. Rode o `runGameTestServer`: o GameTest `smoke_filtered_joint` também espera 160 e 80; troque nele também.
+4. Atualize a tabela "Efeitos aplicados" da seção 5.8 deste guia.
 
 #### 7.2.2 Fumar: artigos e isqueiro
 
@@ -981,58 +1348,76 @@ Testes que vão reclamar:
 |---|---|---|
 | Força de cada artigo e tempo segurando o botão | `core/SmokeDevice.java`. Exemplo: `BONG(true, 1.6F, 40)` = usa material, força 1,6, 40 ticks (2 s) | Não |
 | Durabilidade do isqueiro (64) | `SmokeRules.LIGHTER_DURABILITY` | Não |
-| Dano por uso do isqueiro (1) | `SmokeRules.LIGHTER_DAMAGE_PER_USE` **e** o texto `tooltip.cultivo.lighter` ("perde 1 de durabilidade por uso") no `manifest.json`, em `en_us` e `pt_br` | **Sim** (por causa do texto) |
+| Dano por uso do isqueiro (1) | `SmokeRules.LIGHTER_DAMAGE_PER_USE` **e** o texto `tooltip.cultivo.lighter` (a linha "Gasta 1 de durabilidade a cada uso") no `manifest.json`, em `en_us` e `pt_br` | **Sim** (por causa do texto) |
 
 Testes que vão reclamar:
 
 - **Força e tempo:** `SmokeRulesTest` (a ordem bong > chillum > cachimbo > narguilé, as durações exatas e os tempos 32, 40 e 48 ticks).
-  - Mudar o **Bong** também quebra o GameTest `smoke_stacking_and_cap` (3456 e 6912). O `smoke_bong_hash_stronger` só compara bong e cachimbo (linha 598).
-  - Mudar o **Cachimbo** ou o **Baseado** também quebra os GameTests `smoke_hash_multiplier` (linhas 700–701), `smoke_resmoke_after_heavy` (linhas 653–666), `smoke_joint_without_strain` (linhas 772 e 785) e `hash_keeps_strain` (linha 862).
-  - Chillum e Narguilé: só o `SmokeRulesTest`.
-- **Durabilidade:** `SmokeRulesTest.lighterHas64UsesLosingOnePerUse` (trava 64, linha 171). O GameTest `smoke_lighter_breaks` lê a constante e acompanha sozinho.
-- **Dano por uso:** `SmokeRulesTest.lighterHas64UsesLosingOnePerUse` (trava 1, linha 172) e o GameTest `smoke_stacking_and_cap`: ele fuma 2 vezes e confere dano `== 2`, escrito direto na linha 624. Troque por 2 × o novo dano.
+  - Mudar o **Bong** também quebra o GameTest `smoke_stacking_and_cap` (3456 e 6912). O `smoke_bong_hash_stronger` só compara bong e cachimbo.
+  - Mudar o **Cachimbo** ou o **Baseado** também quebra os GameTests `smoke_hash_multiplier`, `smoke_resmoke_after_heavy`, `smoke_joint_without_strain`, `hash_keeps_strain`, `catalog_joint_carries_strain` e `smoke_filtered_joint`.
+  - **Chillum e Narguilé:** só o `SmokeRulesTest`.
+- **Animação:** ela se ajusta sozinha ao tempo novo, porque os testes de animação leem o tempo de cada artigo. Evite menos de 11 ticks: é o tempo que o item leva para subir (6) e descer (5).
+- **Durabilidade:** `SmokeRulesTest.lighterHas64UsesLosingOnePerUse` trava o 64. O GameTest `smoke_lighter_breaks` lê a constante e acompanha sozinho.
+- **Dano por uso:** `SmokeRulesTest.lighterHas64UsesLosingOnePerUse` trava o 1. O GameTest `smoke_stacking_and_cap` fuma 2 vezes e confere o dano com o 2 escrito direto (procure `lighterDamage(player) == 2`). Troque por 2 × o novo dano.
 
 **Exemplo:** Chillum um pouco mais forte. Em `core/SmokeDevice.java`, troque `CHILLUM(true, 1.2F, 32)` por `CHILLUM(true, 1.3F, 32)`. O `build` falha com:
 
 ```
 SmokeRulesTest > exactDurationsPerDeviceQualityAndHash() FAILED
-    org.opentest4j.AssertionFailedError at SmokeRulesTest.java:154
+    org.opentest4j.AssertionFailedError at SmokeRulesTest.java:185
 ```
 
-No relatório aparece `expected: <1080> but was: <1170>` (54 s viraram 58,5 s). Como a mudança foi de propósito, troque o `1080` por `1170` na linha 154 de `SmokeRulesTest.java` e atualize a linha do Chillum na tabela da seção 5.8.
+No relatório aparece `expected: <1080> but was: <1170>` (54 s viraram 58,5 s). Como a mudança foi de propósito, troque o `1080` por `1170` nessa linha de `SmokeRulesTest.java` e atualize a linha do Chillum na tabela da seção 5.8.
 
-#### 7.2.3 Cultivo: qualidade, variedades e estufa
+#### 7.2.3 Cultivo: qualidade, genéticas e estufa
 
 | O que você quer mudar | Onde mudar | Precisa rodar o gerador? |
 |---|---|---|
 | Qualidade base (2 ao ar livre, 4 na estufa) | `core/QualityRules.java` | Não |
-| Chance de +1 de qualidade e velocidade de cada variedade | `core/Variety.java` | Não |
+| Chance de +1 de qualidade por potência (20%, 35%, 50%) | `core/Variety.java`: método `potencyBonusChance` | Não |
+| Velocidade de cada classe de crescimento (×1,25, ×1,0, ×0,8) | `core/Variety.java`: `FAST(1.25F)`, `MEDIUM(1.0F)`, `SLOW(0.8F)` | Não |
+| Raridade, ciclo, genética, crescimento ou potência de **uma** genética | a linha dela em `core/Variety.java` **e** em `manifest.json` → `strains` **e** em `docs/strains-catalog.json` (as três precisam bater) | **Sim** |
 | Bônus de crescimento da estufa, luz mínima para crescer (9) | `core/GrowthRules.java`. A luz para não se soltar (8) vem do trigo do Minecraft e não muda aqui | Não |
 | Tamanho da estufa (6 blocos) | `core/GreenhouseRules.java` (`RANGE`) | Não |
 | Quais vidros contam para a estufa | `manifest.json` → `greenhouse_glass` | **Sim** |
 
 Testes que vão reclamar:
 
-- **Qualidade base:** `QualityRulesTest` e o GameTest `greenhouse_quality` (espera 4–5 na estufa e 2–3 fora, linhas 216 e 226).
-- **Chance e velocidade:** `QualityRulesTest`, `VarietyAndGrowthTest`.
+- **Qualidade base:** `QualityRulesTest` e os GameTests `greenhouse_quality` (espera 4–5 na estufa e 2–3 fora) e `catalog_strain_grows_and_drops` (2–3 ao ar livre).
+- **Chance e velocidade:** `QualityRulesTest`, `VarietyAndGrowthTest` e `StrainCatalogTest`.
+- **Uma genética:** `StrainCatalogTest` (contagem por raridade e as regras "automática = rápida" e "lenta = sativa"), `ParodyNamesTest` e `DataConsistencyTest` (as três listas iguais).
 - **Estufa e luz:** `VarietyAndGrowthTest`, `GreenhouseRulesTest`.
-- **Vidros:** `DataConsistencyTest` (espera 35 blocos) e o GameTest `greenhouse_quality`, que monta a estufa com vidro, vidro tingido de lima e painel de vidro (linhas 139–142). Se tirar um desses da lista, esse teste falha.
+- **Vidros:** `DataConsistencyTest` (espera 35 blocos) e o GameTest `greenhouse_quality`. Ele monta a estufa com vidro, vidro tingido de lima e vidraça (procure `buildGreenhouse`); se tirar um desses da lista, esse teste falha.
 
-**Exemplo:** Eclipse com 60% de chance de +1. Em `core/Variety.java`, na linha `ECLIPSE(...)`, troque `0.50D` por `0.60D`. O `build` falha em `QualityRulesTest > bonusChancesPerVariety()`, linha 22, com `expected: <0.5> but was: <0.6>`. Troque o `0.50` por `0.60` nessa linha do teste e atualize a tabela da seção 5.2.
+**Exemplo:** potência ★★★ com 60% de chance de +1 (em vez de 50%).
+1. Em `core/Variety.java`, no método `potencyBonusChance`, troque `case 3 -> 0.50D;` por `case 3 -> 0.60D;`. Isso vale para todas as genéticas de potência 3, inclusive a Eclipse.
+2. O `build` falha em `QualityRulesTest > bonusChancesPerVariety()`, linha 22, com `expected: <0.5> but was: <0.6>`. Também falham `QualityRulesTest > catalogBonusChancesFollowPotency()` e dois testes de `StrainCatalogTest` (`nativesKeepTheMvpNumbers` e `growthClassesAndPotency`).
+3. Troque o `0.50` por `0.60` nesses testes e atualize as seções 5.2 e 5.5.
 
-#### 7.2.4 Estações de processamento
+#### 7.2.4 Estações e artigos
 
 | O que você quer mudar | Onde mudar | Precisa rodar o gerador? |
 |---|---|---|
 | Tempo das estações | `manifest.json` → `processing` (é o que o jogo usa) **e** `core/StationKind.java` (o valor de referência) | **Sim** |
 | Prensa: 2 resinas → 1 haxixe | `manifest.json` → `processing.pressing` (`input_count` e `count`) **e** o texto `tooltip.cultivo.station.pressing` ("Prensa 2 resinas em 1 haxixe"), em `en_us` e `pt_br` | **Sim** |
 | Bônus da peneira (qualidade 4 ou mais) | `core/ProcessingRules.java` (`SIEVE_BONUS_MIN_QUALITY`) | Não |
+| Bônus do dichavador (+1 resina) | `core/ProcessingRules.java` (`GRINDER_BONUS`) **e** o texto `tooltip.cultivo.grinder` ("+1 resina") | **Sim** (por causa do texto) |
+| Tempo da cura no pote (2400 ticks = 2 min) | `core/CuringRules.java` (`CURE_TICKS`) | Não |
+| Bandeja: 2 flores + 3 folhas → 3 baseados | `core/RollingRules.java` (`FLOWERS_PER_ROLL`, `PAPERS_PER_ROLL`, `JOINTS_PER_ROLL`) **e** os textos `tooltip.cultivo.rolling_tray`, `tooltip.cultivo.rolling_paper`, `message.cultivo.tray_need_flowers` e `message.cultivo.tray_need_papers` | **Sim** (por causa dos textos) |
+| Cinzeiro: alcance (4 para os lados, 2 para cima e para baixo) e farinha de osso por esvaziada (1) | `core/AshtrayRules.java` (`RADIUS_XZ`, `RADIUS_Y`, `BONE_MEAL_PER_EMPTYING`). O máximo de 4 de cinza (`MAX_ASH`) também tem um desenho por nível: para mudar, peça ajuda | Não |
 
 Testes que vão reclamar:
 
 - **Tempo:** `DataConsistencyTest.processingRecipesMatchStations`, `ProcessingRulesTest.stationDurations`.
-- **Prensa:** `DataConsistencyTest` (espera 2 e 1) e os GameTests `press_station` (linhas 299 e 303) e `hash_keeps_strain` (prensa 2 resinas, linhas 853–857).
-- **Bônus da peneira:** `ProcessingRulesTest` e os GameTests `sieve_station` (linhas 285 e 290) e `hash_keeps_strain` (espera 2 resinas, linha 851).
+  - O GameTest `station_real_ticker` espera a secagem terminar em até 800 ticks (o `max_ticks` dele no `manifest.json` → `game_tests`).
+  - O `station_reload_resumes` espera a peneira em até 300.
+  - Se você aumentar muito esses tempos, aumente também os `max_ticks` deles.
+- **Prensa:** `DataConsistencyTest` (espera 2 e 1) e os GameTests `press_station` e `hash_keeps_strain` (prensa 2 resinas).
+- **Bônus da peneira e dichavador:** `ProcessingRulesTest` e os GameTests `sieve_station`, `sieve_grinder` (2 resinas na qualidade 2 e 3 na qualidade 4), `station_effects_run` e `hash_keeps_strain` (espera 2 resinas).
+- **Cura:** `CuringRulesTest.cureTakes2400Ticks`.
+- **Bandeja:** `RollingRulesTest.numbersFromThePlan` e os GameTests `tray_rolls_joints` e `tray_rolls_from_off_hand`, que contam flores, folhas e baseados.
+- **Cinzeiro:** `AshtrayRulesTest` (`numbersFromThePlan` e as 405 posições de busca) e os GameTests `ashtray_collects_ash` e `ashtray_search_edges`.
+- **Textos:** se uma frase nova ficar larga demais para a tela, o `TooltipHintsTest` reclama (seção 7.2.6).
 
 **Exemplo:** o passo a passo de mudar o tempo de secagem está na [seção 7.4](#74-como-ler-um-teste-que-falhou).
 
@@ -1040,44 +1425,67 @@ Testes que vão reclamar:
 
 | O que você quer mudar | Onde mudar | Precisa rodar o gerador? |
 |---|---|---|
-| Pesos dos baús de aldeia | `core/SeedSources.java` (é o que o jogo usa) **e** `manifest.json` → `seed_sources.chest_*` (uma cópia em JSON) | **Sim** |
+| Peso e quantidade dos baús por raridade (comum 4 e 1–3; incomum 2 e 1–2; rara 1 e 1) | `core/SeedSources.java` → `chestLoot` (é o que o jogo usa) **e** `manifest.json` → `seed_sources.chest_by_rarity` (gera a cópia em JSON) | **Sim** |
+| Chance de um baú ter semente (hoje 50%: o peso de "nada" é a soma dos pesos das genéticas) | `SeedSources.CHEST_EMPTY_WEIGHT` **e** a conta `chestEmptyWeight` em `tools/gen/generate.mjs`. Peça ajuda | **Sim** |
 | Quais aldeias recebem sementes | Só `core/SeedSources.java` → `COVERED_VILLAGE_TYPES`. **Ignore a lista `chest_tables` do `manifest.json`.** | Não |
-| Chances nas lavouras de aldeia | `manifest.json` → `farm_rules` (é o que o jogo usa) **e** `SeedSources.FARM_RULES` | **Sim** |
-| Sementes da Planta Silvestre | `manifest.json` → `wild_drops` **e** `SeedSources.WILD_PLANT_DROPS` | **Sim** |
+| Mercador Ambulante: quantas ofertas (2), sementes por oferta (2 a 3), preço (2, 4, 8 esmeraldas), trocas por oferta (4) | Só `core/SeedSources.java`: `TRADER_OFFERS`, `TRADER_MIN_COUNT`, `TRADER_MAX_COUNT`, `traderPrice`, `TRADER_MAX_USES` | Não |
+| Chances nas lavouras de aldeia (só nativas) | `manifest.json` → `farm_rules` (é o que o jogo usa) **e** `SeedSources.FARM_RULES` | **Sim** |
+| Sementes da Planta Silvestre (só nativas) | `manifest.json` → `wild_drops` **e** `SeedSources.WILD_PLANT_DROPS` | **Sim** |
 | Biomas da Planta Silvestre | `manifest.json` → `wild_biomes` **e** `SeedSources.WILD_*` | **Sim** |
 | Raridade da Planta Silvestre (16 e 48) e tamanho do grupo (12) | `tools/gen/generate.mjs` (`patch(16)`, `patch(48)`, `count: 12`) | **Sim** |
 
 Testes que vão reclamar:
 
-- **Pesos dos baús:** `SeedSourcesTest` (espera total 100 e 30%, 14%, 6%), `DataConsistencyTest` e o GameTest `village_chest_seeds` (a Brisa precisa sair mais de 3× mais que a Eclipse, linha 407).
+- **Baús:**
+  - `SeedSourcesTest` (`rarityWeightsAndCounts`, `chestDrawsFromAllFortyStrains`, `chestProbabilities`: peso total 238, metade com semente);
+  - `DataConsistencyTest` (41 entradas, peso de "nada" 119);
+  - o GameTest `village_chest_seeds`: em 1600 baús, 45% a 55% com semente, as 40 genéticas aparecem, e as médias por genética ficam perto de 53,8 (comum), 20,2 (incomum) e 6,7 (rara).
 - **Aldeias:** `SeedSourcesTest.coversMoreThanHalfOfVillageTypes` (espera 4 dos 5 tipos, sem a aldeia de neve) e `SeedSourcesTest.chestTables` (a lista de baús está escrita no teste).
-- **Lavouras, Planta Silvestre e biomas:** `DataConsistencyTest`, `SeedSourcesTest` (os pesos da silvestre somam 100).
+- **Mercador:** `SeedSourcesTest` (`traderNumbers` e os testes `trader…`) e o GameTest `wandering_trader_catalog_seeds`.
+- **Lavouras, Planta Silvestre e biomas:** `DataConsistencyTest`, `SeedSourcesTest.farmAndWildKeepTheNativeNumbers` e o GameTest `harvest_drops` (40 plantas silvestres dão só sementes nativas).
 - **Raridade e grupo:** nenhum (só vale para chunks novos).
 
-**Exemplo:** mais Eclipse nos baús, sem mudar o total. Em `core/SeedSources.java`, troque `new ChestEntry(Variety.ECLIPSE, 6, 1, 1)` por `new ChestEntry(Variety.ECLIPSE, 8, 1, 1)` e `CHEST_EMPTY_WEIGHT = 50` por `48`. Faça o mesmo no `manifest.json` (`"chest_empty_weight": 48` e `"weight": 8` na linha da eclipse em `chest_entries`) e rode o gerador. O `build` falha em `SeedSourcesTest > chestWeightsFollowRarity()`, linha 33, com `expected: <0.06> but was: <0.08>`. Troque `0.06` por `0.08` nessa linha e atualize a tabela da seção 5.3.
+**Exemplo:** genéticas raras um pouco menos raras (peso 2 em vez de 1).
+1. Em `core/SeedSources.java`, no método `chestLoot`, troque `case RARE -> new RarityLoot(1, 1, 1);` por `case RARE -> new RarityLoot(2, 1, 1);`. Esse peso vale para os baús **e** para o sorteio do Mercador Ambulante.
+2. No `manifest.json`, em `seed_sources.chest_by_rarity`, troque o `"weight": 1` da `"rara"` por `2` e rode o gerador.
+3. O peso de "nada" acompanha sozinho (119 + 11 = 130), e metade dos baús continua com semente.
+4. O `build` falha nos testes que travam os números de hoje. Corrija esses números de propósito:
+   - `SeedSourcesTest`: `rarityWeightsAndCounts`, `chestDrawsFromAllFortyStrains`, `chestProbabilities` (119 e 238), `traderNumbers` (112, que vira 122) e `firstTraderOfferFollowsRarityWeights`;
+   - `DataConsistencyTest.chestInjectionTableMatchesSeedSources` (119).
+5. Rode o `runGameTestServer`: o `village_chest_seeds` confere as médias, e a das raras sobe de 6,7 para cerca de 12,3. Depois atualize a tabela da seção 5.3.
 
-#### 7.2.6 Receitas, nomes, texturas e versão
+#### 7.2.6 Receitas, nomes, textos, texturas e versão
 
 | O que você quer mudar | Onde mudar | Precisa rodar o gerador? |
 |---|---|---|
 | Receitas | `manifest.json` → `crafting` **e** `core/ArticleRecipes.java` (atenção às letras, seção 5.7) | **Sim** |
-| Nomes, traduções e mensagens (como "Seu isqueiro acabou") | `manifest.json` (`en`, `pt`, `lang`; as mensagens são as chaves `message.cultivo.*`). Os nomes "Sementes de X", "Plantação de X", "Flor Fresca de X" e "Flor Seca de X" (e os ingleses) são montados em `tools/gen/generate.mjs`, linhas 79–85 | **Sim** |
+| Nomes, dicas e mensagens (como "Seu isqueiro acabou") | `manifest.json`: `pt` e `en` de cada item, e `lang.pt_br` / `lang.en_us` (as mensagens são as chaves `message.cultivo.*`; as dicas dos tooltips são listas de linhas curtas) | **Sim** |
+| "Sementes de X", "Plantio de X", "Flor Fresca de X", "Flor Seca de X" | `manifest.json` → `name_patterns` | **Sim** |
+| Mostrar o inglês para quem joga em inglês | `manifest.json` → `"portuguese_everywhere": false`. Os textos em inglês já estão no manifest | **Sim** |
 | Texturas | `tools/art/textures.mjs` (veja o exemplo abaixo). Editar os PNG em `src/generated` não adianta: o gerador sobrescreve | **Sim** |
+| Sons (qual áudio do Minecraft, volume, tom, legenda) | `manifest.json` → `sounds` | **Sim** |
 | Pilha máxima do baseado (16) | `registry/ModItems.java` | Não |
 | Versão do mod (0.1.0) | `build.gradle` linha 12 **e** `src/main/resources/META-INF/mods.toml` linha 8 (são separados) | Não |
 
 Testes que vão reclamar:
 
-- **Receitas:** `DataConsistencyTest`, GameTest `article_recipes`.
-- **Nomes e textos:** `AssetCompletenessTest`.
-- **Texturas:** `AssetCompletenessTest` (16×16, exceto o ícone do efeito `mob_effect/high.png`, que é 18×18; nenhuma textura sobrando).
+- **Receitas:** `DataConsistencyTest` e o GameTest `article_recipes`.
+- **Nomes e textos:**
+  - `AssetCompletenessTest` (toda chave nas duas línguas);
+  - `PortugueseEverywhereTest` (com a flag ligada, o `en_us` é igual ao `pt_br`; nenhum texto ficou em inglês; os nomes revisados estão escritos no teste);
+  - `ParodyNamesTest` (nomes das genéticas);
+  - `TooltipHintsTest` (cada linha de dica cabe na tela, 220 px no máximo). A quantidade de linhas de cada dica fica em `core/TooltipHints.java`: se você acrescentar ou tirar uma linha no `manifest.json`, mude lá também.
+- **Texturas:** `AssetCompletenessTest` (16×16, exceto o ícone do efeito `mob_effect/high.png`, que é 18×18; nenhuma textura sobrando; ícones diferentes entre genéticas), `TextureArtTest` e `AnimatedTexturesTest`.
+- **Sons:** `SoundsTest`.
 - **Pilha e versão:** nenhum.
 
-**Exemplo (textura):** as texturas são **desenhadas por código JavaScript**, não pintadas à mão. Cada uma é uma grade de 16 linhas de 16 letras; cada letra é uma cor da `palette` logo abaixo, e `.` é transparente. O isqueiro, por exemplo, fica perto da linha 379 de `tools/art/textures.mjs`:
+**Exemplo (textura):** as texturas são **desenhadas por código JavaScript**, não pintadas à mão.
+- Cada uma é uma grade de 16 linhas de 16 letras; cada letra é uma cor da `palette` logo abaixo, e `.` é transparente.
+- No isqueiro, o ícone do inventário é a grade `lighter` (procure `lighter: {` em `tools/art/textures.mjs`), e o modelo 3D na mão usa a textura `model_plastic` (procure `model_plastic`):
 
 ```
   lighter: {
-    grid: [
+    grid: [E, E,
       ...
       '.....kRRRRk.....',
       ...
@@ -1086,7 +1494,12 @@ Testes que vão reclamar:
   },
 ```
 
-Para um isqueiro vermelho em vez de azul, troque só as cores do corpo na `palette`: `R: '#2f7fc1'` por `R: '#c1342f'` (e, se quiser, `r` para o brilho e `d` para a sombra). Rode `node tools/gen/generate.mjs`, depois `.\gradlew.bat build`, e veja no `runClient`. Para desenhar uma textura nova do zero, peça ajuda.
+**Para um isqueiro vermelho** em vez de azul:
+1. Troque as cores do corpo na `palette` do `lighter`: `R: '#2f7fc1'` por `R: '#c1342f'` (e, se quiser, `r` para o brilho e `d` para a sombra).
+2. Faça o mesmo na `palette` do `model_plastic`, para a mão ficar igual.
+3. Rode `node tools/gen/generate.mjs`, depois `.\gradlew.bat build`, e veja no `runClient`.
+
+Para desenhar uma textura nova do zero, peça ajuda.
 
 ### 7.3 Receita segura para mudar um número
 
@@ -1105,11 +1518,11 @@ Para um isqueiro vermelho em vez de azul, troque só as cores do corpo na `palet
 
 ```
 DataConsistencyTest > processingRecipesMatchStations() FAILED
-    org.opentest4j.AssertionFailedError at DataConsistencyTest.java:136
+    org.opentest4j.AssertionFailedError at DataConsistencyTest.java:193
 ```
 
 1. **Quem falhou:** a **classe** `DataConsistencyTest` (o arquivo de teste), o **método** `processingRecipesMatchStations` (um teste dentro dele).
-2. **Onde:** o arquivo `src/test/java/io/github/peixeangola/cultivo/data/DataConsistencyTest.java`, linha 136 (no VS Code: Ctrl+P para abrir, Ctrl+G para ir à linha). Essa linha compara `StationKind.DRYING.defaultTicks()` (Java) com o `processing_time` do JSON.
+2. **Onde:** o arquivo `src/test/java/io/github/peixeangola/cultivo/data/DataConsistencyTest.java`, linha 193 (no VS Code: Ctrl+P para abrir, Ctrl+G para ir à linha). Essa linha compara `StationKind.DRYING.defaultTicks()` (Java) com o `processing_time` do JSON de secagem de cada genética.
 3. **A mensagem completa** está no relatório. **[terminal]** Abra com `start build\reports\tests\test\index.html` e clique no teste. Você vai ver:
    `expected: <600> but was: <400>`
    - `assertEquals(a, b)` é o comando do teste que confere se `a` e `b` são iguais.
@@ -1132,7 +1545,13 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | `java -version` mostra `1.8.0` ou `Client VM`, ou diz que `'java' não é reconhecido` | O PATH ainda encontra o Java 8 primeiro, ou não tem nenhum `java` | Normal se você só fez a 2.2. Para o servidor: seção 2.3 ou 2.4 |
 | `'git' não é reconhecido como um comando interno ou externo...` ou `O termo 'git' não é reconhecido...` | O Git não está instalado, ou o terminal foi aberto antes de instalar | Seção 2.6, depois feche e abra o terminal |
 | PowerShell: `O termo 'gradlew.bat' não é reconhecido...` (ou `run.bat`) | Falta o `.\` no começo, **ou** você está na pasta errada (por exemplo `C:\dev`, ou a pasta de dentro do ZIP) | Rode `dir gradlew.bat`: se não achar o arquivo, vá para a pasta certa (seção 2.8). Depois use `.\gradlew.bat build` ou `.\run.bat` |
-| `dir src\main\java\io\github\peixeangola\cultivo` diz que não encontra o caminho, ou o build gera `examplemod-1.0.0.jar` em vez de `cultivo-0.1.0.jar` | Você está na branch `main`, que só tem o exemplo do Forge | `git checkout claude/cultivo-mvp-nxdr8q` (seção 2.7) |
+| `dir src\main\java\io\github\peixeangola\cultivo` diz que não encontra o caminho | Você está na pasta errada, por exemplo `C:\dev` ou a pasta de dentro do ZIP | Vá para a pasta que tem `gradlew.bat` (seções 2.7 e 2.8) |
+| Falta algo que o guia descreve (por exemplo, as 40 genéticas ou a bandeja), ou o build mostra outra quantidade de testes | O seu código está desatualizado, ou você está numa branch antiga (como `claude/cultivo-mvp-nxdr8q`, de 21/10/2026) | Rode `git branch` para ver a branch; depois `git checkout main` e `git pull` (seção 2.7) |
+| Os textos do Cultivo continuam em português com o jogo em English | É de propósito: o dono pediu o mod todo em português (seção 5) | Nada. Para voltar ao inglês, veja a seção 7.2.6 (`portuguese_everywhere`) |
+| Clicar numa estação com um bloco na mão coloca o bloco ao lado | A estação não aceita aquele item, então o jogo faz o uso normal dele (seção 5.6) | Esvazie a mão para retirar o que está pronto, ou agache com as duas mãos vazias para pegar a entrada |
+| A prensa tem resina, mas a placa não mexe | A prensa precisa de 2 resinas iguais; com 1 só, ela fica "carregada", parada (seção 5.6) | Ponha mais uma resina da mesma genética e qualidade |
+| No jogo com outros mods, as plantações do Cultivo crescem devagar ou param | O Serene Seasons (estações do ano) pode mexer no crescimento das plantações; essa combinação ainda não foi testada | Teste o Cultivo sozinho no `runClient` ou numa pasta de jogo separada (seção 4.1, passo 6) e conte o que viu (seção 6.4) |
+| O teste visual automático para com `Falta run\world` | Ainda não existe o mundo do servidor de teste | Rode `.\gradlew.bat runServer` uma vez, aceite a EULA e desligue com `stop` (seção 3.8) |
 | `Failed to download default tool: minecraft-mavenizer-0.5.21.jar` ou `Could not resolve ...` | Sem internet, ou rede bloqueando `maven.minecraftforge.net`, `piston-meta.mojang.com` ou `libraries.minecraft.net` (comum em rede de escola ou empresa) | Use outra rede (por exemplo, a de casa) e tente de novo. Cuidado com dados móveis: o primeiro build pode baixar mais de 1 GB (seção 3.1) |
 | O primeiro `build` ou `runClient` leva vários minutos | Downloads e preparação do Minecraft e do Forge | Normal. Espere; as próximas vezes são rápidas |
 | O terminal fica parado em `EXECUTING` durante o `runClient` ou o `runServer` | O Gradle espera o jogo ou o servidor fechar | Normal (seção 3) |
@@ -1163,7 +1582,7 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | **assertEquals** | Comando dos testes JUnit que confere se dois valores são iguais. O primeiro é o esperado (`expected`), o segundo é o que veio (`but was`). |
 | **Biome modifier** | Arquivo do Forge que adiciona coisas a biomas. É assim que a Planta Silvestre entra nas selvas e planícies. |
 | **BlockEntity** | Um bloco que guarda dados, como as estações com a entrada, a saída e o progresso. |
-| **Branch** | Uma linha de trabalho separada dentro de um repositório Git. O mod está na branch `claude/cultivo-mvp-nxdr8q`. |
+| **Branch** | Uma linha de trabalho separada dentro de um repositório Git. A `main` tem o mod completo; as mudanças novas nascem numa branch separada e entram na `main` por um PR. |
 | **Build** | Compilar, testar e empacotar o mod. |
 | **CGNAT** | Quando a operadora de internet divide um mesmo IP público entre vários clientes. Com CGNAT, o redirecionamento de porta não funciona; use uma LAN virtual ou uma hospedagem (seção 4.2, passo 8). |
 | **Chunk** | Pedaço do mundo de 16×16 blocos. O mundo é gerado chunk por chunk. |
@@ -1171,11 +1590,12 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | **Clone** | A cópia de um repositório no seu PC, feita com `git clone`. |
 | **cmd (Prompt de Comando)** | O terminal antigo do Windows. A linha começa com `C:\...>`. |
 | **Commit** | Uma versão salva do código no Git, identificada por um código curto como `740bf86`. |
-| **Componente** | Um dado extra gravado num item. Aqui: `cultivo:quality` (qualidade) e `cultivo:strain` (variedade, gravada no baseado, na resina e no haxixe). |
+| **Componente** | Um dado extra gravado num item. Aqui: `cultivo:quality` (qualidade), `cultivo:strain` (a genética, gravada no baseado, na resina e no haxixe), `cultivo:filtered` (baseado com piteira) e `cultivo:cured` (flor curada no pote). |
 | **Constante** | Um valor fixo com nome no código Java, como `BASE_SECONDS = 45`. |
 | **Daemon do Gradle** | Processo do Gradle que fica aberto para acelerar os próximos builds. `--stop` desliga. |
 | **EULA** | O contrato de uso do Minecraft. O servidor dedicado só liga depois que você aceita em `eula.txt`. |
 | **Farmland** | Terra arada com enxada, onde as plantações crescem. |
+| **Genética** | Cada tipo de planta do mod (o código chama de "variedade"): 3 nativas e 37 do catálogo, com raridade, ciclo, genética, potência e crescimento (seção 5.2). |
 | **Git** | Programa que guarda o histórico do código e conversa com o GitHub. |
 | **git pull** | Baixa as atualizações da branch atual do GitHub para o seu PC. |
 | **git status** | Mostra quais arquivos você mudou e ainda não salvou num commit. |
@@ -1188,12 +1608,14 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | **Loot table** | A tabela que sorteia o que sai de um baú ou de um bloco quebrado. |
 | **LTS** | *Long Term Support*: a versão com suporte mais longo. É a recomendada para a maioria das pessoas. |
 | **Manifest** | `tools/gen/manifest.json`, a lista única de onde o gerador cria os recursos. |
+| **Mercador Ambulante** | O mascate do Minecraft que aparece com duas lhamas. No Cultivo, cada um novo vende sementes de 2 genéticas do catálogo. |
 | **Maven Central** | Um grande "depósito" público de bibliotecas Java na internet. O Gradle baixa coisas de lá. |
 | **Método** | Um bloco de código com nome dentro de uma classe. Num teste JUnit, cada método é um teste. |
 | **OP** | Jogador com permissão de usar comandos num servidor. |
 | **PATH** | Lista de pastas onde o Windows procura programas como `java` e `git`. Usa o primeiro que achar. |
 | **Porta** | O "número da porta" de rede onde o servidor escuta. O padrão do Minecraft é 25565. |
 | **PowerShell** | O terminal mais novo do Windows. A linha começa com `PS C:\...>`. |
+| **Pull request (PR)** | Pedido, feito no site do GitHub, para juntar as mudanças de uma branch na `main`. Depois de revisado, alguém clica em "Merge" e a mudança entra. |
 | **Random tick** | Um sorteio periódico do jogo que faz plantas crescerem. |
 | **Redirecionamento de porta** (*port forwarding*) | Configuração no roteador que manda quem vem da internet na porta 25565 para o PC do servidor. Cada roteador tem um menu diferente; procure pelo modelo do seu. Não funciona com CGNAT. |
 | **Repositório** | O projeto com todo o histórico de versões, guardado pelo Git e pelo GitHub. |
@@ -1202,7 +1624,7 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | **Terminal** | Janela onde você digita comandos. No Windows: PowerShell ou cmd. |
 | **Tick** | Unidade de tempo do jogo: 20 ticks = 1 segundo. |
 | **Toolchain** | A versão de Java que o Gradle usa para compilar o projeto (aqui, 25). |
-| **Transmute** | Tipo de receita que transforma um item em outro mantendo os dados dele. O baseado herda a qualidade da flor por causa disso. |
+| **Transmute** | Tipo de receita que transforma um item em outro mantendo os dados dele. O baseado herda a qualidade da flor por causa disso, e o baseado com piteira mantém a genética e a qualidade do baseado. |
 | **Worldgen** | Geração do mundo: biomas, estruturas, plantas espalhadas. |
 | **Wrapper** | O `gradlew` / `gradlew.bat`, que baixa e roda a versão certa do Gradle. |
 
@@ -1219,14 +1641,22 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 | Gradle | 9.7.1 (vem pelo `gradlew`, não precisa instalar) | `gradle/wrapper/gradle-wrapper.properties` |
 | Mod | id `cultivo`, versão 0.1.0 | `build.gradle` linha 12 e `mods.toml` linha 8 |
 | Arquivo final do mod | `build\libs\cultivo-0.1.0.jar` | gerado pelo `build` |
-| Branch do código | `claude/cultivo-mvp-nxdr8q` | GitHub `fishpedrol/minezada` (seção 2.7) |
+| Código | branch `main` do GitHub `fishpedrol/minezada`; as mudanças novas chegam por PR (seção 2.7) | GitHub |
+| Gerador de recursos | Node.js (no PC do dono, 24.19) | `tools/gen/generate.mjs` |
 
-**Situação verificada em 24/10/2026, com o código do commit `1e7325a`** (os commits seguintes só mudaram documentos, então o seu `git log --oneline -1` pode mostrar outro código, como `e693564` ou mais novo; é normal):
+**PC do dono do projeto (24/10/2026):**
+- Windows 11, com o projeto em `C:\Users\Cliente\Documents\minezada` (fora do OneDrive).
+- JDK 25 em `C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1`, com JAVA_HOME configurado em 24/10/2026; o `java` do PATH ainda é um Java 8 de 32 bits.
+- Git e Node 24 instalados.
+- O launcher tem um perfil "Forge 26.3" com o Forge **26.3-66.0.2** e outros mods (entre eles o Serene Seasons). O Cultivo pede o **66.0.13** (seção 4).
 
-- `build` passa, com 88 testes JUnit.
-- `runGameTestServer` passa 30 de 30 (29 testes do Cultivo + 1 do próprio Minecraft).
-- O servidor dedicado (`runServer`) liga com a versão atual do mod (`Done (...)!`, sem erros do Cultivo no log).
-- **Falta** testar com o jogo aberto na tela e em multiplayer. É para isso que existe a [seção 6](#6-o-que-você-precisa-testar-à-mão).
+**Situação verificada em 24/10/2026, com o código do commit `319cf0b`** (branch `claude/polish-visual-uses`, que entra na `main` por PR). Commits só de documentos vêm depois, então o seu `git log --oneline -1` pode mostrar outro código; é normal.
+
+- `build` passa, com 311 testes JUnit.
+- `runGameTestServer` passa 62 de 62 (61 testes do Cultivo + 1 do próprio Minecraft).
+- `node tools/gen/generate.mjs` gera 285 texturas e 786 arquivos JSON.
+- **Servidor e cliente:** o servidor dedicado (`runServer`) ligou e o `runClient` abriu sem erros de recurso, mas os dois com o código de `5bded22`, antes do polimento (genéticas do catálogo, arte nova, usos dos artigos, português, animações e sons).
+- **Falta:** testar com o jogo aberto na tela e em multiplayer o que veio no polimento. É para isso que existe a [seção 6](#6-o-que-você-precisa-testar-à-mão).
 
 ## Apêndice B: Linux e macOS
 
@@ -1247,7 +1677,7 @@ chmod +x gradlew      # só se aparecer "Permission denied"
 - Nos comandos da seção 3, troque `.\gradlew.bat` por `./gradlew`.
 - A pasta `mods` do jogo fica em `~/.minecraft/mods` (Linux) ou `~/Library/Application Support/minecraft/mods` (macOS), como na seção 4.1.
 
-**`tools/test-offline.sh`: testes sem Gradle.** Este script roda os mesmos 88 testes JUnit sem passar pelo Forge. Serve quando os servidores do Forge ou da Mojang estão fora do ar ou bloqueados.
+**`tools/test-offline.sh`: testes sem Gradle.** Este script roda os testes JUnit sem passar pelo Forge. Serve quando os servidores do Forge ou da Mojang estão fora do ar ou bloqueados.
 
 ```
 JAVA_HOME=/caminho/do/jdk25 sh tools/test-offline.sh
@@ -1255,5 +1685,6 @@ JAVA_HOME=/caminho/do/jdk25 sh tools/test-offline.sh
 
 - **No Windows, não use este script.** Ele não foi testado no Windows e foi escrito para Linux/macOS. No Windows, use `.\gradlew.bat test`.
 - Ele também precisa de internet na primeira vez: baixa o JUnit e o Gson de `repo1.maven.org`.
-- O fim da saída tem um resumo. Sucesso é `88 tests successful` com `0 tests failed`.
+- O fim da saída tem um resumo, como `N tests successful` e `0 tests failed`. A última vez que ele rodou foi em 24/10/2026, com 88 testes; hoje a suíte tem 311.
+- **Dois testes precisam de um build:** os de bytecode do `ClientIsolationTest` leem as classes que o Gradle compila em `build/sourceSets/main`. Sem nenhum build antes, esses dois falham com "classes compiladas não encontradas".
 - Quando um teste falha, ele mostra a mensagem completa (`expected: ... but was: ...`) direto no terminal, ao lado do teste marcado como falho.

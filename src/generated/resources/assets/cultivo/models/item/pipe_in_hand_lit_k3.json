@@ -1,0 +1,73 @@
+{
+  "parent": "cultivo:item/pipe_in_hand_lit",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        30,
+        -108,
+        0
+      ],
+      "translation": [
+        0.144,
+        4.632,
+        1.138
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        30,
+        108,
+        0
+      ],
+      "translation": [
+        -2.376,
+        4.632,
+        1.138
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        10,
+        -60,
+        0
+      ],
+      "translation": [
+        -1,
+        6,
+        -2
+      ],
+      "scale": [
+        0.65,
+        0.65,
+        0.65
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        10,
+        60,
+        0
+      ],
+      "translation": [
+        -1,
+        6,
+        -2
+      ],
+      "scale": [
+        0.65,
+        0.65,
+        0.65
+      ]
+    }
+  }
+}

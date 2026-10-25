@@ -2,13 +2,15 @@
 
 ## Objetivo
 
-Mod privado para Minecraft: Java Edition, feito para jogar com amigos. O jogador encontra sementes de variedades fictícias inspiradas na diversidade de genéticas e ciclos catalogados por bancos de sementes, cultiva plantas, colhe flores e as processa por uma cadeia de crafting em etapas que termina em haxixe. Todo o cultivo e processamento são abstrações de gameplay com itens, receitas e ticks de Minecraft; não representam nem ensinam processos reais. A Santa Semente BR serve como referência de categorias e organização de variedades, não como catálogo a ser copiado.
+Mod privado para Minecraft: Java Edition, feito para jogar com amigos. O jogador encontra sementes de variedades fictícias inspiradas na diversidade de genéticas e ciclos catalogados por bancos de sementes, cultiva plantas, colhe flores e as processa por uma cadeia de crafting em etapas que termina em haxixe. Todo o cultivo e processamento são abstrações de gameplay com itens, receitas e ticks de Minecraft; não representam nem ensinam processos reais.
+
+A Santa Semente BR serviu primeiro como referência de categorias e organização de variedades. Desde 24/10/2026, a pedido do dono, ela também é a fonte da lista de genéticas: as do filtro High THC da loja entram no jogo com **nomes de paródia** e atributos em faixas abstratas de jogo (raridade, ciclo, genética, crescimento, potência), sem números do mundo real. Os nomes reais ficam só em `docs/strains-catalog.json`.
 
 ## Alvo
 
-Primeiro alvo: Minecraft Java Edition 26.3 com Forge, usando versões exatas e toolchain registradas em [TECHNICAL_RESEARCH.md](TECHNICAL_RESEARCH.md). O projeto é privado para um grupo de amigos; compatibilidade com o loader usado pelo grupo pode justificar reavaliar NeoForge antes do primeiro build. Não manter dois loaders no MVP.
+Minecraft Java Edition 26.3 com Forge 26.3-66.0.13 e Java 25, com versões e toolchain fixadas em [TECHNICAL_RESEARCH.md](TECHNICAL_RESEARCH.md). O Forge foi escolhido em 21/10/2026 (o grupo não depende de NeoForge, e o launcher do dono já usa Forge). O projeto é privado para um grupo de amigos e mantém um loader só.
 
-Bedrock fica fora do alvo. NeoForge é alternativa em avaliação, não compatibilidade prometida.
+Bedrock e NeoForge ficam fora do alvo.
 
 ## Ciclo principal
 
@@ -18,7 +20,9 @@ O jogador obtém sementes em fontes de mundo, escolhe uma variedade e pode culti
 
 ## MVP
 
-- Três variedades originais identificadas por semente, nome e aparência, cobrindo perfis de ciclo e genética inspirados nas categorias de referência (ex.: automática/fotoperíodo e sativa/índica/híbrida). Brisa, Aurora e Eclipse são nomes provisórios. Não copiar marcas ou cultivares comerciais.
+Escopo do MVP de 21/10/2026, todo implementado; as extensões que vieram depois estão nas seções seguintes.
+
+- Três variedades originais identificadas por semente, nome e aparência, cobrindo perfis de ciclo e genética inspirados nas categorias de referência (ex.: automática/fotoperíodo e sativa/índica/híbrida). Brisa, Aurora e Eclipse ficaram como as variedades "nativas" do mundo. Não copiar marcas ou cultivares comerciais: as genéticas do catálogo (24/10/2026) usam nomes de paródia.
 - Sementes têm níveis de raridade que influenciam sua chance de aparecer em baús e plantações de aldeias. Proposta inicial: Brisa comum, Aurora incomum e Eclipse rara; raridade afeta descoberta, não deve bloquear plantio em biomas.
 - Sementes com raridade e distribuição em baús/loot de aldeias e plantações de aldeias em planícies e selvas; cultivo outdoor em qualquer lugar válido e cultivo indoor em estufa.
 - Plantio, estágios visuais, colheita, flores, qualidade diferenciada pela rota e drops de sementes.
@@ -26,21 +30,45 @@ O jogador obtém sementes em fontes de mundo, escolhe uma variedade e pode culti
 - Secagem, peneiração e prensagem em estações/blocos.
 - Cadeia de processamento até haxixe e receita abstrata de baseado usando folha de seda + flor seca.
 - Artigos de fumo craftáveis, incluindo bong, cachimbo, narguilé, chillum, papel/folha de seda, piteira, dichavador, isqueiro, bandeja, pote e cinzeiro; itens decorativos/funcionais adicionais podem ser acrescentados sem simular instruções reais.
-- Traduções pt-BR/en-US e IDs persistentes.
+- Traduções pt-BR/en-US e IDs persistentes. Desde 24/10/2026 o jogo mostra o português também no en_us, a pedido do dono; o inglês continua no manifesto como fonte.
 - Lógica autoritativa no servidor e cliente/servidor dedicados compatíveis com o loader escolhido.
 
 ## Fora do MVP
 
-Bedrock e outros loaders; dependência/vício; crime/comércio; simulação de técnicas ou parâmetros reais; integração obrigatória com outros mods.
+Bedrock e outros loaders; dependência/vício; crime ou comércio de drogas; simulação de técnicas ou parâmetros reais; integração obrigatória com outros mods. O mascate que vende sementes por esmeraldas, como já vende mudas no vanilla, é só uma fonte de sementes.
 
 ## Extensão pós-MVP (pedida pelo usuário em 21/10/2026)
 
 Mecânica fictícia de fumar: baseado, cachimbo, chillum, bong e narguilé podem ser usados (segurar o botão direito) com um isqueiro no inventário; os artigos queimam flor seca ou haxixe. O servidor aplica efeitos de jogo temporários: o indicador "Chapado" (`cultivo:high`) mais efeitos vanilla (fome, náusea curta e um perfil por variedade). A duração depende do artigo, da qualidade e do material, soma ao fumar de novo e tem limite. São só mecânicas de Minecraft, sem informação do mundo real. Regras e números em DECISIONS.md.
 
+## Extensões pós-MVP (24/10/2026)
+
+- **Catálogo de genéticas.** Pedido do dono, com o link do filtro High THC da Santa Semente BR: "pode ser o nome deles mesmo, ou se preferir use um nome parodia".
+  - Entraram 37 genéticas com nomes de paródia, somando 40 com as nativas.
+  - As do catálogo aparecem em baús de aldeia e com o mascate; as nativas continuam na planta silvestre e nas lavouras de aldeia.
+- **Polimento a partir da auditoria do projeto:**
+  - lavoura com 8 estágios visuais e arte por família;
+  - estações em 3D que mostram se estão vazias, carregadas, trabalhando ou prontas;
+  - modelos 3D dos artigos na mão;
+  - os aldeões fazendeiros replantam a lavoura do mod;
+  - todas as receitas aparecem no livro de receitas.
+- **Todo artigo com uso:**
+  - piteira → baseado com piteira (dura mais, menos náusea);
+  - dichavador → melhoria da peneira (+1 resina);
+  - bandeja de enrolar (3 baseados com 2 flores);
+  - pote de vidro (guarda uma pilha e cura flores secas: +1 de qualidade uma vez, e a estufa continua superior);
+  - cinzeiro (junta a cinza de quem fuma por perto e vira farinha de osso).
+- **Português e animações.** Pedido do dono: "deixe tudo no mod em português, também crie as animações".
+  - Todo o texto do mod aparece em português em qualquer idioma.
+  - Fumar tem animação própria em 1ª e 3ª pessoa.
+  - As estações e os artigos têm animações, partículas e 16 eventos de som com legenda (o áudio é o vanilla).
+
+Regras e números em DECISIONS.md.
+
 ## Critérios de aceite
 
 1. Build compila e jogo inicia na combinação exata de Minecraft, loader e Java declarada.
-2. As três variedades plantam, crescem e produzem os drops esperados em outdoor e estufa; as duas rotas têm diferenças de qualidade visíveis e persistentes.
+2. Todas as variedades (as 3 nativas e as 37 do catálogo) plantam, crescem e produzem os drops esperados em outdoor e estufa; as duas rotas têm diferenças de qualidade visíveis e persistentes.
 3. Sementes podem ser obtidas pelas fontes de mundo documentadas; plantio outdoor funciona em qualquer bioma/local que aceite as condições de plantio definidas; a estufa oferece uma alternativa indoor funcional.
 4. Sementes com raridades distintas aparecem em baús de mais da metade dos tipos de aldeia existentes e em plantações/campos de planície e selva ou fontes equivalentes nesses biomas; testes validam fontes e pesos configurados.
 5. A cadeia de processamento funciona e persiste após reload; flor seca + folha de seda crafta o baseado conforme a receita do jogo.
@@ -48,4 +76,4 @@ Mecânica fictícia de fumar: baseado, cachimbo, chillum, bong e narguilé podem
 7. Saída cheia, chunk unload/reload e interações repetidas não perdem nem duplicam itens.
 8. Servidor dedicado valida interações, progresso e drops; cliente não pode forjar resultados.
 9. O jar carrega numa instalação limpa do loader escolhido com dependências declaradas, sem arquivos do jogo empacotados.
-10. Todos os recursos visuais/audiovisuais referenciados existem, são originais e carregam sem placeholders.
+10. Todos os recursos visuais/audiovisuais referenciados existem, são originais e carregam sem placeholders. Os sons são eventos do próprio mod que tocam áudio vanilla, sem arquivos de áudio no jar.

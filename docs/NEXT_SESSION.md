@@ -1,159 +1,256 @@
 # Orientação para a próxima sessão
 
-**Atualizado em 24/10/2026.** O MVP e a mecânica de fumar (pedida pelo usuário) compilam e passam em `./gradlew build` (88 testes JUnit), `./gradlew runGameTestServer` (30 de 30) e `./gradlew runServer`. Evidências em docs/TODO.md; regras e números em docs/DECISIONS.md; passo a passo para o dono (leigo em Java) em docs/GUIA_INICIANTE.md. Falta testar com o cliente gráfico/multiplayer e balancear.
+**Atualizado em 25/10/2026, com o código do commit `f515cb9`.** Este é o documento para retomar o projeto sem a conversa anterior. Regras e números de jogo: [DECISIONS.md](DECISIONS.md). Evidências: [TODO.md](TODO.md). Passo a passo do dono (leigo em Java): [GUIA_INICIANTE.md](GUIA_INICIANTE.md). Prompt pronto para a nuvem: [CLOUD_PROMPT.md](CLOUD_PROMPT.md).
 
-**Código da mecânica de fumar:** `core/SmokeRules.java` e `core/SmokeDevice.java` (regras puras), `smoke/SmokeSession.java` (servidor: isqueiro, material, consumo, efeitos), `item/SmokingItem.java`, `item/LighterItem.java`, `effect/HighEffect.java`, `registry/ModEffects.java`, componente `cultivo:strain` em `registry/ModComponents.java`; GameTests `smoke_*`, `joint_*`, `hash_keeps_strain` em `gametest/CultivoGameTests.java`.
+## 1. Estado
 
-## 1. Ambiente e versões (verificadas no MDK baixado)
+O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecraft 26.3 + Forge 26.3-66.0.13:
+
+- **40 genéticas:** 3 nativas (Brisa, Aurora, Eclipse) e 37 do catálogo High THC da Santa Semente BR, com nomes de paródia. Lavoura com 8 estágios visuais, estufa com qualidade superior, planta silvestre, duas abas criativas.
+- **Fontes de sementes:** baús de casa de 4 dos 5 tipos de aldeia (todas as genéticas, peso pela raridade), lavouras de aldeia de planície e planta silvestre (só nativas) e o mascate (2 ofertas do catálogo). O fazendeiro replanta a lavoura do mod que colhe.
+- **Processamento:** suporte de secagem, peneira de bancada (com o dichavador como melhoria) e prensa manual, por ticks, com estados visuais, animações, partículas e sons.
+- **Artigos:** todos têm uso. Baseado com piteira, bandeja de enrolar, pote de vidro que cura flores, cinzeiro que vira farinha de osso, além dos artigos de fumar e do isqueiro.
+- **Mecânica fictícia de fumar** (pedida em 21/10/2026), com animação própria em 1ª e 3ª pessoa.
+- **Tudo em português** em qualquer idioma do cliente (pedido de 24/10/2026), com 16 eventos de som do mod.
+
+**Verificado** no PC do dono (Windows 11, Temurin 25.0.4.1+1), com o código de `f515cb9` (25/10/2026):
+
+| Verificação | Resultado |
+|---|---|
+| `.\gradlew.bat build` | `BUILD SUCCESSFUL`, 311 testes JUnit, 0 falhas |
+| `.\gradlew.bat runGameTestServer` | `All 62 required tests passed :)` (61 do Cultivo + `minecraft:always_pass`) |
+| `node tools/gen/generate.mjs` | `285 texturas e 786 arquivos JSON` |
+| Teste visual automático (`run-probe.ps1`, `runClient`) | 47 prints conferidos; log sem modelo, textura ou som faltando; achou e corrigiu a fumaça cobrindo a tela em 1ª pessoa |
+| `run-probe.ps1 -Multiplayer` | Parcial: o cliente entrou no servidor dedicado em 127.0.0.1 e 2 cenas sincronizaram sem erro; parado por falta de memória no PC |
+
+**Visto num cliente de verdade (25/10/2026):** o teste visual automático abriu o `runClient` com o código atual e passou por todas as cenas: árvores de modelo de item, blockstates multipart, texturas animadas, placa da prensa (BlockEntityRenderer), poses de braço, partículas e legendas dos sons. **Ainda não visto:** mão esquerda, os artigos de todos os lados, ouvir os sons e o multiplayer do começo ao fim. Erros de carregamento de modelo do cliente não aparecem no `runGameTestServer`; rode o teste visual depois de mexer em asset.
+
+**Branches:**
+- `main` está em `5bded22` (PR #3).
+- A branch `claude/polish-visual-uses` tem o polimento de 24–25/10, de `121cc4b` até o commit destes docs. Foi enviada ao GitHub em 25/10/2026 junto com estes docs, ainda sem mesclar; ela entra na `main` por PR.
+
+## 2. Como retomar
+
+1. **Escolher a base.**
+   - Rode `git fetch origin`. Se o PR de `claude/polish-visual-uses` já foi mesclado, parta da `main`; senão, faça `git checkout claude/polish-visual-uses`.
+   - Para saber se já foi mesclado: `git cat-file -e origin/main:docs/strains-catalog.json && echo mesclado`. O arquivo só existe a partir do polimento, e o teste funciona mesmo se o PR tiver sido mesclado com squash.
+   - Crie uma branch nova `claude/<tema>`. Commits em inglês; entrega por PR para a `main`.
+   - Pronto quando `git log --oneline -1` mostrar o commit destes docs (depois de `f515cb9`) ou um mais novo.
+2. **Preparar o ambiente** (seção 3).
+   - Pronto quando `java -version` mostrar 25 e o primeiro `./gradlew build` terminar.
+3. **Verificar o ponto de partida.** Rode nesta ordem e nunca dois comandos do Gradle ao mesmo tempo:
+   1. `node tools/gen/generate.mjs`: termina com `285 texturas e 786 arquivos JSON gerados em ...`, e `git status` não mostra mudança.
+   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (311 testes, 0 falhas em `f515cb9`).
+   3. `./gradlew runGameTestServer --console=plain`: `All 62 required tests passed :)`.
+
+   Os números crescem com testes novos; o que vale é zero falha. No Windows (PC do dono), defina antes, na mesma janela: `$env:JAVA_HOME = "C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1"; $env:Path = "$env:JAVA_HOME\bin;$env:Path"`.
+4. **Escolher a tarefa:** o pedido do dono, ou o primeiro item da seção 8 que der para fazer no ambiente que você tem.
+5. **Fechar.** Pronto quando:
+   - os três comandos do passo 3 passam;
+   - toda regra nova tem teste;
+   - os docs afetados estão atualizados (o guia, se mudou algo que o dono vê ou testa);
+   - `TODO.md` só ganhou linhas com evidência (data, comando exato, saída real);
+   - o commit foi feito.
+
+## 3. Ambiente e versões
 
 | Item | Valor |
 |---|---|
-| Minecraft | 26.3 (MCP/mappings `26.3-20260918.230105`) |
-| Loader | Forge `26.3-66.0.13` (`net.minecraftforge:forge:26.3-66.0.13`) |
-| Plugin | `net.minecraftforge.gradle` `[7.0.17,8)` (ForgeGradle 7) |
+| Minecraft | 26.3 (mappings `26.3-20260918.230105`) |
+| Forge | `26.3-66.0.13` (`net.minecraftforge:forge:26.3-66.0.13`); `mods.toml` aceita forge `[66,)` e minecraft `[26.3,26.4)` |
+| ForgeGradle | `net.minecraftforge.gradle` `[7.0.17,8)` |
 | Gradle | wrapper 9.7.1 |
-| Java | toolchain 25 |
+| Java | toolchain 25; o plugin foojay em `settings.gradle` pode baixar um JDK 25 se faltar |
+| Testes | JUnit 5.12.2 (BOM) + Gson 2.13.1 |
+| Gerador | Node.js (testado com 24.19 no PC do dono); sem dependências npm |
 
-- **Decisão: manter 26.3 + Forge.** O build do MDK de exemplo já passou (`BUILD SUCCESSFUL in 5m 1s`, jar `build/libs/examplemod-1.0.0.jar`). Não vale a pena trocar de versão.
-- Máquina local: JDK 25 em `C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1`. O `java` no PATH é Java 8 de 32 bits, então use `JAVA_HOME` apontando para o JDK 25. Na nuvem, instale um JDK 25 (Temurin). O plugin foojay em `settings.gradle` pode baixar o toolchain.
-- A matriz exata está registrada em `docs/TECHNICAL_RESEARCH.md` (seção "Matriz exata do projeto").
+- **PC do dono:**
+  - Windows 11; projeto em `C:\Users\Cliente\Documents\minezada` (essa pasta Documentos não está no OneDrive, então está ok).
+  - JDK 25 em `C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1`, com JAVA_HOME configurado em 24/10/2026. O `java` do PATH é um Java 8 de 32 bits, então use o JAVA_HOME.
+  - Git e Node 24 instalados.
+  - Shell das sessões locais: PowerShell 5.1. Ali, `Get-Content -Raw` lê UTF-8 sem BOM como ANSI e estraga os acentos de um `.java` que passar por ele. Para editar ou restaurar fontes, use node ou `git show`.
+- **Launcher do dono:**
+  - O perfil "Forge 26.3" usa o Forge **26.3-66.0.2**, não o 66.0.13 do projeto.
+  - `%APPDATA%\.minecraft\mods` já tem outros mods: Serene Seasons (com GlitchCore), FallingTree, Macaw's Furniture, Simply Eggs e Xaero's Minimap.
+  - O Serene Seasons mexe no crescimento das plantações (a lavoura do Cultivo chama `ForgeHooks.onCropsGrowPre/Post`, onde mods de estação costumam agir). Teste o Cultivo no `runClient` ou num perfil limpo com o Forge 66.0.13.
+  - O `mods.toml` aceita `[66,)`, então o jar também tenta carregar no 66.0.2, uma versão não testada.
+- **Nuvem (Linux):**
+  - Instale o Temurin 25 e exporte `JAVA_HOME` (comandos em [CLOUD_PROMPT.md](CLOUD_PROMPT.md)).
+  - O primeiro build precisa de rede para `maven.minecraftforge.net`, `piston-meta.mojang.com` e `libraries.minecraft.net`, além de `services.gradle.org`, `plugins.gradle.org` e `repo1.maven.org`. Em 21/10/2026 a sessão na nuvem só buildou depois de liberar esses domínios (TECHNICAL_RESEARCH.md).
+- **Sem tela** (nuvem ou qualquer sessão sem display) não dá para fazer:
+  - `runClient`;
+  - o teste visual automático `tools/visual-probe/run-probe.ps1`, que só roda no Windows, com tela, a partir de `run\world` criado por um `runServer`;
+  - um teste multiplayer com cliente de verdade.
 
-### Como consultar a API sem pesquisar na web
-Depois do primeiro build, o ForgeGradle deixa estes arquivos no projeto:
-- **Fontes completas do Minecraft e do Forge (decompiladas, nomes oficiais):** `.gradle/mavenizer/repo/net/minecraftforge/forge/26.3-66.0.13/forge-26.3-66.0.13-sources.jar`. Extraia num diretório temporário e use grep.
-- **Dados e assets vanilla em JSON (loot, receitas, worldgen, modelos):** `.gradle/mavenizer/repo/net/minecraft/client-extra/26.3-20260918.230105/client-extra-26.3-20260918.230105.jar`. Leia com `unzip -p`.
+  Essas caixas do TODO ficam abertas até o dono testar. Uma sessão sem tela prepara a checklist para ele (GUIA_INICIANTE.md, seção 6).
 
-## 2. Diferenças da API 26.3 já confirmadas
-- `Identifier` substitui `ResourceLocation`. Blocos e itens precisam de `.setId(BLOCKS.key("nome"))` / `.setId(ITEMS.key("nome"))` nas Properties (veja o ExampleMod).
-- Para um item-semente que nomeia o crop: `new BlockItem(block, props.useItemDescriptionPrefix())`. Itens compostáveis usam `Item.Properties#compostable(ContextIntProviders.COMPOSTABLE_LOW)`.
-- Blocos **não** precisam mais de `codec()`.
-- Interação com blocos:
-  - `useItemOn(ItemStack, BlockState, Level, BlockPos, Player, InteractionHand, BlockHitResult)` retorna `InteractionResult.SUCCESS_SERVER / CONSUME / TRY_WITH_EMPTY_HAND`.
-  - `useWithoutItem(BlockState, Level, BlockPos, Player, BlockHitResult)`.
-- BlockEntity:
-  - salva e carrega com `saveAdditional(ValueOutput)` / `loadAdditional(ValueInput)`, usando `ContainerHelper.saveAllItems/loadAllItems`;
-  - o drop ao quebrar vai em `preRemoveSideEffects(BlockPos, BlockState)`;
-  - a sincronização usa `getUpdatePacket()` + `getUpdateTag(HolderLookup.Provider)`;
-  - o construtor do tipo é `new BlockEntityType<>(factory, Set.of(block))`.
-  - Modelo completo: `CampfireBlock` + `CampfireBlockEntity`. O ticker usa `createTickerHelper`.
-- Tooltip: `Item#appendHoverText(ItemStack, Item.TooltipContext, TooltipDisplay, Consumer<Component>, TooltipFlag)` (marcado @Deprecated, mas ainda funciona).
-- Componentes de dados: `DataComponentType.<Integer>builder().persistent(Codec.INT).networkSynchronized(ByteBufCodecs.VAR_INT).build()`, registrados via DeferredRegister em `Registries.DATA_COMPONENT_TYPE`.
-- Receitas:
-  - a interface `Recipe<T>` tem `matches`, `assemble(T)`, `showNotification`, `group`, `getSerializer`, `getType`, `placementInfo`, `recipeBookCategory`;
-  - `RecipeSerializer` é um record `(MapCodec, StreamCodec)`;
-  - resultado como `ItemStackTemplate`;
-  - modelo a seguir: `SingleItemRecipe` / `StonecutterRecipe` com `SingleRecipeInput`;
-  - no servidor, a busca é `serverLevel.recipeAccess().getRecipeFor(type, input, level)`.
-- Função de loot: estender `LootItemConditionalFunction`, com `MapCodec` montado via `commonFields(i).apply(...)`, e registrar em `Registries.LOOT_FUNCTION_TYPE`. Parâmetros de contexto: `LootContextParams.ORIGIN` e `BLOCK_STATE`.
-- **Formato JSON novo de loot:** usa `"modifier"` e `"condition"`, no lugar de `functions`/`conditions`. Copie os arquivos vanilla `loot_table/blocks/wheat.json` e `short_grass.json`.
-- **Worldgen:**
-  - as features configuradas ficam em `data/<ns>/worldgen/feature/`; o tipo `random_patch` não existe mais;
-  - exemplo de feature: `{"type":"minecraft:simple_block","to_place":{"id":"..."}}`;
-  - o "patch" é montado no placed_feature com `count` + `offset` + `block_predicate_filter`; copie `placed_feature/patch_melon.json`.
-- Biome modifier do Forge: `data/cultivo/forge/biome_modifier/x.json` com `{"type":"forge:add_features","biomes":"#minecraft:is_jungle","features":"cultivo:...","step":"vegetal_decoration"}`. Confira o caminho exato da pasta no registro `forge:biome_modifier`.
-- **Render layer automático:** a camada cutout é inferida da transparência da textura, então não é preciso `render_type`.
-- Modelos de item: além de `models/item/x.json`, cada item precisa de `assets/<ns>/items/x.json` com `{"model":{"type":"minecraft:model","model":"cultivo:item/x"}}`.
-- Injeção de loot: `LootTableLoadEvent.BUS.addListener(...)` e depois `event.getTable().addPool(...)`. No 26.3 `NestedLootTable.lootTableReference` pede `Holder<LootTable>` e o evento não dá acesso ao registro; por isso `SeedLootInjector` monta o pool em Java a partir de `SeedSources` (veja a seção 6). O evento roda só no servidor.
-- **GameTests no Forge 26.3:**
-  - registre as funções via DeferredRegister em `Registries.TEST_FUNCTION`, como `Consumer<GameTestHelper>`;
-  - crie um JSON por teste em `data/cultivo/test_instance/<nome>.json` no formato `{"type":"minecraft:function","function":"cultivo:<nome>","environment":"minecraft:default","structure":"forge:empty9x9x9","max_ticks":100}`;
-  - o Forge gera sozinho a estrutura vazia `forge:emptyXxYxZ`;
-  - para rodar: `gradlew runGameTestServer`, com `forge.enabledGameTestNamespaces=cultivo` no build.gradle.
-  - Helpers úteis: `setBlock`, `getBlockState`, `randomTick`, `useBlock(pos, player)`, `makeMockPlayer(GameType)`, `getLevel`, `succeed`, `fail`.
+### Consultar a API sem pesquisar na web
+Depois do primeiro build, o ForgeGradle deixa no projeto:
+- **Fontes do Minecraft e do Forge** (decompiladas, nomes oficiais): `.gradle/mavenizer/repo/net/minecraftforge/forge/26.3-66.0.13/forge-26.3-66.0.13-sources.jar`. Extraia num diretório temporário e use grep:
 
-## 3. Inventário vanilla que direciona o design
-- **Aldeias em 26.3:** plains, desert, savanna, snowy e taiga (5 tipos). **Não existe aldeia de selva.**
-- Baús das casas: `minecraft:chests/village/village_{plains,desert,savanna,snowy,taiga}_house`.
-- Lavouras das aldeias: os processor lists `minecraft:worldgen/processor_list/farm_<tipo>.json` usam regras `random_block_match` que trocam trigo por outras culturas.
-- Tags úteis: `#minecraft:is_jungle` (jungle, sparse_jungle, bamboo_jungle), `#minecraft:has_structure/village_plains` (plains, meadow). Adicione os crops em `#minecraft:maintains_farmland`, `#minecraft:crops` e `#minecraft:bee_growables`.
+  ```
+  mkdir -p /tmp/forge-src && unzip -q -o .gradle/mavenizer/repo/net/minecraftforge/forge/26.3-66.0.13/forge-26.3-66.0.13-sources.jar -d /tmp/forge-src
+  ```
+- **JSONs vanilla** (loot, receitas, worldgen, modelos, blockstates, `items/*.json`): `.gradle/mavenizer/repo/net/minecraft/client-extra/26.3-20260918.230105/client-extra-26.3-20260918.230105.jar`. Leia com `unzip -p <jar> data/minecraft/loot_table/blocks/wheat.json`. Copie os formatos do vanilla: o 26.3 mudou muitos (seção 6).
 
-## 4. Arquitetura decidida (não rediscutir; registrar em DECISIONS.md)
-- **Identificação:** modId `cultivo`, nome "Cultivo", group/pacote `io.github.peixeangola.cultivo`, versão 0.1.0. Substitua todo `examplemod` no build.gradle (incluindo os args de `runs` e `enabledGameTestNamespaces`), em settings.gradle, no mods.toml e nas classes; apague `Config.java` e `ExampleMod.java`.
-- **Variedades** (enum puro):
-  - Brisa: comum, automática/sativa, cresce mais rápido;
-  - Aurora: incomum, fotoperíodo/híbrida;
-  - Eclipse: rara, fotoperíodo/índica, cresce mais devagar.
-- **Itens por variedade:** `<v>_seeds` (BlockItem do crop), `<v>_crop` (bloco), `<v>_fresh_flower` e `<v>_dried_flower`.
-- **Itens genéricos:** `resin` (resina fictícia), `hash`, `joint` (baseado), mais os 11 artigos: `bong`, `pipe`, `hookah`, `chillum`, `rolling_paper`, `filter_tip`, `grinder`, `lighter`, `rolling_tray`, `jar`, `ashtray`.
-- **Qualidade:**
-  - componente `cultivo:quality`, valor inteiro de 1 a 5, mostrado no tooltip;
-  - outdoor: base 2; estufa: base 4;
-  - +1 com chance por variedade: 0,20 / 0,35 / 0,50;
-  - resultado: outdoor fica em 2–3 e estufa em 4–5;
-  - a função de loot `cultivo:set_harvest_quality` calcula a rota no servidor, no momento da colheita.
-- **Crop:**
-  - `CannabisCropBlock extends CropBlock`, sem filtro de bioma; precisa de farmland e luz ≥ 9, igual ao trigo;
-  - `randomTick` replica o vanilla, incluindo os hooks `ForgeHooks.onCropsGrowPre/Post`, com velocidade × multiplicador da variedade × 1,25 na estufa;
-  - 4 texturas visuais por variedade, mapeando idades 0–1, 2–3, 4–5 e 6–7;
-  - drops maduros: flor fresca com qualidade + sementes (bônus binomial); drops imaturos: 1 semente.
-- **Estufa** (`GreenhouseRules`, puro, testável):
-  - o primeiro bloco não-ar acima da planta, até 6 blocos, precisa ser da tag `cultivo:greenhouse_glass` (vidros, vidros tingidos, painéis);
-  - nas 4 direções horizontais, precisa haver vidro dessa tag a até 6 blocos, na altura da planta ou um bloco acima.
-- **Estações** (a mesma BlockEntity serve as três):
-  - `drying_rack` (suporte de secagem), `sieve` (peneira de bancada) e `press` (prensa manual);
-  - cada uma tem 1 slot de entrada (pilha) + 1 de saída e progresso em ticks;
-  - interação: clique direito com o item insere; mão vazia retira primeiro a saída;
-  - se a saída estiver cheia ou não for compatível (outra qualidade), o progresso para, sem perder nem duplicar itens;
-  - a qualidade da entrada é copiada para a saída.
-  - Receitas data-driven com os tipos `cultivo:drying`, `cultivo:sieving` e `cultivo:pressing`; campos `ingredient`, `input_count`, `result` e `processing_time`:
-    - secagem: 600 ticks;
-    - peneira: 200 ticks, flor seca → resina, +1 resina com qualidade ≥ 4;
-    - prensa: 300 ticks, 2 resinas → 1 haxixe.
-- **Fontes de sementes** (constantes em `SeedSources`, com testes que conferem os JSONs):
-  - Baús: injeção nas casas de **plains, savanna, taiga e desert** (4/5 tipos; snowy fica de fora). O pool injetado tem 1 rolagem com pesos vazio 50, brisa 30 (1–3), aurora 14 (1–2), eclipse 6 (1).
-  - Lavouras de aldeia de planície: sobrescrever `data/minecraft/worldgen/processor_list/farm_plains.json`, mantendo as regras vanilla e acrescentando **antes** delas brisa 0,05, aurora 0,025 e eclipse 0,01 no crop com age 0.
-  - Campo natural: bloco `wild_plant`, colocado por worldgen em `#minecraft:is_jungle` (equivalente da selva, que não tem aldeia) e em plains/meadow. Ao quebrar, dá sementes com pesos 60/30/10.
-- **Receita do baseado:** ~~shapeless `rolling_paper` + `#cultivo:dried_flowers`~~ → substituída em 21/10/2026 por 3 receitas `crafting_transmute` (flor seca de cada variedade + folha de seda), que copiam a qualidade e gravam `cultivo:strain`. Veja DECISIONS.md, "Mecânica de fumar".
-- **Artigos:** cada um com receita shaped/shapeless de itens vanilla. Use um GameTest para garantir que cada padrão resolve para a receita do mod e não conflita com receitas vanilla.
-- **Assets:**
-  - texturas originais 16×16 geradas por script Node em `tools/art/` (usando `png.mjs`);
-  - blockstates, modelos e lang (en_us/pt_br) podem vir de um gerador `tools/gen/` alimentado por um manifesto único;
-  - os sons e partículas usados são os vanilla (por exemplo `SoundEvents.CROP_BREAK`), então não há sons próprios para criar.
-- **Testes:**
-  - JUnit (adicionar `testImplementation` do JUnit 5 + `useJUnitPlatform()`) para as regras puras (qualidade, estufa, pesos de fonte, rendimento de processamento) e para a completude dos assets e receitas (parse dos JSON);
-  - GameTests para crescimento, colheita, estufa, estações (incluindo persistência via save/load da BE), injeção de loot e receitas.
+## 4. Regras de trabalho
 
-## 5. O que existe agora (mapa do código)
-- `src/main/java/io/github/peixeangola/cultivo/`:
-  - `Cultivo` (@Mod): registra todos os DeferredRegister e o listener de `LootTableLoadEvent`;
-  - `core/`: regras **puras**, sem Minecraft: `Variety`, `QualityRules`, `GrowthRules`, `GreenhouseRules`, `ProcessingRules`, `StationKind`, `SeedSources`, `ArticleRecipes`, `ContentIds`, `SmokeRules`, `SmokeDevice`;
-  - `registry/`: `ModBlocks`, `ModItems`, `ModComponents` (`cultivo:quality`, `cultivo:strain`), `ModEffects` (`cultivo:high`), `ModBlockEntities` (`processing_station`), `ModRecipes` (tipos e serializers drying/sieving/pressing), `ModLootFunctions` (`set_harvest_quality`), `ModCreativeTabs`, `ModTags`;
-  - `block/`: `CannabisCropBlock`, `WildPlantBlock`, `ProcessingStationBlock` e `ProcessingStationBlockEntity`, `GreenhouseDetector`;
-  - `item/`: `QualityItem`, `SeedItem`, `DecorativeItem`, `StationBlockItem`, `SmokingItem` e `LighterItem`;
-  - `smoke/SmokeSession` (servidor: isqueiro, material, consumo, efeitos) e `effect/HighEffect`;
-  - `recipe/ProcessingRecipe`, `loot/SetHarvestQualityFunction`, `loot/SeedLootInjector`;
-  - `gametest/CultivoGameTests`: 29 GameTests registrados em `Registries.TEST_FUNCTION` (10 do MVP + 19 da mecânica de fumar/variedade; nomes em `ContentIds.GAME_TESTS`).
-- `src/generated/resources/`: **gerado** por `node tools/gen/generate.mjs`, que também chama `tools/art/textures.mjs`. Não editar à mão. Para mudar algo, edite `tools/gen/manifest.json` e os scripts e rode o gerador de novo.
-- `src/test/java/`: testes das regras puras (`core/`) e da completude e consistência dos dados (`data/`). Os testes leem os arquivos a partir da raiz do projeto.
-- `tools/test-offline.sh`: roda o JUnit sem Gradle nem Minecraft. Útil quando o maven do Forge não está acessível.
+- **Recursos gerados:** `src/generated/resources` sai inteiro de `node tools/gen/generate.mjs`. Conteúdo, nomes, receitas, pesos e testes ficam em `tools/gen/manifest.json`; os modelos 3D em `tools/gen/models.mjs`; a pixel art (grades ASCII; encoder em `tools/art/png.mjs`) em `tools/art/textures.mjs`. Edite as fontes, rode o gerador e versione a saída. O gerador lê o manifesto antes de apagar a pasta; um erro depois disso deixa a pasta pela metade (`git restore src/generated/resources`).
+- **Duas fontes para a mesma regra:** muitas regras existem no Java puro de `core/` (o jogo usa) e no manifesto (gera o JSON), e os testes JUnit conferem que as duas concordam. Mude as duas.
+- **GameTest novo:** nome em `ContentIds.GAME_TESTS` e entrada em `game_tests` do manifesto (`max_ticks`, padrão 100), depois o gerador.
+- **Testes honestos:** valores esperados como literais da especificação, não recalculados com o código testado. Toda regra nova ganha teste, e um teste negativo (quebrar a regra e ver o teste falhar) vale como evidência.
+- **Servidor decide tudo:** crescimento, qualidade, drops, estações, crafting, fumo. O cliente só prevê cliques com o que sabe (tags `cultivo:<estação>_inputs`, slots sincronizados) e mostra.
+- **Ficção de jogo:** nada de instruções ou números do mundo real (nem % de THC, nem semanas de cultivo); não mexa em autenticação ou licença do jogo.
+- **Nomes reais** de genéticas e de bancos de sementes ficam só em `docs/strains-catalog.json`. `ParodyNamesTest` falha se aparecerem em `src/main`, `src/generated`, `tools/gen`, `tools/art` ou `tools/visual-probe`, assim como a palavra "THC".
+- **Textos:** só chaves de tradução, sem `Component.literal` (só o diagnóstico de falha dos GameTests usa). Todo texto novo vai no manifesto em pt e en: com `portuguese_everywhere: true`, o `en_us.json` sai igual ao `pt_br.json`. `PortugueseEverywhereTest` procura inglês esquecido. Dicas de tooltip em linhas curtas: `core/TooltipHints`, no máximo 220 px de largura.
+- **Código de cliente** só no pacote `client/`, alcançado apenas por `SmokingItem.initializeClient` e por `CultivoClientEvents` (`Dist.CLIENT`). `ClientIsolationTest` confere as fontes e o bytecode.
+- **Sons** só pelos eventos de `ModSounds` (`ContentIds.SOUNDS`, seção `sounds` do manifesto), tocados no servidor com `playSound(null, ...)`. `SoundsTest` proíbe `SoundEvents` vanilla no código de jogo.
+- **Estilo:** comentários e javadoc em português, como o código ao redor; identificadores em inglês.
+- **Evidência:** atualize `TODO.md` somente com data, comando exato e saída real. Caixas de checagem visual ficam abertas sem evidência do dono.
 
-## 6. Diferenças do 26.3 descobertas no build real (corrigidas)
-- **Funções de loot:** o registro `Registries.LOOT_FUNCTION_TYPE` é de `MapCodec<? extends LootItemFunction>`. `LootItemFunctionType` não existe mais. A função implementa `codec()`, e o construtor de `LootItemConditionalFunction` recebe `Optional<Holder<LootItemCondition>>`. Os parâmetros saem de `LootContext#getOptional(...)`.
-- **Providers numéricos:** são holders de registro: `ContextIntProviders.exactly(n)`/`between(a, b)` (`providers.number.ints`). `LootPool.Builder#setRolls` recebe `Holder<ContextIntProvider>`.
-- **`NestedLootTable.lootTableReference`:** recebe `Holder<LootTable>`, e o `LootTableLoadEvent` não dá acesso ao registro. Por isso, `SeedLootInjector` monta o pool em Java a partir de `SeedSources`; `loot_table/inject/village_seeds.json` fica como espelho, conferido por teste.
-- **Blocos e jogador:** `FarmBlock` virou `FarmlandBlock`. Os vidros tingidos estão em `Blocks.STAINED_GLASS.<cor>()` (`ColorCollection`). `Player#drop` recebe um `Prediction` (use `SERVER_ONLY`, como o `ChiseledBookShelfBlock`).
-- **Receitas próprias:** com `PlacementInfo.NOT_PLACEABLE`, o `RecipeManager` avisa e descarta a receita dos índices. Use `PlacementInfo.create(ingredient)`.
-- **Formatos JSON (do `client-extra`):**
-  - condições de bloco são `minecraft:match_block` (`blocks`, `state`);
-  - `condition`, `modifier` e `rolls` existem em pool e entrada, e `modifier` também no nível da tabela;
-  - `condition` pode ser um ID string;
-  - `output_state` de processor e `state` de `would_survive` são strings de block state;
-  - a feature é `{"type":"minecraft:simple_block","to_place":{"id":...}}`;
-  - o offset de patch é `minecraft:offset` com `x`/`y`/`z` trapezoid;
-  - receitas sem `category` obrigatório.
-- Todas as outras suposições da lista anterior (componentes, BlockEntity com ValueInput/ValueOutput, `useItemOn`/`useWithoutItem`, `Recipe#assemble(input)`, `RecipeSerializer` record, GameTest `helper.fail(Component)`, `saveWithFullMetadata`/`loadStatic`, `appendHoverText`, `ForgeHooks.onCropsGrowPre/Post`) compilaram como escritas.
+## 5. Mapa do código
 
-## 7. Próximos passos, em ordem
-1. `runClient` numa máquina com display: texturas, tooltips, estufa.
-2. `runServer` + cliente conectado: ciclo completo em multiplayer.
-3. Mundo novo: planta silvestre na selva/planície e crops nas lavouras de aldeia.
-4. Balanceamento; atualizar TODO.md **somente com evidências**.
+Pacote `src/main/java/io/github/peixeangola/cultivo/`:
+- `Cultivo` (@Mod): registra os DeferredRegister e os listeners de jogo (`LootTableLoadEvent` → `SeedLootInjector`, `VanillaGameEvent` → `FarmerReplant`, `MobSpawnEvent.FinalizeSpawn` → `WanderingTraderSeeds`).
+- `core/`, regras **puras** sem Minecraft, todas com JUnit:
+  - genéticas e cultivo: `Variety` (as 40 genéticas), `GrowthRules`, `QualityRules`, `GreenhouseRules`, `SeedSources`;
+  - estações: `StationKind`, `ProcessingRules` (dichavador incluso), `StationVisualRules`, `StationAnimation`;
+  - fumo: `SmokeRules` (piteira inclusa), `SmokeDevice`, `SmokeAnimation`;
+  - artigos: `RollingRules`, `CuringRules`, `AshtrayRules`;
+  - listas e dados: `ArticleRecipes`, `ContentIds` (lista única de IDs, GameTests, sons, propriedades de blockstate), `TooltipHints`.
+  - `GrowthRules.visualStage` (4 estágios) é sobra sem uso no jogo: a lavoura tem 8.
+- `registry/`:
+  - `ModBlocks`, `ModItems`, `ModBlockEntities` (`processing_station`, `jar`), `ModRecipes` (drying/sieving/pressing), `ModLootFunctions` (`set_harvest_quality`), `ModEffects` (`cultivo:high`), `ModSounds`;
+  - `ModComponents`: `cultivo:quality`, `cultivo:strain`, `cultivo:filtered`, `cultivo:cured`;
+  - `ModCreativeTabs` ("Cultivo" e "Cultivo: Genéticas");
+  - `ModTags`: entradas das estações, `jar_storable` e vidro de estufa.
+- `block/`:
+  - lavoura e mundo: `CannabisCropBlock`, `WildPlantBlock`, `GreenhouseDetector`;
+  - estações: `ProcessingStationBlock` + `ProcessingStationBlockEntity` (as três estações), `SieveBlock` (dichavador), `StationContents`;
+  - artigos colocáveis: `RollingTrayBlock`, `JarBlock` + `JarBlockEntity`, `AshtrayBlock`;
+  - `Handouts`: o que vai para a mão do jogador, com sobra caindo aos pés.
+- `item/`:
+  - `SeedItem`, `FlowerItem` e `QualityItem`, com `StrainProfile` (linha de raridade · ciclo · genética · potência);
+  - `SmokingItem` e `LighterItem`;
+  - `StationBlockItem`, `ArticleBlockItem` (bloco com ícone plano) e `TooltipItem` (dicas em linhas).
+- `smoke/`: `SmokeSession` (servidor: isqueiro, material, consumo, efeitos, cinzeiro) e `SmokeEffects` (partículas e sons do fumo).
+- `effect/HighEffect`, `recipe/ProcessingRecipe`, `loot/SetHarvestQualityFunction`, `loot/SeedLootInjector`.
+- `village/`: `FarmerReplant` e `WanderingTraderSeeds`.
+- `client/`, só no cliente:
+  - `SmokingItemClient`: poses de braço e transformação em 1ª pessoa;
+  - `PressPlatenRenderer`: placa da prensa;
+  - `CultivoClientEvents`.
+- `gametest/CultivoGameTests`: 61 GameTests, com os nomes em `ContentIds.GAME_TESTS`.
 
-## Histórico: plano da sessão de investigação (passos 1–5 e 7 feitos na nuvem; o 6 foi bloqueado pela rede)
-1. Commitar `tools/art/png.mjs` e este arquivo.
-2. Renomear o MDK para `cultivo`, criar o esqueleto de registros e rodar `gradlew build`.
-3. Implementar as regras puras com JUnit (TDD).
-4. Escrever o Java de conteúdo: crop, estações, receitas, função de loot, injeção, creative tab.
-5. Gerar os dados JSON e os assets (script de arte + gerador).
-6. Rodar GameTests (`runGameTestServer`), `build` e, se possível, `runServer` para testar o servidor dedicado.
-7. Atualizar TODO.md, DECISIONS.md e TECHNICAL_RESEARCH.md **somente com evidências** (comandos e resultados reais).
+Outras pastas:
+- `src/test/java/.../core` e `.../data`: 311 testes JUnit.
+  - `core`: regras puras.
+  - `data`: completude e consistência dos recursos, nomes de paródia, português, sons, texturas animadas, isolamento do cliente, animação e dicas.
+  - Os testes leem os arquivos a partir da raiz do projeto.
+- `tools/gen/`: `manifest.json`, `generate.mjs` e `models.mjs`.
+- `tools/art/`: `textures.mjs` e `png.mjs`.
+- `tools/visual-probe/`:
+  - `run-probe.ps1` + datapack de cena: abre o `runClient` num mundo de teste e tira 47 prints (só Windows com tela; ferramenta de desenvolvimento, fora do jar). Cobre tudo do polimento; `-Multiplayer` sobe também o servidor dedicado em 127.0.0.1 (precisa de bastante memória livre).
+  - `gen-datapack.mjs` gera o datapack a partir do `manifest.json` (rode depois de mudar genéticas) e `validate.mjs` confere a sintaxe sem abrir o jogo. Os `.mcfunction` têm de ficar em LF (`.gitattributes`).
+  - Prints e o `log-problems.txt` vão para a pasta de `-OutDir`; olhe os prints um por um, porque o script não julga a imagem.
+- `tools/test-offline.sh`: roda o JUnit sem Gradle nem Minecraft (Linux/macOS).
+  - Rodado pela última vez em 24/10/2026 com 88 testes.
+  - Pelo código, os dois testes de bytecode do `ClientIsolationTest` precisam das classes que o Gradle compila em `build/sourceSets/main`; sem um build anterior, eles dão erro "classes compiladas não encontradas".
+- `docs/strains-catalog.json`: catálogo do dono, a fonte das genéticas.
+
+## 6. Diferenças e armadilhas da API 26.3 (já confirmadas no build)
+
+**Registro e blocos**
+- `Identifier` substitui `ResourceLocation`. Blocos e itens precisam de `.setId(BLOCKS.key(...))` / `.setId(ITEMS.key(...))` nas Properties. Blocos não precisam mais de `codec()`.
+- Item-semente que nomeia o crop: `new BlockItem(block, props.useItemDescriptionPrefix())`. Compostável: `Item.Properties#compostable(ContextIntProviders.COMPOSTABLE_LOW)`.
+- `FarmBlock` virou `FarmlandBlock`. Os vidros tingidos estão em `Blocks.STAINED_GLASS.<cor>()`. `PushReaction.DESTROY` virou `POPPED`.
+- `createBlockStateDefinition` roda dentro do construtor de `Block`, antes dos campos da subclasse; para uma propriedade a mais, use uma subclasse (como a `SieveBlock`). `BooleanProperty` tem `true` como primeiro valor: defina o padrão explicitamente.
+- `Shapes.rotateHorizontal(shape)` devolve o mapa por direção. `Level.markAndNotifyBlock` só atualiza comparadores com o flag de vizinhos: para mudar o sinal, use `UPDATE_ALL`.
+
+**Interação**
+- `useItemOn(ItemStack, BlockState, Level, BlockPos, Player, InteractionHand, BlockHitResult)` e `useWithoutItem(...)`. `TRY_WITH_EMPTY_HAND` só leva ao `useWithoutItem` na mão principal.
+- Devolva `SUCCESS` no servidor quando o cliente já previu o clique. `SUCCESS_SERVER` faz o servidor repetir o balanço do braço para quem clicou.
+- `PASS` deixa o vanilla seguir (usar o item, colocar o bloco, tentar a outra mão).
+- O cliente não recebe receitas: preveja por tag de item e pelos slots sincronizados.
+- Agachado, `ServerPlayerGameMode#useItemOn` só chama o bloco com as duas mãos vazias. Segurar o botão repete o clique a cada 4 ticks.
+- `Inventory#add` com o jogador criativo e o inventário cheio zera a pilha e devolve true. Para entregar itens, use `placeItemBackInInventory(stack, false, Prediction.PREDICTED)` (`block/Handouts`). `Player#drop` recebe um `Prediction`.
+
+**BlockEntity**
+- Salva e carrega com `saveAdditional(ValueOutput)` / `loadAdditional(ValueInput)` e `ContainerHelper`. O drop ao quebrar vai em `preRemoveSideEffects`. O tipo é `new BlockEntityType<>(factory, Set.of(block))`, e o ticker usa `createTickerHelper`. Modelo completo: `CampfireBlock`.
+- Sincronização com o cliente: `getUpdatePacket()` + `getUpdateTag(...)` com só os itens, e `level.sendBlockUpdated(...)` quando o conteúdo muda.
+- Recarregar como no load de chunk: `BlockEntity.loadStatic` + `Level#setBlockEntity`, que registra o ticker de novo.
+
+**Componentes e receitas**
+- Componentes: `DataComponentType.<T>builder().persistent(codec).networkSynchronized(streamCodec)`. Marca sem valor: `Unit.CODEC`, que é `{}` no JSON.
+- `Recipe<T>`: `matches`, `assemble(T)`, `placementInfo` (use `PlacementInfo.create(ingredient)`; `NOT_PLACEABLE` some dos índices), `recipeBookCategory`. `RecipeSerializer` é um record `(MapCodec, StreamCodec)`; o resultado é `ItemStackTemplate`. No servidor, a busca é `serverLevel.recipeAccess().getRecipeFor(type, input, level)`.
+- `crafting_transmute` copia só o *patch* de componentes da entrada: um valor igual ao padrão do protótipo não fica no patch. Por isso há um transmute por genética para o baseado.
+- Livro de receitas: um avanço `data/<ns>/advancement/recipes/misc/<id>.json` por receita, com critérios `inventory_changed` por ingrediente + `recipe_unlocked`, uma só lista de requisitos (OU) e `rewards.recipes`.
+
+**Loot, worldgen e eventos**
+- Loot: o registro de funções é de `MapCodec`; `LootItemFunctionType` não existe. `LootItemConditionalFunction` recebe `Optional<Holder<LootItemCondition>>`. Os providers são holders (`ContextIntProviders.exactly/between`).
+- JSON de loot: `condition`/`modifier` no lugar de `conditions`/`functions`, e o campo de tipo é `type`.
+- `NestedLootTable` pede `Holder<LootTable>`, e o `LootTableLoadEvent` não dá o registro. Por isso `SeedLootInjector` monta o pool em Java; `loot_table/inject/village_seeds.json` é um espelho conferido por teste.
+- Worldgen:
+  - não existe mais `random_patch`;
+  - feature: `{"type":"minecraft:simple_block","to_place":{...}}`;
+  - o patch vai no placed feature (`count` + `minecraft:offset` + `block_predicate_filter`).
+  - O biome modifier do Forge fica em `data/<ns>/forge/biome_modifier/`.
+- Não há evento de trocas do mascate no Forge 26.3: o `WanderingTrader` usa três conjuntos fixos. Ofertas novas entram em `MobSpawnEvent.FinalizeSpawn`.
+- O `HarvestFarmland` do aldeão quebra qualquer `CropBlock` maduro (`CropBlock.isMaxAge` é final) e só replanta sementes da tag vanilla. O Cultivo replanta reagindo ao `VanillaGameEvent` BLOCK_DESTROY.
+
+**Recursos de cliente**
+- Cada item precisa de `assets/<ns>/items/<id>.json`. Árvores usadas:
+  - `minecraft:condition` com `minecraft:using_item` ou `minecraft:has_component`;
+  - `minecraft:select` em `minecraft:display_context` (inclui `on_shelf`) ou em `minecraft:component`;
+  - `minecraft:range_dispatch` em `minecraft:use_duration`;
+  - `minecraft:composite`.
+- Sem transformação de mão esquerda, o 26.3 usa a da direita.
+- A camada de render vem da transparência da textura: alpha só 0 ou 255 mantém sólido ou cutout.
+- Textura animada: tira vertical 16×(16·n) + `.png.mcmeta`.
+- `sounds.json` com `"type": "event"` reaproveita um evento vanilla.
+- Poses de braço próprias: `HumanoidModel.ArmPose.create(...)` do Forge, criadas no carregamento do item (`IClientItemExtensions`). `Item#initializeClient` só roda no cliente físico, dentro do construtor do item.
+- Uma ArmPose estendida não troca `animateUseItem`, e não há gancho por frame para o item na 3ª pessoa: por isso a subida em 3ª pessoa usa 5 modelos-chave.
+- Modelo de bloco sem bloco (a placa da prensa): estado sintético registrado em `ModelEvent.RegisterModelStateDefinitions`, como o vanilla faz com a moldura.
+
+**GameTests no Forge 26.3**
+- Funções em `Registries.TEST_FUNCTION` (`Consumer<GameTestHelper>`). Um JSON por teste em `data/cultivo/test_instance/` com a estrutura `forge:empty9x9x9`.
+- `forge.enabledGameTestNamespaces=cultivo` está no build.gradle.
+- Helpers usados:
+  - `makeMockPlayer`, `makeMockServerPlayer`; e `player.gameMode.useItemOn(...)` para o clique real;
+  - `runAfterDelay`, `succeedWhen`;
+  - `spawn(..., EntitySpawnReason.EVENT)`.
+
+## 7. Histórico curto
+
+- **21/10/2026, nuvem:** o MDK virou o mod, nasceram o MVP (3 variedades, estufa, estações, fontes de sementes, artigos) e a mecânica de fumar (pedida pelo dono). Os primeiros builds mostraram as diferenças da API listadas na seção 6.
+- **24/10/2026, até as 16h35:**
+  - o PR #1 levou o MVP e a mecânica de fumar para a `main`;
+  - duas revisões adversariais (commits `1e7325a` e `9b0ef80`) entraram pelos PRs #2 e #3 (o merge do #3 é o `5bded22`);
+  - no PC do dono, `build`, GameTests, `runServer` e um `runClient` que abriu sem erros, com o código de `5bded22`.
+- **24/10/2026, depois disso**, branch `claude/polish-visual-uses`:
+  - teste visual automático (`121cc4b`, `5533a37`);
+  - correções da auditoria (`910549e`);
+  - 37 genéticas do catálogo (`e467d58`);
+  - arte nova (`191d082`);
+  - usos dos artigos (`9cd902c`);
+  - português, animações e sons (`16c7d3c`);
+  - correções da revisão (`319cf0b`) e docs (`dbe06a4`).
+- **25/10/2026, madrugada, PC do dono:** conferência própria de build e GameTests; teste visual estendido (47 cenas) no cliente real, que achou a fumaça cobrindo a tela em 1ª pessoa (corrigido em `f515cb9`); multiplayer local parcial; estes docs; branch enviada ao GitHub.
+- Detalhes e resultados de cada etapa estão em TODO.md (evidências) e em `git log`. O prompt da sessão de 21/10 está em `git show 319cf0b:docs/CLOUD_PROMPT.md`.
+
+## 8. Pendências, em ordem
+
+1. **Multiplayer completo** (PC do dono): `run-probe.ps1 -Multiplayer` com o PC folgado (o de 25/10 foi parado por falta de memória: são dois Minecraft e dois Gradle). Depois, dois jogadores de verdade numa estação e fumando perto um do outro (GUIA, seção 6.3).
+2. **O que o teste visual não cobre** (PC do dono, seção 6.1 do guia): mão esquerda, artigos de todos os lados e ouvir os sons.
+3. **Ambiente do dono:** testar com o Serene Seasons, ou documentar que as lavouras do Cultivo sofrem com as estações; decidir entre exigir `[66.0.13,)` no `mods.toml` ou testar no Forge 66.0.2.
+4. **Teste visual automático:** o enquadramento de algumas cenas é largo (artigos, genéticas e "na mão" ficam pequenos); aproximar as câmeras ajudaria a revisar.
+5. **Catálogo:** o filtro High THC da loja tinha cerca de 58 produtos num snapshot antigo; entraram 37. Se o dono colar a página, acrescente as que faltam (DECISIONS.md, "Como adicionar uma genética").
+6. **Balanceamento** depois de jogar (pesos, raridade da planta silvestre, velocidades, preços do mascate).
+7. **Opcionais** registrados nas etapas:
+   - pote com funil (hopper);
+   - brilho no pote curado;
+   - ícone do suporte de secagem com maços;
+   - silhueta por genética na lavoura;
+   - áudio próprio no lugar dos eventos vanilla;
+   - chama no isqueiro enquanto fuma.
+8. **Limpeza:** apagar a sobra `GrowthRules.visualStage` e o teste dela; registrar uma inspeção do jar do código atual (a última registrada é do código `1e7325a`).

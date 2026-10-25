@@ -54,6 +54,18 @@ class VarietyAndGrowthTest {
         assertThrows(IllegalArgumentException.class, () -> GrowthRules.growthRollBound(0.0F));
     }
 
+    /** Catálogo: rápida ×1,25 (automáticas), média ×1,0 e lenta ×0,8, sobre o mesmo trigo hidratado (velocidade 4). */
+    @Test
+    void catalogGrowthClasses() {
+        assertEquals(1.25F, Variety.KUSH_ROXINHA.growthMultiplier());
+        assertEquals(1.0F, Variety.MANGA_GELADA.growthMultiplier());
+        assertEquals(0.8F, Variety.AMNESIA_NEBLINA.growthMultiplier());
+        assertEquals(6, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.KUSH_ROXINHA, false)));
+        assertEquals(7, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.MANGA_GELADA, false)));
+        assertEquals(8, GrowthRules.growthRollBound(GrowthRules.effectiveSpeed(4.0F, Variety.AMNESIA_NEBLINA, false)));
+        assertEquals(4.0F * 0.8F * 1.25F, GrowthRules.effectiveSpeed(4.0F, Variety.MORANGO_AZEDO, true), 1e-6);
+    }
+
     @Test
     void lightThresholdLikeWheat() {
         assertFalse(GrowthRules.hasEnoughLight(8));

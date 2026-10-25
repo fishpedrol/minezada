@@ -16,6 +16,9 @@ import java.util.List;
  *
  * <p>Perfis (só gameplay): sativa dá Velocidade, híbrida dá Regeneração curta, índica dá Lentidão + Regeneração,
  * e sem variedade conhecida (ex.: baseado de /give ou haxixe antigo sem cultivo:strain) dá Lentidão leve. Todos dão Fome ("larica") e um pouco de Náusea.
+ *
+ * <p>Baseado com piteira (componente cultivo:filtered, só no baseado): a sessão dura
+ * {@link #FILTER_DURATION_MULTIPLIER}× e a náusea cai pela metade ({@link #FILTER_NAUSEA_DIVISOR}) depois do teto.
  */
 public final class SmokeRules {
     public static final int TICKS_PER_SECOND = 20;
@@ -31,6 +34,13 @@ public final class SmokeRules {
     public static final int AT_MAX_MARGIN_TICKS = 30 * TICKS_PER_SECOND;
     public static final int LIGHTER_DAMAGE_PER_USE = 1;
     public static final int LIGHTER_DURABILITY = 64;
+    /** Piteira no baseado: a sessão dura 25% a mais. */
+    public static final float FILTER_DURATION_MULTIPLIER = 1.25F;
+    /**
+     * Piteira no baseado: a náusea é dividida por isto depois de aplicado o teto (se fosse antes, o teto apagaria a
+     * diferença nas sessões longas).
+     */
+    public static final int FILTER_NAUSEA_DIVISOR = 2;
 
     /** Efeitos usados; o Java traduz para MobEffects (HIGH é o efeito próprio cultivo:high). */
     public enum EffectKind { HIGH, HUNGER, NAUSEA, SPEED, SLOWNESS, REGENERATION }
@@ -40,9 +50,15 @@ public final class SmokeRules {
 
     /**
      * O que o jogador fuma: variedade (null quando não se sabe, ex.: haxixe sem variedade), qualidade
-     * (null = {@link #DEFAULT_QUALITY}) e se é haxixe.
+     * (null = {@link #DEFAULT_QUALITY}), se é haxixe e se tem piteira (cultivo:filtered; só conta no baseado, veja
+     * {@link #isFiltered}).
      */
-    public record Material(Variety variety, Integer quality, boolean hash) {}
+    public record Material(Variety variety, Integer quality, boolean hash, boolean filtered) {
+        /** Material sem piteira: flor seca, haxixe ou baseado comum. */
+        public Material(Variety variety, Integer quality, boolean hash) {
+            this(variety, quality, hash, false);
+        }
+    }
 
     /** Motivo para não deixar fumar, com a chave da mensagem mostrada ao jogador. */
     public enum Refusal {
@@ -94,11 +110,22 @@ public final class SmokeRules {
         return 0.6F + 0.2F * effectiveQuality(quality);
     }
 
+    /**
+     * A piteira só vale no baseado: cachimbo, chillum, bong e narguilé queimam flor seca ou haxixe, que nunca têm
+     * piteira, então a marca é ignorada para eles.
+     */
+    public static boolean isFiltered(SmokeDevice device, Material material) {
+        return material.filtered() && device == SmokeDevice.JOINT;
+    }
+
     /** Duração desta sessão (sem somar o que já restava). */
     public static int sessionTicks(SmokeDevice device, Material material) {
         float seconds = BASE_SECONDS * device.strength() * qualityFactor(material.quality());
         if (material.hash()) {
             seconds *= HASH_MULTIPLIER;
+        }
+        if (isFiltered(device, material)) {
+            seconds *= FILTER_DURATION_MULTIPLIER;
         }
         return Math.round(seconds * TICKS_PER_SECOND);
     }
@@ -121,7 +148,11 @@ public final class SmokeRules {
         out.add(new EffectSpec(EffectKind.HIGH, total, heavy ? 1 : 0));
         out.add(new EffectSpec(EffectKind.HUNGER, total, 0));
         int nauseaCap = heavy ? NAUSEA_HEAVY_MAX_TICKS : NAUSEA_LIGHT_MAX_TICKS;
-        out.add(new EffectSpec(EffectKind.NAUSEA, Math.min(nauseaCap, Math.round(session * 0.3F)), 0));
+        int nausea = Math.min(nauseaCap, Math.round(session * 0.3F));
+        if (isFiltered(device, material)) {
+            nausea /= FILTER_NAUSEA_DIVISOR;
+        }
+        out.add(new EffectSpec(EffectKind.NAUSEA, nausea, 0));
         Variety.Lineage lineage = material.variety() == null ? null : material.variety().lineage();
         if (lineage == null) {
             out.add(new EffectSpec(EffectKind.SLOWNESS, Math.round(session * 0.3F), 0));

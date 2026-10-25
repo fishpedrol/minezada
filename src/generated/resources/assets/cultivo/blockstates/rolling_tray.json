@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "cultivo:block/rolling_tray"
+    },
+    "facing=east": {
+      "model": "cultivo:block/rolling_tray",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "cultivo:block/rolling_tray",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "cultivo:block/rolling_tray",
+      "y": 270
+    }
+  }
+}

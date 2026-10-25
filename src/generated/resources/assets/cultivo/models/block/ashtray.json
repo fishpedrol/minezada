@@ -1,0 +1,278 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cultivo:block/ashtray_block",
+    "clay": "cultivo:block/ashtray_block"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        0,
+        4
+      ],
+      "to": [
+        12,
+        0.5,
+        12
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#clay",
+          "cullface": "down"
+        },
+        "up": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#clay"
+        },
+        "north": {
+          "uv": [
+            4,
+            15.5,
+            12,
+            16
+          ],
+          "texture": "#clay"
+        },
+        "south": {
+          "uv": [
+            4,
+            15.5,
+            12,
+            16
+          ],
+          "texture": "#clay"
+        },
+        "west": {
+          "uv": [
+            4,
+            15.5,
+            12,
+            16
+          ],
+          "texture": "#clay"
+        },
+        "east": {
+          "uv": [
+            4,
+            15.5,
+            12,
+            16
+          ],
+          "texture": "#clay"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        0.5,
+        4
+      ],
+      "to": [
+        12,
+        2,
+        5
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            4,
+            4,
+            12,
+            5
+          ],
+          "texture": "#clay"
+        },
+        "north": {
+          "uv": [
+            4,
+            14,
+            12,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "south": {
+          "uv": [
+            4,
+            14,
+            12,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "west": {
+          "uv": [
+            4,
+            14,
+            5,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "east": {
+          "uv": [
+            11,
+            14,
+            12,
+            15.5
+          ],
+          "texture": "#clay"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        0.5,
+        11
+      ],
+      "to": [
+        12,
+        2,
+        12
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            4,
+            11,
+            12,
+            12
+          ],
+          "texture": "#clay"
+        },
+        "north": {
+          "uv": [
+            4,
+            14,
+            12,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "south": {
+          "uv": [
+            4,
+            14,
+            12,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "west": {
+          "uv": [
+            11,
+            14,
+            12,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "east": {
+          "uv": [
+            4,
+            14,
+            5,
+            15.5
+          ],
+          "texture": "#clay"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        0.5,
+        5
+      ],
+      "to": [
+        5,
+        2,
+        11
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            4,
+            5,
+            5,
+            11
+          ],
+          "texture": "#clay"
+        },
+        "west": {
+          "uv": [
+            5,
+            14,
+            11,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "east": {
+          "uv": [
+            5,
+            14,
+            11,
+            15.5
+          ],
+          "texture": "#clay"
+        }
+      }
+    },
+    {
+      "from": [
+        11,
+        0.5,
+        5
+      ],
+      "to": [
+        12,
+        2,
+        11
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            11,
+            5,
+            12,
+            11
+          ],
+          "texture": "#clay"
+        },
+        "west": {
+          "uv": [
+            5,
+            14,
+            11,
+            15.5
+          ],
+          "texture": "#clay"
+        },
+        "east": {
+          "uv": [
+            5,
+            14,
+            11,
+            15.5
+          ],
+          "texture": "#clay"
+        }
+      }
+    }
+  ]
+}

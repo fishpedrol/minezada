@@ -11,7 +11,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.block.Block;
 
-/** Item das estações, com uma linha explicando a função e outra o uso. */
+/** Item das estações, com uma linha explicando a função e a dica de uso em linhas curtas. */
 public class StationBlockItem extends BlockItem {
     private final StationKind kind;
 
@@ -26,6 +26,6 @@ public class StationBlockItem extends BlockItem {
                                 Consumer<Component> tooltip, TooltipFlag flag) {
         tooltip.accept(Component.translatable("tooltip.cultivo.station." + kind.recipeTypeId())
             .withStyle(ChatFormatting.GRAY));
-        tooltip.accept(Component.translatable("tooltip.cultivo.station.usage").withStyle(ChatFormatting.DARK_GRAY));
+        TooltipItem.addHint(tooltip, "tooltip.cultivo.station.usage");
     }
 }

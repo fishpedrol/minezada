@@ -1,0 +1,73 @@
+{
+  "parent": "cultivo:item/bong_in_hand_lit",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        60,
+        4,
+        0
+      ],
+      "translation": [
+        -0.178,
+        1.476,
+        1.65
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        60,
+        -4,
+        0
+      ],
+      "translation": [
+        -0.178,
+        1.476,
+        1.65
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -25,
+        5
+      ],
+      "translation": [
+        -1,
+        5,
+        -2
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        25,
+        -5
+      ],
+      "translation": [
+        -1,
+        5,
+        -2
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    }
+  }
+}

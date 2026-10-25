@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_transmute",
+  "category": "misc",
+  "group": "cultivo_joint",
+  "input": "cultivo:joint",
+  "material": "cultivo:filter_tip",
+  "result": {
+    "id": "cultivo:joint",
+    "count": 1,
+    "components": {
+      "cultivo:filtered": {}
+    }
+  }
+}

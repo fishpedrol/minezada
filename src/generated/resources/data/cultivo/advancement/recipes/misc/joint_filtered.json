@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_joint": {
+      "conditions": {
+        "items": [
+          {
+            "items": "cultivo:joint"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_filter_tip": {
+      "conditions": {
+        "items": [
+          {
+            "items": "cultivo:filter_tip"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipes": "cultivo:joint_filtered"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_joint",
+      "has_filter_tip"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "cultivo:joint_filtered"
+    ]
+  }
+}

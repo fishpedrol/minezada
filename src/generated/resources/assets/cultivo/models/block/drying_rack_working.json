@@ -1,0 +1,6 @@
+{
+  "parent": "cultivo:block/drying_rack_bundles",
+  "textures": {
+    "bundle": "cultivo:block/drying_bundle_fresh"
+  }
+}

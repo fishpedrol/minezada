@@ -6,12 +6,14 @@ import io.github.peixeangola.cultivo.core.SmokeDevice;
 import io.github.peixeangola.cultivo.core.SmokeRules;
 import io.github.peixeangola.cultivo.core.StationKind;
 import io.github.peixeangola.cultivo.core.Variety;
-import io.github.peixeangola.cultivo.item.DecorativeItem;
+import io.github.peixeangola.cultivo.item.ArticleBlockItem;
+import io.github.peixeangola.cultivo.item.FlowerItem;
 import io.github.peixeangola.cultivo.item.LighterItem;
 import io.github.peixeangola.cultivo.item.QualityItem;
 import io.github.peixeangola.cultivo.item.SeedItem;
 import io.github.peixeangola.cultivo.item.SmokingItem;
 import io.github.peixeangola.cultivo.item.StationBlockItem;
+import io.github.peixeangola.cultivo.item.TooltipItem;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,8 +42,8 @@ public final class ModItems {
             // useItemDescriptionPrefix: o item-semente é o BlockItem do crop, mas usa item.cultivo.<v>_seeds
             SEEDS.put(variety, ITEMS.register(seeds, () -> new SeedItem(variety, ModBlocks.CROPS.get(variety).get(),
                 new Item.Properties().setId(ITEMS.key(seeds)).useItemDescriptionPrefix())));
-            FRESH_FLOWERS.put(variety, quality(variety.freshFlowerId()));
-            DRIED_FLOWERS.put(variety, quality(variety.driedFlowerId()));
+            FRESH_FLOWERS.put(variety, flower(variety, variety.freshFlowerId()));
+            DRIED_FLOWERS.put(variety, flower(variety, variety.driedFlowerId()));
         }
     }
 
@@ -69,32 +71,55 @@ public final class ModItems {
     private ModItems() {}
 
     /** Isqueiro: durabilidade própria (e por isso empilha 1). */
-    public static final RegistryObject<Item> LIGHTER = ARTICLES.get("lighter");
+    public static final RegistryObject<Item> LIGHTER = ARTICLES.get(ContentIds.LIGHTER);
+    /** Folha de seda: ingrediente do baseado na bancada e na bandeja. */
+    public static final RegistryObject<Item> ROLLING_PAPER = ARTICLES.get(ContentIds.ROLLING_PAPER);
+    /** Piteira: ingrediente do baseado com piteira. */
+    public static final RegistryObject<Item> FILTER_TIP = ARTICLES.get(ContentIds.FILTER_TIP);
+    /** Dichavador: instala na peneira. */
+    public static final RegistryObject<Item> GRINDER = ARTICLES.get(ContentIds.GRINDER);
 
-    /** Cachimbo, chillum, bong e narguilé fumam; o isqueiro tem durabilidade; o resto é decorativo. */
+    /**
+     * Cada artigo tem um papel ({@link ContentIds#ARTICLES}): cachimbo, chillum, bong e narguilé fumam; o isqueiro tem
+     * durabilidade; folha de seda, piteira e dichavador têm uma dica com o uso; bandeja, pote e cinzeiro colocam o
+     * bloco (mantendo o ícone plano) e também mostram a dica.
+     */
     private static Item article(String name) {
         Item.Properties properties = new Item.Properties().setId(ITEMS.key(name));
-        if (name.equals("lighter")) {
+        if (name.equals(ContentIds.LIGHTER)) {
             return new LighterItem(properties.durability(SmokeRules.LIGHTER_DURABILITY));
         }
         properties.stacksTo(STACKABLE_ARTICLES.contains(name) ? 64 : 1);
+        String tooltip = "tooltip.cultivo." + name;
+        if (ContentIds.PLACEABLE_ARTICLES.contains(name)) {
+            return new ArticleBlockItem(ModBlocks.PLACEABLE_ARTICLES.get(name).get(), properties, tooltip);
+        }
+        if (ContentIds.INGREDIENT_ARTICLES.contains(name) || ContentIds.UPGRADE_ARTICLES.contains(name)) {
+            return new TooltipItem(properties, tooltip);
+        }
         return SmokeDevice.byItemId(name)
             .<Item>map(device -> new SmokingItem(device, properties))
-            .orElseGet(() -> new DecorativeItem(properties));
+            .orElseThrow(() -> new IllegalStateException("artigo sem papel: " + name));
     }
 
     /** Variedade de uma semente, flor fresca ou flor seca pelo item; null para outros itens. */
     public static Variety varietyOf(net.minecraft.world.item.ItemStack stack) {
-        for (Variety variety : Variety.values()) {
-            if (stack.is(SEEDS.get(variety).get()) || stack.is(FRESH_FLOWERS.get(variety).get())
-                || stack.is(DRIED_FLOWERS.get(variety).get())) {
-                return variety;
-            }
+        Item item = stack.getItem();
+        if (item instanceof SeedItem seed) {
+            return seed.variety();
+        }
+        if (item instanceof FlowerItem flower) {
+            return flower.variety();
         }
         return null;
     }
 
     private static RegistryObject<Item> quality(String name) {
         return ITEMS.register(name, () -> new QualityItem(new Item.Properties().setId(ITEMS.key(name))));
+    }
+
+    /** Flor fresca ou seca: já sabe a variedade (perfil no tooltip) e carrega cultivo:quality como os outros. */
+    private static RegistryObject<Item> flower(Variety variety, String name) {
+        return ITEMS.register(name, () -> new FlowerItem(variety, new Item.Properties().setId(ITEMS.key(name))));
     }
 }

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "cultivo:block/press_platen_moving"
+    },
+    "facing=east": {
+      "model": "cultivo:block/press_platen_moving",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "cultivo:block/press_platen_moving",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "cultivo:block/press_platen_moving",
+      "y": 270
+    }
+  }
+}

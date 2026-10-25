@@ -13,9 +13,10 @@ import net.minecraft.world.level.storage.loot.providers.number.ints.ContextIntPr
 import net.minecraftforge.event.LootTableLoadEvent;
 
 /**
- * Acrescenta aos baús das casas de aldeia cobertas um pool com 1 rolagem: vazio 50, brisa 30 (1–3),
- * aurora 14 (1–2), eclipse 6 (1), montado a partir de {@link SeedSources}. O evento só dispara no servidor
- * ao carregar as loot tables. No 26.3 o evento não dá acesso ao registro de loot tables, então o pool é
+ * Acrescenta aos baús das casas de aldeia cobertas um pool com 1 rolagem e uma entrada por variedade (nativas e do
+ * catálogo): peso 4 e 1–3 sementes para comum, 2 e 1–2 para incomum, 1 e 1 para rara, mais uma entrada vazia com a
+ * soma desses pesos (metade dos baús ganha semente). Montado a partir de {@link SeedSources}. O evento só dispara no
+ * servidor ao carregar as loot tables. No 26.3 o evento não dá acesso ao registro de loot tables, então o pool é
  * construído aqui em vez de referenciar cultivo:inject/village_seeds; o JSON espelha os mesmos pesos para
  * datapacks e testes.
  */

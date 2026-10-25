@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_transmute",
+  "category": "misc",
+  "group": "cultivo_joint",
+  "input": "cultivo:bananona_dried_flower",
+  "material": "cultivo:rolling_paper",
+  "result": {
+    "id": "cultivo:joint",
+    "count": 1,
+    "components": {
+      "cultivo:strain": "bananona"
+    }
+  }
+}

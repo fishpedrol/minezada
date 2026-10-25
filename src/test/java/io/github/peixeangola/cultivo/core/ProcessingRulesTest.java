@@ -28,6 +28,25 @@ class ProcessingRulesTest {
         assertEquals(1, ProcessingRules.outputCount(StationKind.PRESSING, 1, 5));
     }
 
+    /** Dichavador na peneira: +1 resina por ciclo, somado ao bônus de qualidade (plano 1.3). */
+    @Test
+    void grinderAddsOneResinOnTheSieveOnly() {
+        assertEquals(1, ProcessingRules.GRINDER_BONUS);
+        assertEquals(2, ProcessingRules.outputCount(StationKind.SIEVING, 1, 2, true));
+        assertEquals(3, ProcessingRules.outputCount(StationKind.SIEVING, 1, 4, true));
+        assertEquals(2, ProcessingRules.outputCount(StationKind.SIEVING, 1, null, true));
+        assertEquals(1, ProcessingRules.outputCount(StationKind.PRESSING, 1, 5, true));
+        assertEquals(1, ProcessingRules.outputCount(StationKind.DRYING, 1, 3, true));
+    }
+
+    @Test
+    void withoutGrinderTheOldNumbersHold() {
+        assertEquals(1, ProcessingRules.outputCount(StationKind.SIEVING, 1, 3, false));
+        assertEquals(2, ProcessingRules.outputCount(StationKind.SIEVING, 1, 5, false));
+        assertEquals(2, ProcessingRules.outputCount(StationKind.SIEVING, 1, 4, false));
+        assertEquals(1, ProcessingRules.outputCount(StationKind.SIEVING, 1, null, false));
+    }
+
     @Test
     void outputCompatibility() {
         assertTrue(ProcessingRules.outputAccepts(true, false, 0, 2, 64));

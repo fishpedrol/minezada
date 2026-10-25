@@ -12,6 +12,22 @@
           "name": "cultivo:sieve"
         }
       ]
+    },
+    {
+      "rolls": 1,
+      "condition": {
+        "type": "minecraft:match_block",
+        "blocks": "cultivo:sieve",
+        "state": {
+          "grinder": "true"
+        }
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "cultivo:grinder"
+        }
+      ]
     }
   ],
   "random_sequence": "cultivo:blocks/sieve"

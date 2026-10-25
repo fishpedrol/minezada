@@ -1,0 +1,131 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cultivo:block/press_iron",
+    "iron": "cultivo:block/press_iron"
+  },
+  "elements": [
+    {
+      "from": [
+        7.5,
+        8.5,
+        7.5
+      ],
+      "to": [
+        8.5,
+        15,
+        8.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            7.5,
+            7.5,
+            8.5
+          ],
+          "rotation": 90,
+          "texture": "#iron"
+        },
+        "south": {
+          "uv": [
+            1,
+            7.5,
+            7.5,
+            8.5
+          ],
+          "rotation": 90,
+          "texture": "#iron"
+        },
+        "west": {
+          "uv": [
+            1,
+            7.5,
+            7.5,
+            8.5
+          ],
+          "rotation": 90,
+          "texture": "#iron"
+        },
+        "east": {
+          "uv": [
+            1,
+            7.5,
+            7.5,
+            8.5
+          ],
+          "rotation": 90,
+          "texture": "#iron"
+        }
+      }
+    },
+    {
+      "from": [
+        4,
+        7,
+        4
+      ],
+      "to": [
+        12,
+        8.5,
+        12
+      ],
+      "faces": {
+        "down": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#iron"
+        },
+        "up": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#iron"
+        },
+        "north": {
+          "uv": [
+            4,
+            7.5,
+            12,
+            9
+          ],
+          "texture": "#iron"
+        },
+        "south": {
+          "uv": [
+            4,
+            7.5,
+            12,
+            9
+          ],
+          "texture": "#iron"
+        },
+        "west": {
+          "uv": [
+            4,
+            7.5,
+            12,
+            9
+          ],
+          "texture": "#iron"
+        },
+        "east": {
+          "uv": [
+            4,
+            7.5,
+            12,
+            9
+          ],
+          "texture": "#iron"
+        }
+      }
+    }
+  ]
+}

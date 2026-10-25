@@ -1,0 +1,17 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "cultivo:block/jar"
+      }
+    },
+    {
+      "when": {
+        "filled": "true"
+      },
+      "apply": {
+        "model": "cultivo:block/jar_filled"
+      }
+    }
+  ]
+}

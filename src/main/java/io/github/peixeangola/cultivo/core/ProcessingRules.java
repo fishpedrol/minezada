@@ -3,19 +3,35 @@ package io.github.peixeangola.cultivo.core;
 /** Regras puras das estações: rendimento, compatibilidade da saída e avanço do progresso. */
 public final class ProcessingRules {
     public static final int SIEVE_BONUS_MIN_QUALITY = 4;
+    /** Dichavador instalado na peneira: resina a mais por ciclo, somada ao bônus de qualidade. */
+    public static final int GRINDER_BONUS = 1;
 
     private ProcessingRules() {}
 
+    /** Quantidade produzida por ciclo sem dichavador (veja {@link #outputCount(StationKind, int, Integer, boolean)}). */
+    public static int outputCount(StationKind kind, int baseCount, Integer quality) {
+        return outputCount(kind, baseCount, quality, false);
+    }
+
     /**
-     * Quantidade produzida por ciclo. Na peneira, qualidade ≥ 4 rende +1 resina.
+     * Quantidade produzida por ciclo. Só a peneira tem bônus: qualidade ≥ 4 rende +1 resina e o dichavador instalado
+     * rende mais +1 (os dois somam). Secagem e prensa ignoram os dois.
      *
      * @param quality qualidade da entrada, ou {@code null} se a entrada não tem qualidade
+     * @param grinder a peneira tem dichavador (blockstate grinder=true)
      */
-    public static int outputCount(StationKind kind, int baseCount, Integer quality) {
-        if (kind == StationKind.SIEVING && quality != null && quality >= SIEVE_BONUS_MIN_QUALITY) {
-            return baseCount + 1;
+    public static int outputCount(StationKind kind, int baseCount, Integer quality, boolean grinder) {
+        if (kind != StationKind.SIEVING) {
+            return baseCount;
         }
-        return baseCount;
+        int count = baseCount;
+        if (quality != null && quality >= SIEVE_BONUS_MIN_QUALITY) {
+            count++;
+        }
+        if (grinder) {
+            count += GRINDER_BONUS;
+        }
+        return count;
     }
 
     /**

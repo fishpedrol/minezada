@@ -1,7 +1,156 @@
 {
-  "variants": {
-    "": {
-      "model": "cultivo:block/drying_rack"
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_loaded"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_working"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_done"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_loaded",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_working",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_done",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_loaded",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_working",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_done",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "loaded"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_loaded",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "working"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_working",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "contents": "done"
+      },
+      "apply": {
+        "model": "cultivo:block/drying_rack_done",
+        "y": 270
+      }
     }
-  }
+  ]
 }
