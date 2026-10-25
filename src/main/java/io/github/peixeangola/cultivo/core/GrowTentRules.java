@@ -51,12 +51,17 @@ public final class GrowTentRules {
     }
 
     /**
-     * O clique direito: com semente na estufinha vazia, planta; com a planta madura (com qualquer coisa na mão, menos
-     * semente numa estufinha vazia), colhe; senão nada (o vanilla segue, por exemplo com a farinha de osso).
+     * O clique direito: com semente na estufinha desocupada, planta (se o jogador pode construir ali: no modo aventura,
+     * só com {@code can_place_on}); com a planta madura (com qualquer coisa na mão), colhe; senão nada (o vanilla segue,
+     * por exemplo com a farinha de osso).
+     *
+     * @param occupied    tem planta ou um id de variedade desconhecido (estufinha inerte, que não planta nem colhe)
+     * @param hasPlant    tem uma planta de variedade conhecida
+     * @param mayPlace    o jogador pode construir na estufinha
      */
-    public static Use use(boolean hasPlant, int age, boolean holdingSeed) {
-        if (!hasPlant) {
-            return holdingSeed ? Use.PLANT : Use.NONE;
+    public static Use use(boolean occupied, boolean hasPlant, int age, boolean holdingSeed, boolean mayPlace) {
+        if (!occupied) {
+            return holdingSeed && mayPlace ? Use.PLANT : Use.NONE;
         }
         return isRipe(hasPlant, age) ? Use.HARVEST : Use.NONE;
     }

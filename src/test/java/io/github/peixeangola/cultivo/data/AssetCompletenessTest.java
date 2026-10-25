@@ -251,12 +251,14 @@ class AssetCompletenessTest {
             .allMatch(f -> f.getValue().getAsJsonObject().get("texture").getAsString().equals("#mylar"))).count();
     }
 
-    /** Elementos com light_emission, todos entre 1 e 15 (o CuboidModelElement do 26.3 recusa fora de 0–15). */
+    /** Elementos com light_emission, todos entre 1 e 15 (o CuboidModelElement do 26.3 recusa fora de 0–15); nenhum com "shade". */
     private static List<JsonObject> emissive(String model) {
         JsonArray elements = Resources.json(Resources.assets("models/block/" + model + ".json")).getAsJsonArray("elements");
         List<JsonObject> out = new ArrayList<>();
         for (JsonElement e : elements) {
             JsonObject el = e.getAsJsonObject();
+            // O 26.3 não tem a chave "shade" (só shade_direction_override): o deserializador a ignoraria em silêncio
+            assertFalse(el.has("shade"), model + " com a chave shade, que o 26.3 não lê");
             if (el.has("light_emission")) {
                 int glow = el.get("light_emission").getAsInt();
                 assertTrue(glow >= 1 && glow <= 15, model + " light_emission " + glow);

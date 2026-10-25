@@ -76,8 +76,8 @@ public final class ModBlocks {
             .pushReaction(PushReaction.POPPED).setId(BLOCKS.key(ContentIds.ASHTRAY))));
 
     /**
-     * Estufinha: tecido, 2 de altura, luz roxa na metade de cima. Pistões não a movem (a de cima não tem BlockEntity e
-     * se separaria da de baixo).
+     * Estufinha: tecido, 2 de altura, luz roxa na metade de cima. Pistões não a movem nem a estouram: fica de pé, como a
+     * mesa de encantamento, em vez de virar item com a planta junto a cada máquina de redstone por perto.
      */
     public static final RegistryObject<GrowTentBlock> GROW_TENT = BLOCKS.register(ContentIds.GROW_TENT,
         () -> new GrowTentBlock(BlockBehaviour.Properties.of()

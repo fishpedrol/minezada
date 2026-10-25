@@ -57,15 +57,22 @@ class GrowTentRulesTest {
         assertFalse(GrowTentRules.isRipe(false, 7), "vazia não está madura");
     }
 
-    /** Planta só com semente na vazia; colhe só madura (com qualquer coisa na mão); o resto não faz nada. */
+    /**
+     * Planta só com semente na desocupada e podendo construir; colhe só madura (com qualquer coisa na mão); a inerte (id
+     * desconhecido) não planta nem colhe; o resto não faz nada.
+     */
     @Test
     void rightClick() {
-        assertEquals(Use.PLANT, GrowTentRules.use(false, 0, true));
-        assertEquals(Use.NONE, GrowTentRules.use(false, 0, false));
-        assertEquals(Use.NONE, GrowTentRules.use(true, 3, true), "não replanta por cima");
-        assertEquals(Use.NONE, GrowTentRules.use(true, 6, false));
-        assertEquals(Use.HARVEST, GrowTentRules.use(true, 7, false));
-        assertEquals(Use.HARVEST, GrowTentRules.use(true, 7, true));
+        assertEquals(Use.PLANT, GrowTentRules.use(false, false, 0, true, true));
+        assertEquals(Use.NONE, GrowTentRules.use(false, false, 0, true, false), "modo aventura sem can_place_on");
+        assertEquals(Use.NONE, GrowTentRules.use(false, false, 0, false, true));
+        assertEquals(Use.NONE, GrowTentRules.use(true, true, 3, true, true), "não replanta por cima");
+        assertEquals(Use.NONE, GrowTentRules.use(true, true, 6, false, true));
+        assertEquals(Use.HARVEST, GrowTentRules.use(true, true, 7, false, true));
+        assertEquals(Use.HARVEST, GrowTentRules.use(true, true, 7, true, true));
+        assertEquals(Use.HARVEST, GrowTentRules.use(true, true, 7, false, false), "colher vale no modo aventura");
+        assertEquals(Use.NONE, GrowTentRules.use(true, false, 7, false, true), "inerte não colhe");
+        assertEquals(Use.NONE, GrowTentRules.use(true, false, 0, true, true), "inerte não replanta");
     }
 
     @Test

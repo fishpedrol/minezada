@@ -32,10 +32,10 @@ class CuringRulesTest {
     @Test
     void growTentStaysAheadAfterCuring() {
         int bestOutdoor = CuringRules.curedQuality(3);
-        int worstGreenhouse = CuringRules.curedQuality(4);
+        int worstTent = CuringRules.curedQuality(4);
         assertEquals(4, bestOutdoor);
-        assertEquals(5, worstGreenhouse);
-        assertTrue(worstGreenhouse > bestOutdoor);
+        assertEquals(5, worstTent);
+        assertTrue(worstTent > bestOutdoor);
     }
 
     @Test

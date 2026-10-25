@@ -7,6 +7,7 @@ import io.github.peixeangola.cultivo.core.Variety;
 import io.github.peixeangola.cultivo.registry.ModBlockEntities;
 import io.github.peixeangola.cultivo.registry.ModBlocks;
 import java.util.List;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -22,7 +23,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -34,15 +38,20 @@ import org.slf4j.Logger;
  *   <li>Os drops da planta são os da própria lavoura ({@link #rollPlantDrops}): a tabela cultivo:blocks/&lt;v&gt;_crop
  *       rolada com esta BlockEntity no contexto, que é o que faz a função de loot dar qualidade 4–5. Madura: 1 flor
  *       fresca e sementes; antes disso: 1 semente.</li>
- *   <li>Quebrar a estufinha (qualquer metade, por jogador, explosão ou comando) derruba a planta uma vez, aqui em
- *       {@link #preRemoveSideEffects}, como o pote derruba o conteúdo. Também no criativo, como os baús.</li>
- *   <li>Salva a variedade pelo id e a idade; um id desconhecido carrega como estufinha vazia.</li>
+ *   <li>Quebrar a estufinha (qualquer metade, por jogador ou comando) derruba a planta uma vez, aqui em
+ *       {@link #preRemoveSideEffects}, como o pote derruba o conteúdo. Na explosão, a planta sai pelo
+ *       {@link GrowTentBlock} (com o decaimento da explosão); no criativo, não sai, como a lavoura quebrada no criativo.</li>
+ *   <li>Salva a variedade pelo id e a idade. Um id desconhecido (genética renomeada, mod mais antigo) carrega como
+ *       estufinha <b>inerte</b>: ocupada, sem crescer, sem colher, sem replantar, sem desenho e sem drop, e o id volta
+ *       igual ao salvar, para não apagar a planta de ninguém.</li>
  * </ul>
  */
 public class GrowTentBlockEntity extends BlockEntity {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private @Nullable Variety variety;
+    /** O id salvo quando não corresponde a nenhuma variedade (estufinha inerte); null no resto. */
+    private @Nullable String rawVariety;
     private int age;
 
     public GrowTentBlockEntity(BlockPos pos, BlockState state) {
@@ -53,6 +62,11 @@ public class GrowTentBlockEntity extends BlockEntity {
         return variety != null;
     }
 
+    /** Tem planta ou um id desconhecido: não aceita outra semente. */
+    public boolean occupied() {
+        return variety != null || rawVariety != null;
+    }
+
     public @Nullable Variety variety() {
         return variety;
     }
@@ -61,8 +75,11 @@ public class GrowTentBlockEntity extends BlockEntity {
         return age;
     }
 
-    /** Planta uma semente da variedade, na idade 0. */
+    /** Planta uma semente da variedade, na idade 0 (só na estufinha desocupada). */
     public void plant(Variety variety) {
+        if (occupied()) {
+            return;
+        }
         this.variety = variety;
         this.age = 0;
         changed();
@@ -77,20 +94,36 @@ public class GrowTentBlockEntity extends BlockEntity {
         changed();
     }
 
-    /** Esvazia a estufinha (depois da colheita). */
+    /** Esvazia a estufinha (depois da colheita; também tira um id desconhecido). */
     public void clear() {
-        variety = null;
-        age = 0;
+        forget();
         changed();
     }
 
-    /** O que a planta derruba agora: o loot da lavoura da variedade nesta idade, com esta BlockEntity no contexto. */
-    public List<ItemStack> rollPlantDrops(ServerLevel level, @Nullable Entity breaker, ItemStack tool) {
+    /** Esquece a planta sem salvar nem sincronizar: o bloco está saindo (quebra, explosão ou criativo), como o pote. */
+    void forget() {
+        variety = null;
+        rawVariety = null;
+        age = 0;
+    }
+
+    /**
+     * O que a planta derruba agora: o loot da lavoura da variedade nesta idade, com esta BlockEntity no contexto (os
+     * mesmos parâmetros de Block#getDrops; com {@code explosionRadius}, o decaimento da explosão da tabela vale).
+     */
+    public List<ItemStack> rollPlantDrops(ServerLevel level, @Nullable Entity breaker, ItemStack tool,
+                                          @Nullable Float explosionRadius) {
         if (variety == null) {
             return List.of();
         }
         BlockState plant = ModBlocks.CROPS.get(variety).get().getStateForAge(age);
-        return Block.getDrops(plant, level, worldPosition, this, breaker, tool);
+        LootParams.Builder params = new LootParams.Builder(level)
+            .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(worldPosition))
+            .withParameter(LootContextParams.TOOL, tool)
+            .withOptionalParameter(LootContextParams.THIS_ENTITY, breaker)
+            .withOptionalParameter(LootContextParams.BLOCK_ENTITY, this)
+            .withOptionalParameter(LootContextParams.EXPLOSION_RADIUS, explosionRadius);
+        return plant.getDrops(params);
     }
 
     /** Estado da lavoura que o cliente desenha dentro da estufinha (null se vazia). */
@@ -115,8 +148,9 @@ public class GrowTentBlockEntity extends BlockEntity {
     }
 
     private void writePlant(ValueOutput output) {
-        if (variety != null) {
-            output.putString("variety", variety.id());
+        String id = variety != null ? variety.id() : rawVariety;
+        if (id != null) {
+            output.putString("variety", id);
             output.putInt("age", age);
         }
     }
@@ -130,8 +164,14 @@ public class GrowTentBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        variety = input.getString("variety").flatMap(Variety::byId).orElse(null);
-        age = variety == null ? 0 : Mth.clamp(input.getIntOr("age", 0), 0, GrowthRules.MAX_AGE);
+        // Sempre os três campos: a tag do cliente sem planta também apaga a planta que ele via
+        Optional<String> id = input.getString("variety");
+        variety = id.flatMap(Variety::byId).orElse(null);
+        rawVariety = variety == null ? id.orElse(null) : null;
+        if (rawVariety != null && (level == null || !level.isClientSide())) {
+            LOGGER.warn("Estufinha em {} com variedade desconhecida '{}': fica inerte até ser quebrada", worldPosition, rawVariety);
+        }
+        age = occupied() ? Mth.clamp(input.getIntOr("age", 0), 0, GrowthRules.MAX_AGE) : 0;
     }
 
     @Override
@@ -139,7 +179,7 @@ public class GrowTentBlockEntity extends BlockEntity {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    /** O cliente recebe a variedade e a idade (sem planta, nada: a estufinha aparece vazia). */
+    /** O cliente recebe a variedade e a idade (sem planta, nada: a estufinha aparece vazia; inerte, o id desconhecido). */
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(problemPath(), LOGGER)) {
@@ -162,10 +202,9 @@ public class GrowTentBlockEntity extends BlockEntity {
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
-        if (level instanceof ServerLevel serverLevel && variety != null) {
-            rollPlantDrops(serverLevel, null, ItemStack.EMPTY).forEach(stack -> Block.popResource(serverLevel, pos, stack));
-            variety = null;
-            age = 0;
+        if (level instanceof ServerLevel serverLevel) {
+            rollPlantDrops(serverLevel, null, ItemStack.EMPTY, null).forEach(stack -> Block.popResource(serverLevel, pos, stack));
+            forget();
         }
     }
 }

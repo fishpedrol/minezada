@@ -3,6 +3,7 @@ package io.github.peixeangola.cultivo.block;
 import io.github.peixeangola.cultivo.core.GrowTentRules;
 import io.github.peixeangola.cultivo.item.SeedItem;
 import io.github.peixeangola.cultivo.registry.ModSounds;
+import java.util.function.BiConsumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -17,6 +18,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ScheduledTickAccess;
@@ -31,10 +33,12 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
@@ -52,11 +56,14 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Clique direito ({@link GrowTentRules#use}): com uma semente na estufinha vazia, planta; com a planta madura,
  *       colhe flores e sementes pela tabela da lavoura (qualidade 4–5, com a fortuna da mão principal) e a estufinha
  *       fica vazia; antes disso nada, e a farinha de osso do vanilla segue (+2 a +5 idades).</li>
- *   <li>Quebrar qualquer metade derruba 1 estufinha (só a metade de baixo tem o item no loot) e a planta uma vez.</li>
+ *   <li>Quebrar qualquer metade derruba 1 estufinha (só a metade de baixo tem o item no loot) e a planta uma vez; no
+ *       criativo, nenhum dos dois (como a lavoura e a porta); na explosão, a planta sai com o decaimento da explosão.</li>
  *   <li>Luz de bloco {@link GrowTentRules#LAMP_LIGHT} na metade de cima e partículas roxas (só no cliente).</li>
  * </ul>
  * O cliente prevê o clique com a mesma regra e os dados sincronizados; o servidor devolve SUCCESS, nunca
- * SUCCESS_SERVER (o braço já balançou pela previsão). Pistões não movem a estufinha (as metades se separariam).
+ * SUCCESS_SERVER (o braço já balançou pela previsão). Pistões não movem a estufinha. Comandos ({@code /setblock
+ * strict}) ainda podem deixar uma metade sozinha: toda entrada confere se a metade de baixo é mesmo uma estufinha
+ * ({@link #tentAt}) e não faz nada se não for.
  */
 public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
@@ -82,9 +89,15 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
         return state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos : pos.below();
     }
 
-    /** A BlockEntity da planta, clicando em qualquer metade (null se faltar, por dados corrompidos). */
+    /**
+     * A BlockEntity da planta, clicando em qualquer metade. Null se a metade de baixo não for uma estufinha
+     * {@code half=lower} com a BlockEntity (metade órfã, dados corrompidos).
+     */
     public static @Nullable GrowTentBlockEntity tentAt(BlockGetter level, BlockState state, BlockPos pos) {
-        return level.getBlockEntity(lowerPos(state, pos)) instanceof GrowTentBlockEntity tent ? tent : null;
+        BlockPos lower = lowerPos(state, pos);
+        BlockState lowerState = level.getBlockState(lower);
+        return lowerState.getBlock() instanceof GrowTentBlock && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER
+            && level.getBlockEntity(lower) instanceof GrowTentBlockEntity tent ? tent : null;
     }
 
     @Override
@@ -137,12 +150,15 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
     }
 
     /**
-     * No criativo, quebrar a metade de cima tira a de baixo sem drop do item (cópia de
-     * DoublePlantBlock#preventDropFromBottomPart, que só o pacote vanilla enxerga). A planta ainda cai, pelo
-     * preRemoveSideEffects da BlockEntity, como o conteúdo de um baú quebrado no criativo.
+     * No criativo nada cai: a planta é esquecida antes (como a lavoura quebrada no criativo) e, quebrando a metade de
+     * cima, a de baixo sai sem drop do item (cópia de DoublePlantBlock#preventDropFromBottomPart, que só o pacote vanilla
+     * enxerga).
      */
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide() && player.preventsBlockDrops() && tentAt(level, state, pos) instanceof GrowTentBlockEntity tent) {
+            tent.forget();
+        }
         if (!level.isClientSide() && player.preventsBlockDrops() && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
             BlockPos bottomPos = pos.below();
             BlockState bottomState = level.getBlockState(bottomPos);
@@ -155,6 +171,32 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
             }
         }
         return super.playerWillDestroy(level, pos, state, player);
+    }
+
+    /**
+     * Explosão em qualquer metade: a planta sai uma vez, pelo {@code onHit} da explosão e com o raio no loot (o
+     * {@code explosion_decay} da tabela da lavoura vale), e depois o vanilla explode a metade de baixo (o item da
+     * estufinha com {@code survives_explosion}); a de cima some junto, sem loot. A outra posição, quando a explosão
+     * chega nela, já é ar.
+     */
+    @Override
+    protected void onExplosionHit(BlockState state, ServerLevel level, BlockPos pos, Explosion explosion,
+                                  BiConsumer<ItemStack, BlockPos> onHit) {
+        GrowTentBlockEntity tent = tentAt(level, state, pos);
+        if (tent == null) {
+            super.onExplosionHit(state, level, pos, explosion, onHit);
+            return;
+        }
+        BlockPos lower = tent.getBlockPos();
+        if (explosion.getBlockInteraction() != Explosion.BlockInteraction.TRIGGER_BLOCK) {
+            Float radius = explosion.getBlockInteraction() == Explosion.BlockInteraction.DESTROY_WITH_DECAY
+                ? explosion.radius()
+                : null;
+            tent.rollPlantDrops(level, explosion.getDirectSourceEntity(), ItemStack.EMPTY, radius)
+                .forEach(stack -> onHit.accept(stack, lower));
+            tent.forget();
+        }
+        super.onExplosionHit(level.getBlockState(lower), level, lower, explosion, onHit);
     }
 
     @Override
@@ -187,7 +229,7 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
     /** Como a lavoura, mas sem luz, farmland nem vizinhos: só o sorteio da variedade na estufinha. */
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!(level.getBlockEntity(pos) instanceof GrowTentBlockEntity tent) || !tent.canGrow()) {
+        if (!(tentAt(level, state, pos) instanceof GrowTentBlockEntity tent) || !tent.canGrow()) {
             return;
         }
         boolean grows = random.nextInt(GrowTentRules.rollBound(tent.variety())) == 0;
@@ -220,14 +262,23 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
 
     // ------------------------------------------------------------------ clique direito
 
+    /**
+     * O jogador pode plantar na estufinha: constrói (sobrevivência, criativo) ou, no modo aventura, a semente tem
+     * {@code can_place_on} para a estufinha. É o portão do uso de item vanilla (ItemStack#useOn), que o clique num bloco
+     * pula; os dois lados calculam igual.
+     */
+    public static boolean mayPlace(Player player, ItemStack held, LevelReader level, BlockPos lower) {
+        return player.mayBuild() || held.canPlaceOnBlockInAdventureMode(new BlockInWorld(level, lower, false));
+    }
+
     /** O que o clique faz com o que o lado que chama sabe (no cliente, os dados sincronizados). */
-    public static GrowTentRules.Use predict(GrowTentBlockEntity tent, ItemStack held) {
-        return GrowTentRules.use(tent.hasPlant(), tent.age(), held.getItem() instanceof SeedItem);
+    public static GrowTentRules.Use predict(GrowTentBlockEntity tent, ItemStack held, boolean mayPlace) {
+        return GrowTentRules.use(tent.occupied(), tent.hasPlant(), tent.age(), held.getItem() instanceof SeedItem, mayPlace);
     }
 
     /** Resultado do clique no cliente: SUCCESS quando o servidor vai plantar ou colher; senão PASS. */
-    public static InteractionResult predictResult(GrowTentBlockEntity tent, ItemStack held) {
-        return predict(tent, held) == GrowTentRules.Use.NONE ? InteractionResult.PASS : InteractionResult.SUCCESS;
+    public static InteractionResult predictResult(GrowTentBlockEntity tent, ItemStack held, boolean mayPlace) {
+        return predict(tent, held, mayPlace) == GrowTentRules.Use.NONE ? InteractionResult.PASS : InteractionResult.SUCCESS;
     }
 
     @Override
@@ -237,7 +288,7 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
         if (tent == null) {
             return InteractionResult.PASS;
         }
-        if (predict(tent, stack) != GrowTentRules.Use.PLANT) {
+        if (predict(tent, stack, mayPlace(player, stack, level, tent.getBlockPos())) != GrowTentRules.Use.PLANT) {
             // Colher (com qualquer coisa na mão principal) ou nada: segue para useWithoutItem; a farinha de osso, sem
             // nada a fazer aqui, cai no uso do item
             return InteractionResult.TRY_WITH_EMPTY_HAND;
@@ -265,10 +316,13 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
         if (!(level instanceof ServerLevel serverLevel)) {
             return InteractionResult.SUCCESS;
         }
-        // A tabela da lavoura com a fortuna da mão principal, como quebrar a lavoura madura
-        var drops = tent.rollPlantDrops(serverLevel, player, player.getMainHandItem());
+        // A tabela da lavoura com a fortuna da mão principal, como quebrar a lavoura madura; com a regra blockDrops
+        // desligada, esvazia sem dar nada, como o arbusto de frutas vermelhas vanilla
+        var drops = tent.rollPlantDrops(serverLevel, player, player.getMainHandItem(), null);
         tent.clear();
-        drops.forEach(drop -> Handouts.give(player, drop));
+        if (serverLevel.getGameRules().get(GameRules.BLOCK_DROPS)) {
+            drops.forEach(drop -> Handouts.give(player, drop));
+        }
         BlockPos lower = tent.getBlockPos();
         level.playSound(null, lower, ModSounds.GROW_TENT_HARVEST.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         level.gameEvent(GameEvent.BLOCK_CHANGE, lower, GameEvent.Context.of(player, level.getBlockState(lower)));
@@ -287,13 +341,13 @@ public class GrowTentBlock extends Block implements EntityBlock, BonemealableBlo
         double y = pos.getY();
         double z = pos.getZ();
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
-            if (random.nextInt(3) == 0) {
+            if (random.nextInt(3) == 0 && tentAt(level, state, pos) != null) {
                 level.addParticle(new DustParticleOptions(PURPLE, 0.6F), x + 0.25D + random.nextDouble() * 0.5D, y + 0.6D,
                     z + 0.25D + random.nextDouble() * 0.5D, 0.0D, 0.0D, 0.0D);
             }
             return;
         }
-        if (random.nextInt(5) == 0 && level.getBlockEntity(pos) instanceof GrowTentBlockEntity tent && tent.isRipe()) {
+        if (random.nextInt(5) == 0 && tentAt(level, state, pos) instanceof GrowTentBlockEntity tent && tent.isRipe()) {
             level.addParticle(new DustParticleOptions(PURPLE, 0.8F), x + 0.3D + random.nextDouble() * 0.4D, y + 0.9D,
                 z + 0.3D + random.nextDouble() * 0.4D, 0.0D, 0.0D, 0.0D);
         }

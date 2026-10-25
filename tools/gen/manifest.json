@@ -254,7 +254,9 @@
     { "name": "glass_gives_no_bonus", "max_ticks": 100 },
     { "name": "grow_tent_breaks_either_half", "max_ticks": 100 },
     { "name": "grow_tent_creative_break", "max_ticks": 100 },
-    { "name": "grow_tent_persists", "max_ticks": 100 }
+    { "name": "grow_tent_persists", "max_ticks": 100 },
+    { "name": "grow_tent_adventure_plant", "max_ticks": 100 },
+    { "name": "grow_tent_explosion", "max_ticks": 100 }
   ],
   "lang": {
     "en_us": {

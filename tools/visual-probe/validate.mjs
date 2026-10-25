@@ -82,6 +82,14 @@ for (const f of fnFiles) {
         else if (!props[id][k].has(v)) err(f, n, `${id}: ${k}=${v} fora de ${[...props[id][k]].join('/')}`);
       }
     }
+    // Estufinha: a planta (NBT) so na metade de baixo, com variedade conhecida e idade 0..7
+    for (const m of line.matchAll(/cultivo:grow_tent\[([^\]]*)\]\{([^}]*)\}/g)) {
+      if (!/half=lower/.test(m[1])) err(f, n, 'estufinha: planta fora da metade de baixo');
+      const variety = m[2].match(/variety:"([^"]*)"/);
+      if (!variety || !strainIds.has(variety[1])) err(f, n, `estufinha: variedade desconhecida ${variety ? variety[1] : '(nenhuma)'}`);
+      const age = m[2].match(/age:(-?\d+)/);
+      if (age && !(+age[1] >= 0 && +age[1] <= 7)) err(f, n, `estufinha: idade ${age[1]} fora de 0..7`);
+    }
     // Itens: id:"cultivo:x" em NBT e cultivo:x[...] em give/item replace
     for (const m of line.matchAll(/id:"cultivo:([a-z0-9_]+)"/g)) if (!items.has(m[1])) err(f, n, `item inexistente: ${m[1]}`);
     const withItem = line.match(/ with (cultivo:[a-z0-9_]+)(\[[^\]]*\])?/);

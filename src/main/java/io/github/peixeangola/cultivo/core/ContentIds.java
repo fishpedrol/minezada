@@ -190,7 +190,9 @@ public final class ContentIds {
         "glass_gives_no_bonus",
         "grow_tent_breaks_either_half",
         "grow_tent_creative_break",
-        "grow_tent_persists");
+        "grow_tent_persists",
+        "grow_tent_adventure_plant",
+        "grow_tent_explosion");
 
     private ContentIds() {}
 
