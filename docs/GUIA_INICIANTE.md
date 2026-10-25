@@ -21,7 +21,7 @@ Tudo é ficção de jogo, e todo o texto do mod aparece em português.
 | Comando | Para que serve | Como é o sucesso |
 |---|---|---|
 | `.\gradlew.bat build` | Compila, roda os testes automáticos rápidos (JUnit; hoje são 317) e gera `build\libs\cultivo-0.1.0.jar` | `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 72) | `All 72 required tests passed :)` |
+| `.\gradlew.bat runGameTestServer` | Roda os testes dentro de um Minecraft sem janela (GameTests; hoje são 73) | `All 73 required tests passed :)` |
 | `.\gradlew.bat runClient` | Abre o Minecraft de teste já com o mod | a janela do jogo abre |
 
 - **As quantidades de testes mudam** quando alguém acrescenta testes. O que importa é aparecer `BUILD SUCCESSFUL` e `All N required tests passed :)` (com o número que for), sem `FAILED`.
@@ -294,7 +294,7 @@ Rode tudo **no terminal, na pasta do projeto** (`C:\dev\minezada`, seção 2.8).
 |---|---|---|
 | `.\gradlew.bat build` | Compila, roda os testes JUnit (hoje 317) e gera o .jar | `BUILD SUCCESSFUL in ...` |
 | `.\gradlew.bat test` | Só os testes JUnit | linhas `... PASSED` e `BUILD SUCCESSFUL` |
-| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 72 required tests passed :)` (o número muda se entrarem testes novos) |
+| `.\gradlew.bat runGameTestServer` | Sobe um servidor sem janela, roda os GameTests e fecha | `All 73 required tests passed :)` (o número muda se entrarem testes novos) |
 | `.\gradlew.bat runClient` | Abre o Minecraft de desenvolvimento já com o mod | a janela do jogo abre |
 | `.\gradlew.bat runServer` | Liga um servidor dedicado na pasta `run\` | `Done (...)! For help, type "help"` |
 | `.\gradlew.bat --stop` | Desliga os processos do Gradle que ficam rodando em segundo plano ("daemons") | útil quando algo trava |
@@ -347,7 +347,7 @@ O terminal só mostra o arquivo e a linha. A mensagem completa fica no relatóri
 ### 3.3 `runGameTestServer`
 
 - Não abre janela e **não pede a EULA**: esse servidor de teste não lê o `eula.txt` (só o servidor dedicado da seção 3.5 lê).
-- Sucesso: `All 72 required tests passed :)`. Hoje, 72 é o **total** de testes: os 71 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
+- Sucesso: `All 73 required tests passed :)`. Hoje, 73 é o **total** de testes: os 72 do Cultivo mais o `minecraft:always_pass`, um teste de exemplo que vem com o jogo. Quando entrarem testes novos, o número aumenta; o que importa é a frase `All N required tests passed :)`.
 - Falha: o log lista o nome de cada teste obrigatório que falhou e a mensagem dele. Estas linhas são de uma rodada real que falhou durante o desenvolvimento:
   ```
   3 required tests failed :(
@@ -736,7 +736,7 @@ Fontes: `core/SeedSources.java`, `tools/gen/manifest.json` (`seed_sources`) e `t
    - **Cores:** cada genética tem a cor da sua família (as 3 nativas têm cores próprias).
 5. Plantar a mesma cultura em fileiras cruzadas deixa o crescimento mais lento, igual ao trigo. Abelhas também ajudam a crescer.
 6. **Colheita** (quebrar a planta):
-   - madura (idade 7): 1 **Flor Fresca** com qualidade, mais 0 a 3 sementes (Fortuna aumenta);
+   - madura (idade 7): **de 3 a 5 Flores Frescas** (todas com a mesma qualidade), mais de 1 a 4 sementes (Fortuna aumenta as sementes);
    - antes disso: 1 semente.
 
 **Ver a luz e a idade com o F3:** no Minecraft 26.3, a tela do F3 vem resumida e **não mostra** luz, bioma nem a idade da planta.
@@ -772,7 +772,7 @@ Vista de frente (a frente é aberta)
 2. **Coloque** no chão: precisa de **2 blocos livres** de altura e de um chão firme embaixo. A frente aberta fica virada para você.
 3. **Plante:** clique com o botão direito na estufinha (em cima ou embaixo, tanto faz) segurando **uma semente** de qualquer genética. Gasta 1 semente e aparece uma mudinha no vaso.
 4. **Espere** ela crescer, ou use **farinha de osso** nela (cada uso adianta de 2 a 5 estágios, como no trigo). Ela cresce **em qualquer lugar**: num porão escuro, debaixo da terra, sem céu. A luz roxa é dela mesma.
-5. **Colha:** quando a planta estiver **madura** (as colas grandes e coloridas, como na lavoura), clique com o botão direito. Você recebe **1 flor fresca com qualidade 4 ou 5** e de 1 a 4 sementes, direto no inventário (o que não couber cai aos seus pés). A estufinha fica **vazia na hora**, pronta para plantar de novo.
+5. **Colha:** quando a planta estiver **madura** (as colas grandes e coloridas, como na lavoura), clique com o botão direito. Você recebe **de 3 a 5 flores frescas com qualidade 4 ou 5** e de 1 a 4 sementes, direto no inventário (o que não couber cai aos seus pés). A estufinha fica **vazia na hora**, pronta para plantar de novo.
 
 **O que mais é bom saber:**
 - Antes de madura, o clique **não colhe**. Se quiser tirar uma planta que ainda não está pronta, quebre a estufinha: ela devolve **1 semente** (e a estufinha).
@@ -1003,6 +1003,8 @@ Neste guia, **sessão** quer dizer um uso só: o tempo desta tabela, sem somar o
 
 Os três se colocam no chão como um bloco: segure o item e clique com o botão direito no chão. No inventário eles continuam com o ícone de item. Quebrados, cada um devolve o próprio item. Bandeja e cinzeiro quebram mais rápido com a picareta.
 
+**Bong no chão** (desde 25/10/2026): o clique direito normal com o bong continua sendo **fumar**. Para pôr o bong em pé, **agache** (Shift) e clique com o botão direito em cima de um bloco. No chão ele é enfeite: para usar de novo, quebre (sai na hora e devolve o bong). Ele precisa de chão firme embaixo; sem chão, cai e vira item.
+
 **Bandeja de Enrolar** (`core/RollingRules.java`):
 - **Enrolar:** com a bandeja no chão, clique com o botão direito segurando **pelo menos 2 Flores Secas iguais** (da mesma pilha: mesma genética e mesma qualidade). Você precisa ter também **3 Folhas de Seda** em qualquer lugar do inventário. Ela gasta 2 flores e 3 folhas e entrega **3 Baseados**: 1,5 baseado por flor, contra 1 na bancada.
 - **O que os baseados levam:** a genética e a qualidade da flor (e a cura, se a flor foi curada). Eles empilham com os baseados feitos na bancada com a mesma flor.
@@ -1105,16 +1107,16 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
 **Plantas e estufinha**
 - [ ] **8 estágios:** plantar em terra arada, ver os 8 estágios (um por idade) e usar farinha de osso. Na idade 6 a flor ainda é pequena; só na idade 7 aparecem as flores grandes e coloridas.
 - [ ] **Catálogo:** plantar 3 ou 4 genéticas do catálogo de cores diferentes e ver as cores da família na plantação.
-- [ ] **Colheita:** colher madura e verde, e conferir os drops (madura: flor fresca da mesma genética + sementes; verde: 1 semente).
+- [ ] **Colheita:** colher madura e verde, e conferir os drops (madura: **de 3 a 5 flores frescas** da mesma genética, todas com a mesma qualidade, + sementes; verde: 1 semente).
 - [ ] **Estufinha** (seção 5.5), no Sobrevivência:
   1. **Fazer:** na mesa de trabalho, 6 lãs roxas nas colunas da esquerda e da direita, e no meio, de cima para baixo, fragmento de ametista, tocha e vaso de flor. Sai 1 Estufinha.
   2. **Colocar:** num chão de pedra ou madeira (sem terra arada nem água por perto). Ela fica com 2 blocos de altura e a frente aberta virada para você. Tente também debaixo de um teto baixo (1 bloco livre só): ela não deve ser colocada nem gastar o item.
   3. **Olhar:** lona escura, mylar lilás brilhando por dentro, um painel de LEDs roxos aceso no teto, um pontinho roxo no poste da frente e pó roxo caindo da lâmpada. À noite ou numa sala fechada, a luz roxa deve aparecer bem e iluminar o chão em volta.
   4. **Plantar:** clique com o botão direito segurando uma semente. Gasta 1 semente, aparece a mudinha **dentro do vaso** e a legenda "Semente plantada na estufinha". Clicar de novo com outra semente não planta por cima.
   5. **Crescer:** use farinha de osso (de 2 a 5 estágios por uso) ou espere. A planta deve ficar dentro da barraca, sem atravessar a lona. Monte uma num porão fechado, sem céu: ela cresce do mesmo jeito.
-  6. **Colher:** madura, clique de **mão vazia**. Devem vir 1 flor fresca com **qualidade 4 (Ótima) ou 5 (Excepcional)** e algumas sementes, a legenda "Estufinha colhida", e a estufinha fica vazia. Colha várias vezes e veja as duas qualidades aparecerem.
+  6. **Colher:** madura, clique de **mão vazia**. Devem vir **de 3 a 5 flores frescas** com **qualidade 4 (Ótima) ou 5 (Excepcional)** e algumas sementes, a legenda "Estufinha colhida", e a estufinha fica vazia. Colha várias vezes e veja as duas qualidades aparecerem.
   7. **Replantar** logo em seguida com outra semente: deve funcionar na hora.
-  8. **Quebrar:** com uma planta madura dentro, quebre a metade **de cima** de uma estufinha e a metade **de baixo** de outra. Cada uma deve dar **1 estufinha** e a flor (4 ou 5) com as sementes, sem duplicar nada. Uma estufinha vazia dá só ela mesma; uma com planta verde dá ela e 1 semente.
+  8. **Quebrar:** com uma planta madura dentro, quebre a metade **de cima** de uma estufinha e a metade **de baixo** de outra. Cada uma deve dar **1 estufinha** e as flores (4 ou 5) com as sementes, sem duplicar nada. Uma estufinha vazia dá só ela mesma; uma com planta verde dá ela e 1 semente.
   9. **Salvar e voltar:** saia do mundo com uma planta pela metade dentro, entre de novo: ela deve estar lá, no mesmo tamanho.
   10. **Vidro não dá bônus:** uma planta na terra arada dentro de uma caixa de vidro deve dar 2 ou 3, como ao ar livre.
   11. **Criativo** (opcional): quebre uma estufinha com planta madura no Criativo. Não deve cair nada, nem a estufinha nem a planta.
@@ -1188,6 +1190,7 @@ Crie um mundo novo com **Permitir comandos: Sim**. Comece no Criativo e depois t
 - [ ] **Partículas e sons:** chaminha do isqueiro, brasa e fumaça perto da boca, bolhas no bong e no narguilé, nuvem de fumaça no fim. As legendas: "Isqueiro acende", "Tragando", "Bong borbulha", "Narguilé borbulha", "Fumaça soprada".
 - [ ] **Efeito:** o **ícone "Chapado"** no canto da tela e no inventário, com o tempo, e a Náusea balançando a tela.
 - [ ] **Recusas:** as mensagens de recusa sem isqueiro e sem material.
+- [ ] **Bong no chão:** agachado (Shift), clique direito com o bong em cima de um bloco: ele fica em pé, de vidro com água, virado para você. Sem agachar, o clique fuma normalmente. Quebre: volta 1 bong para o inventário.
 - [ ] **Consumo** (no Sobrevivência): o baseado some, a flor ou o haxixe é gasto, a barra do isqueiro desce.
 - [ ] **Chapado II e limite:** fume várias vezes até ver **Chapado II**. Continue (um bong com haxixe enche rápido) até o jogo recusar perto dos 6 min com "Você já está chapado ao máximo, espere um pouco", e confira que nada foi gasto nessa recusa.
 - [ ] **Velocidade e Lentidão juntas:** ponha uma Flor Seca de Brisa na mão secundária e fume no cachimbo (aparece Velocidade). Depois faça o mesmo com uma de Eclipse: aparece a Lentidão, e a Velocidade **continua** (as duas ficam juntas, seção 5.8).
@@ -1766,7 +1769,7 @@ DataConsistencyTest > processingRecipesMatchStations() FAILED
 
 **Estufinha, verificada no PC do dono em 25/10/2026** (branch `claude/estufinha`, commit `afa87eb`; detalhes no `docs/TODO.md`, seção 3f):
 
-- `node tools/gen/generate.mjs` gera 292 texturas e 807 arquivos JSON; `build` passa com 317 testes JUnit; `runGameTestServer` passa 72 de 72 (71 do Cultivo + 1 do Minecraft), também com o Serene Seasons carregado (antes do alinhamento com o plano revisado, 70 de 70 também no Forge 66.0.2).
+- `node tools/gen/generate.mjs` gera 296 texturas e 811 arquivos JSON; `build` passa com 318 testes JUnit; `runGameTestServer` passa 73 de 73 (72 do Cultivo + 1 do Minecraft, já com os buds e o bong no chão), também com o Serene Seasons carregado (antes do alinhamento com o plano revisado, 70 de 70 também no Forge 66.0.2).
 - **Cliente:** o teste visual automático passou pelas 50 cenas sem erro de modelo, textura ou som, viu as estufinhas com a planta dentro e a luz lilás, e colheu e replantou de verdade.
 - **Falta:** você jogar com ela (seção 6.1, "Plantas e estufinha").
 

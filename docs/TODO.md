@@ -1,5 +1,7 @@
 # Plano do mod
 
+**Mais buds e bong no chão (25/10/2026, PC do dono, branch `claude/bong-colheita`):** `build` com 318 testes JUnit, `runGameTestServer` com `All 73 required tests passed :)`, também no Forge 66.0.2 com o Serene Seasons (a combinação do launcher do dono), e o teste visual com os bongs no chão (seção 3g).
+
 **Estufinha (25/10/2026, PC do dono, branch `claude/estufinha`):** `build` com 317 testes JUnit, `runGameTestServer` com `All 72 required tests passed :)` depois do alinhamento com o plano revisado (também com o Serene Seasons; antes dele, 70 de 70 nos Forge 66.0.13 e 66.0.2) e o teste visual com 50 prints (seção 3f).
 
 **Estado em 25/10/2026.** No PC do dono, com o código de `f515cb9` (branch `claude/polish-visual-uses`, já na `main` pelo PR #4). Na nuvem, com a branch `claude/forge-compat-seasons` (compatibilidade com o Forge 66.0.2 do launcher do dono e com o Serene Seasons): `build` com 316 testes JUnit e `runGameTestServer` com `All 63 required tests passed :)`, também no Forge 66.0.2 e com o Serene Seasons carregado (linhas de 25/10/2026, nuvem, na tabela abaixo).
@@ -229,6 +231,20 @@ Em ordem cronológica. "PC local" é o Windows 11 do dono com Temurin 25.0.4.1+1
   - cena nova no visual-probe (`cam_grow_tent`, `use_tent`, dica no inventário), rodada no cliente real com 50 prints;
   - `serene_seasons_compat`: a estufinha fora das tags do SS e crescendo na primavera com o SS carregado (Forge 66.0.13 e 66.0.2).
 - [ ] Ver no jogo de verdade (GUIA_INICIANTE.md, seção 6.1, "Plantas e estufinha"): a luz roxa no escuro, a planta dentro do vaso sem atravessar a lona, colher, replantar e quebrar.
+
+## 3g. Mais buds e bong no chão (pedido de 25/10/2026, branch `claude/bong-colheita`)
+
+- [x] **Mais buds:** a planta madura dá de 3 a 5 flores frescas (antes 1), numa pilha com a mesma qualidade, na lavoura e na estufinha (`harvest_flowers` no manifesto, `GrowthRules.HARVEST_FLOWERS_MIN/MAX`). `DataConsistencyTest.matureCropDropsFlowerWithHarvestQuality` confere o `set_count` 3–5 antes da qualidade nas 40 tabelas; os GameTests de colheita (lavoura, catálogo, estufinha) conferem de 3 a 5.
+- [x] **Bong no chão:** agachado, o clique direito num bloco põe `cultivo:bong` (`BongBlock`, facing, o modelo da mão em pé, texturas em `block/bong_*`); sem agachar, fuma como antes. Quebrar devolve o bong; sem chão, cai; criativo não gasta; aventura não põe. GameTest `bong_placed_on_ground`; dica nova no item; `AssetCompletenessTest.blockModelsUseOnlyBlockTextures` (o 26.3 recusa modelo de bloco com textura de item).
+
+| Data | Ambiente e comando | Resultado |
+|---|---|---|
+| 25/10/2026 | PC local: `node tools/gen/generate.mjs` / `.\gradlew.bat build --console=plain` / `.\gradlew.bat runGameTestServer --console=plain` | `296 texturas e 811 arquivos JSON` (+4 texturas `block/bong_*`, blockstate, modelo e loot do bong, `test_instance`); `BUILD SUCCESSFUL`, 318 testes JUnit, 0 falhas; **`All 73 required tests passed :)`**. |
+| 25/10/2026 | PC local: `.\gradlew.bat runGameTestServer "-Pcultivo_run_dir=run-compat-ss" "-Pcultivo_forge_version=26.3-66.0.2" --console=plain` | `Forge mod loading, version 66.0.2`; `Registered synced config with path sereneseasons/fertility.toml`; **`All 73 required tests passed :)`**. |
+| 25/10/2026 | PC local: testes negativos (o `useOn` do bong sempre PASS e `harvest_flowers` 1–1, depois um `bong.json` com `cultivo:item/model_glass`) | `8 required tests failed`: `bong_placed_on_ground` ("agachado não pôs o bong"), `harvest_drops` ("BRISA madura com 1 flores"), `catalog_strain_grows_and_drops`, `grow_tent_harvest`, `grow_tent_bone_meal`, `grow_tent_breaks_either_half`, `grow_tent_adventure_plant` e `grow_tent_places_two_halves`; `AssetCompletenessTest > blockModelsUseOnlyBlockTextures() FAILED`. Código restaurado; 318 JUnit e 73 GameTests de novo. |
+| 25/10/2026 | PC local: teste visual (`run-probe.ps1`), 1ª rodada com os bongs na cena da estufinha | `Rejecting block model cultivo:block/bong, since it contains sprites from outside of supported atlas: {minecraft:textures/atlas/items.png=[cultivo:item/model_glass, …]}`: o bloco usava as texturas do item. Corrigido com cópias em `block/bong_*`. |
+| 25/10/2026 | PC local: teste visual, 2ª rodada | `Prints: 50`; `log-problems.txt` sem nada ligado ao Cultivo além dos avisos conhecidos; no print `11_estufinha`, os dois bongs em pé no chão (vidro azul-claro, água, tubo e fornilho de metal), um de frente e um de lado. |
+- [ ] Ver no jogo de verdade (GUIA_INICIANTE.md, seção 6.1): colher e contar de 3 a 5 flores; pôr o bong agachado, fumar com ele sem agachar, quebrar e pegar de volta.
 
 ## 4. Conteúdo de release
 - [x] Licença escolhida (MIT para código e assets do Cultivo) e registrada em `mods.toml` e `LICENSE`.

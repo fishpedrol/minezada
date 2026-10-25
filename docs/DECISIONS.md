@@ -17,6 +17,8 @@ Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As cons
 - **24/10/2026, português e animações:** "deixe tudo no mod em português, também crie as animações" (seção "Português e animações").
 - **25/10/2026, estufinha:** o dono pediu trocar a estufa de vidro por uma estufinha craftável com luz roxa, que caiba um pé de planta, sem farmland e sem água, com qualidade maior. Respostas dele: a estufa de vidro sai (o vidro deixa de dar bônus; ao ar livre continua 2–3); 2 blocos de altura, como uma grow tent, com a planta no tamanho normal; colher no clique direito, que dá flores e sementes como a lavoura e deixa a estufinha vazia; qualidade 4–5. Plano aprovado ("aprovo o plano") em [ESTUFINHA_PLANO.md](ESTUFINHA_PLANO.md); seção "Estufinha".
 
+- **25/10/2026, mais buds e bong no chão:** "quero que venha mais buds quando pegar o pé, tambem quero que deixe o bong como um item que possa colocar no chao". Respostas dele: de 3 a 5 flores por planta madura; o bong vai para o chão agachado com o clique direito e, no chão, é enfeite (seções "Crescimento e lavoura" e "Papéis dos artigos").
+
 ## Recomendações de produto registradas
 - **Nativas:** Brisa, Aurora e Eclipse, as três variedades originais do MVP, continuam como as genéticas "nativas" do mundo, com ciclo e genética distintos (automática/fotoperíodo; sativa/índica/híbrida).
 - **Raridade:** cada genética tem uma raridade (comum, incomum, rara) que regula a chance de encontrá-la e nunca limita onde ela pode ser plantada.
@@ -68,6 +70,7 @@ Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As cons
 - **8 estágios visuais**, um por idade (como o trigo).
   - A idade 6 tem uma cola pequena no topo, com pontinhos de pistilo (ainda verde).
   - Só a idade 7 mostra as colas grandes e coloridas: é o sinal de colher.
+- **Colheita** (desde 25/10/2026, pedido do dono): a planta madura dá **de 3 a 5 flores frescas** (sorteio uniforme; `GrowthRules.HARVEST_FLOWERS_MIN/MAX` e `harvest_flowers` no manifesto), todas numa pilha com a mesma qualidade, e de 1 a 4 sementes (a Fortuna aumenta só as sementes). Imatura, 1 semente. Vale na lavoura, na estufinha e nas explosões (o decaimento pode levar algumas). Antes era 1 flor.
 - **Arte por família:** as texturas da lavoura são por família de arte. São 12 famílias: as 3 nativas e verde, verde_escuro, limao, dourado, roxo, azul, rosa, gelo e creme. Sementes e flores têm ícone próprio por genética.
 - **Aldeões:** o fazendeiro que colhe uma lavoura madura do mod replanta a mesma genética na idade 0 (`village/FarmerReplant`). A flor e as sementes caem no chão, e os aldeões não as recolhem. Isso mantém a lavoura da aldeia como fonte de sementes.
 
@@ -83,7 +86,7 @@ Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As cons
 - **Luz:** a metade de cima emite luz de bloco 12 (cerca de 11 na de baixo); o painel de LEDs e o ponto no poste da frente brilham no escuro (`light_emission` 15 nos elementos do modelo), e o mylar de dentro, lilás, brilha com 11 (`GROW_TENT_MYLAR_GLOW` em `tools/gen/models.mjs`), para a luz roxa aparecer de qualquer ângulo. Pó roxo cai da lâmpada; madura, sobe um ponto roxo a mais na metade de baixo. Efeito colateral: monstros não nascem colados a uma estufinha.
 - **Clique direito** (em qualquer metade):
   - com semente na estufinha vazia: planta, gasta 1 semente (nada no criativo), som "Semente plantada na estufinha". No modo aventura, só com uma semente que tenha `can_place_on` para a estufinha (o mesmo portão de colocar um bloco no vanilla); colher continua valendo, como o arbusto de frutas vermelhas;
-  - planta madura, com qualquer coisa na mão: colhe pela tabela da lavoura (1 flor fresca com qualidade 4–5 e de 1 a 4 sementes; a Fortuna da mão principal conta), entrega na mão/inventário (o que não couber cai aos pés), som "Estufinha colhida", e a estufinha fica vazia na hora. Com a regra `blockDrops` desligada, esvazia sem dar nada, como o arbusto de frutas vermelhas. A Fortuna só vale aqui: quebrar a estufinha rola a planta sem ferramenta;
+  - planta madura, com qualquer coisa na mão: colhe pela tabela da lavoura (de 3 a 5 flores frescas com qualidade 4–5 e de 1 a 4 sementes; a Fortuna da mão principal conta), entrega na mão/inventário (o que não couber cai aos pés), som "Estufinha colhida", e a estufinha fica vazia na hora. Com a regra `blockDrops` desligada, esvazia sem dar nada, como o arbusto de frutas vermelhas. A Fortuna só vale aqui: quebrar a estufinha rola a planta sem ferramenta;
   - planta crescendo: nada (a farinha de osso do vanilla segue);
   - para tirar uma planta imatura: quebre a estufinha (ela devolve 1 semente).
 - **Quebrar:** qualquer metade derruba 1 estufinha (o item só sai do loot da metade de baixo, como a porta) e a planta uma vez: madura, a flor 4–5 e as sementes; imatura, 1 semente; vazia, nada.
@@ -184,6 +187,7 @@ Atualizado em 25/10/2026, com o código do commit `8de8b1a` (estufinha). As cons
 - **Ingredientes:** folha de seda (baseado e bandeja) e piteira (baseado com piteira).
 - **Melhoria:** dichavador (peneira).
 - **Colocáveis:** bandeja de enrolar, pote de vidro e cinzeiro. O item é um BlockItem com o mesmo ID e mantém o ícone plano, como o vaso de flor vanilla; quebrado, cada um derruba o próprio item.
+- **Bong no chão** (desde 25/10/2026, pedido do dono; `ContentIds.PLACED_DEVICES`, `BongBlock`): o item continua fumando com o clique direito. **Agachado**, o clique direito em cima de um bloco põe o bong em pé (`cultivo:bong`, o mesmo modelo da mão, com a frente para quem pôs), gastando o item (nada no criativo; no modo aventura não põe). No chão é enfeite: precisa de chão firme embaixo, quebra na hora como vidro e devolve o bong; sem chão, cai e vira item; o pistão o estoura; o botão do meio dá o bong. A dica do item ganhou "Agachado, clique direito num bloco / para pôr o bong no chão".
 - **Nenhum artigo é só decorativo:** `DecorativeItem` e a dica "Item decorativo" foram removidos.
 - **Pilhas:** folha de seda e piteira empilham 64; baseado 16 (só com a mesma genética, qualidade e marcas); os outros artigos, 1.
 

@@ -19,9 +19,9 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
 
 | Verificação | Resultado |
 |---|---|
-| `node tools/gen/generate.mjs` | `292 texturas e 807 arquivos JSON`, sem diferença no `git status` |
-| `.\gradlew.bat build` | `BUILD SUCCESSFUL`, 317 testes JUnit, 0 falhas |
-| `.\gradlew.bat runGameTestServer` | `All 72 required tests passed :)` (71 do Cultivo + `minecraft:always_pass`) |
+| `node tools/gen/generate.mjs` | `296 texturas e 811 arquivos JSON`, sem diferença no `git status` |
+| `.\gradlew.bat build` | `BUILD SUCCESSFUL`, 318 testes JUnit, 0 falhas (com os buds e o bong no chão, branch `claude/bong-colheita`) |
+| `.\gradlew.bat runGameTestServer` | `All 73 required tests passed :)` (72 do Cultivo + `minecraft:always_pass`), também no Forge 66.0.2 com o Serene Seasons |
 | O mesmo com `"-Pcultivo_run_dir=run-compat-ss"` (Serene Seasons 26.1.2.0.7 + GlitchCore 26.3.0.0.5 do launcher do dono), no Forge 66.0.13 e com `"-Pcultivo_forge_version=26.3-66.0.2"` | `All 70 required tests passed :)` nos dois antes do alinhamento com o plano revisado; depois dele, `All 72 required tests passed :)` no Forge 66.0.13; a estufinha cresce na primavera do SS |
 | Testes negativos | Quebrar a rota da qualidade e o drop da planta derruba `grow_tent_harvest`, `grow_tent_breaks_either_half` e `grow_tent_creative_break`; trocar o multiplicador derruba 3 testes de `GrowTentRulesTest`; tirar o portão do modo aventura, a regra `blockDrops` e o "nada cai no criativo" derruba `grow_tent_adventure_plant`, `grow_tent_harvest` e `grow_tent_creative_break` |
 | Teste visual automático (`run-probe.ps1`, `runClient`) | 50 prints, log limpo; estufinhas com a planta no vaso e o interior lilás, colher e replantar de verdade |
@@ -67,9 +67,9 @@ O mod "Cultivo" (modid `cultivo`, versão 0.1.0) está implementado para Minecra
    - Pronto quando `java -version` mostrar 25 e o primeiro `./gradlew build` terminar.
 3. **Verificar o ponto de partida.** Rode nesta ordem e nunca dois comandos do Gradle ao mesmo tempo:
    1. `node tools/gen/generate.mjs`: termina com `292 texturas e 805 arquivos JSON gerados em ...`, e `git status` não mostra mudança.
-   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (317 testes, 0 falhas com a estufinha, no PC do dono).
-   3. `./gradlew runGameTestServer --console=plain`: `All 72 required tests passed :)`.
-   4. Se mexer em lavouras, sementes ou nas tags do Serene Seasons: `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` (preparo em `tools/compat/README.md`): `All 72 required tests passed :)` (com a estufinha ainda não rodado com o Serene Seasons) e, no log, `Registered synced config with path sereneseasons/fertility.toml`. Sem os jars do Serene Seasons nessa pasta, o `serene_seasons_compat` só confere as tags.
+   2. `./gradlew build --console=plain`: `BUILD SUCCESSFUL`. Os totais ficam nos XML de `build/test-results/test` (318 testes, 0 falhas com o bong no chão, no PC do dono).
+   3. `./gradlew runGameTestServer --console=plain`: `All 73 required tests passed :)`.
+   4. Se mexer em lavouras, sementes ou nas tags do Serene Seasons: `./gradlew runGameTestServer -Pcultivo_run_dir=run-compat-ss --console=plain` (preparo em `tools/compat/README.md`): `All 73 required tests passed :)` (com a estufinha ainda não rodado com o Serene Seasons) e, no log, `Registered synced config with path sereneseasons/fertility.toml`. Sem os jars do Serene Seasons nessa pasta, o `serene_seasons_compat` só confere as tags.
 
    Os números crescem com testes novos; o que vale é zero falha. No Windows (PC do dono), defina antes, na mesma janela: `$env:JAVA_HOME = "C:\Users\Cliente\Documents\jdk\jdk-25.0.4.1+1"; $env:Path = "$env:JAVA_HOME\bin;$env:Path"`.
 4. **Escolher a tarefa:** o pedido do dono, ou o primeiro item da seção 8 que der para fazer no ambiente que você tem.
@@ -158,7 +158,7 @@ Pacote `src/main/java/io/github/peixeangola/cultivo/`:
   - lavoura e mundo: `CannabisCropBlock`, `WildPlantBlock`;
   - estufinha: `GrowTentBlock` (2 metades como a porta, clique, farinha de osso, random tick, partículas) + `GrowTentBlockEntity` (variedade e idade só na metade de baixo; drops pela tabela da lavoura com a BlockEntity no contexto, que é o que dá 4–5; planta cai no `preRemoveSideEffects`);
   - estações: `ProcessingStationBlock` + `ProcessingStationBlockEntity` (as três estações), `SieveBlock` (dichavador), `StationContents`;
-  - artigos colocáveis: `RollingTrayBlock`, `JarBlock` + `JarBlockEntity`, `AshtrayBlock`;
+  - artigos colocáveis: `RollingTrayBlock`, `JarBlock` + `JarBlockEntity`, `AshtrayBlock`; o bong no chão, `BongBlock` (posto pelo `SmokingItem#useOn` agachado; o item não é BlockItem, então `getCloneItemStack` dá o bong);
   - `Handouts`: o que vai para a mão do jogador, com sobra caindo aos pés.
 - `item/`:
   - `SeedItem`, `FlowerItem` e `QualityItem`, com `StrainProfile` (linha de raridade · ciclo · genética · potência);
@@ -172,11 +172,11 @@ Pacote `src/main/java/io/github/peixeangola/cultivo/`:
   - `PressPlatenRenderer`: placa da prensa;
   - `GrowTentRenderer`: a lavoura da variedade dentro da estufinha (o mesmo modelo da lavoura, subido 4 px e com 7/8 da largura);
   - `CultivoClientEvents`.
-- `gametest/CultivoGameTests`: 71 GameTests (com `serene_seasons_compat` e os 10 da estufinha: `grow_tent_harvest`, `grow_tent_places_two_halves`, `grow_tent_plants_and_grows`, `grow_tent_bone_meal`, `glass_gives_no_bonus`, `grow_tent_breaks_either_half`, `grow_tent_creative_break`, `grow_tent_persists`, `grow_tent_adventure_plant`, `grow_tent_explosion`), com os nomes em `ContentIds.GAME_TESTS`.
+- `gametest/CultivoGameTests`: 72 GameTests (com `serene_seasons_compat`, `bong_placed_on_ground` e os 10 da estufinha: `grow_tent_harvest`, `grow_tent_places_two_halves`, `grow_tent_plants_and_grows`, `grow_tent_bone_meal`, `glass_gives_no_bonus`, `grow_tent_breaks_either_half`, `grow_tent_creative_break`, `grow_tent_persists`, `grow_tent_adventure_plant`, `grow_tent_explosion`), com os nomes em `ContentIds.GAME_TESTS`.
   - `serene_seasons_compat` sempre confere as tags em jogo; com o Serene Seasons na pasta de mods (só em `-Pcultivo_run_dir=run-compat-ss`), confere também a paridade com o trigo na primavera, sob vidro e no verão. Exige `out_of_season_crop_behavior = 1` e dispara o `TagsUpdatedEvent` como o cliente do single player.
 
 Outras pastas:
-- `src/test/java/.../core` e `.../data`: 317 testes JUnit (`core/GrowTentRulesTest` trava os números da estufinha).
+- `src/test/java/.../core` e `.../data`: 318 testes JUnit (`core/GrowTentRulesTest` trava os números da estufinha).
   - `core`: regras puras.
   - `data`: completude e consistência dos recursos, nomes de paródia, português, sons, texturas animadas, isolamento do cliente, animação e dicas.
   - `data/CompatibilityTest` (5 testes): tags do Serene Seasons (as 40 lavouras e sementes, só verão e outono, sem planta silvestre), `sky_access` do test_instance, `mods.toml` forge `[66.0.2,)` e o padrão 66.0.13 do `build.gradle`.
@@ -223,6 +223,7 @@ Outras pastas:
 **Bloco de 2 de altura, luz e modelo emissivo** (confirmadas em 25/10/2026 com a estufinha)
 - Padrão da porta: `DoubleBlockHalf HALF`, `getStateForPlacement` checa `pos.getY() < level.getMaxY()` e o bloco de cima `canBeReplaced`, `setPlacedBy` põe a metade de cima, `updateShape` some com a outra metade, item `DoubleHighBlockItem`, loot do item condicionado a `half=lower`. `DoublePlantBlock.preventDropFromBottomPart` é `protected static` do pacote vanilla: fora dele, copie o método (flags 35 e `levelEvent 2001`).
 - `newBlockEntity` pode devolver null na metade de cima. `preRemoveSideEffects` roda com a BlockEntity ainda registrada, também no criativo (flags 35 não têm a 256): para o criativo não derrubar nada, a estufinha esquece a planta no `playerWillDestroy`. `/setblock … replace` usa as flags `2|256` e pula o `preRemoveSideEffects`, mas não a atualização de forma da outra metade (que sai com drop pelo `Block.updateOrDestroy`).
+- Modelo de bloco com textura do atlas de itens (`cultivo:item/...`) é recusado no 26.3 ("Rejecting block model … outside of supported atlas") e o bloco fica sem modelo. Blocos usam só texturas `block/` (o bong no chão tem cópias `block/bong_*`; `AssetCompletenessTest.blockModelsUseOnlyBlockTextures`).
 - Explosões chamam `onExplosionHit` por posição; o loot do bloco é rolado lá, com `EXPLOSION_RADIUS` só em `DESTROY_WITH_DECAY`. A estufinha sobrescreve para rolar a planta pelo `onHit` com o raio e depois chama o vanilla na metade de baixo.
 - O clique num bloco (`ServerPlayerGameMode#useItemOn` → `BlockState#useItemOn`) pula o portão do modo aventura (`ItemStack#useOn` confere `mayBuild`/`can_place_on`); a estufinha confere ela mesma (`GrowTentBlock.mayPlace`).
 - `PushReaction` do 26.3: `PUSH_PULL, PUSH, POPPED, IMMOVEABLE, IGNORE_ENTITY` (não há `DESTROY` nem `BLOCK`).
